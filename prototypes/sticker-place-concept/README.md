@@ -3,7 +3,7 @@
 <!-- Date: 2026-11-07 -->
 # 말랑 크루 스티커 — 컨셉 프로토타입 (PIVOT #1, 변주 B)
 
-**Status**: in-progress (플레이테스트 대기)
+**Status**: concluded — PROCEED (see REPORT.md)
 **Carry-forward**: `../match3-blitz-concept/PIVOT-NOTE.md`
 
 ## 가설
@@ -34,4 +34,4 @@
 - 실제 마우스 드래그 배치 동작, 자동 플레이 한 판: 45조각, 2346점, 최대 연쇄 5, 능력 33회, 결과·재시작 동작
 
 ## Findings
-(플레이테스트 후 기록)
+"괜찮은데?" — 매치-3 버전보다 차별성 인정. 얼굴=스위치 규칙은 강조·연쇄 미리보기가 있어야 읽힘 → PROCEED. 자세한 내용은 REPORT.md.
