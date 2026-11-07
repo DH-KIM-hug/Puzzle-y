@@ -44,6 +44,8 @@ canvas#cv { display: block; touch-action: none; }
 .legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .legend div { background: var(--sticker); border-radius: 14px 16px 12px 15px; padding: 6px 8px; font-size: 11px; color: var(--ink-soft); box-shadow: 0 2px 0 rgba(59,47,37,.18); min-width: 0; }
 .legend b { display: block; font-family: var(--display); font-weight: 400; font-size: 14px; color: var(--ink); }
+.tip { background: var(--ink); color: var(--sticker); border-radius: 12px; padding: 8px 12px; font-size: 13px; line-height: 1.4; }
+.tip b { font-family: var(--display); font-weight: 400; color: #ffe278; }
 .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(232,217,189,.82); }
 .card { background: var(--sticker); border-radius: 22px 26px 20px 24px; padding: 22px 24px; text-align: center; box-shadow: 0 6px 0 rgba(59,47,37,.2); transform: rotate(-1.5deg); min-width: 240px; max-width: 100%; }
 .card h2 { font-family: var(--display); font-weight: 400; font-size: 30px; margin: 0 0 6px; text-wrap: balance; }
@@ -71,11 +73,12 @@ canvas#cv { display: block; touch-action: none; }
     <div class="best" id="best"></div>
     <div class="score" id="score">0</div>
   </div>
+  <div class="tip" id="tip">★ 반짝이는 <b>얼굴 칸</b>이 줄과 함께 지워지면 능력이 터져요. 얼굴끼리 닿게 놓으면 연쇄!</div>
   <div class="stage" id="stage"><canvas id="cv" aria-label="스티커 퍼즐 보드"></canvas></div>
   <div class="legend">
     <div><b>냥이 얼굴</b>지워지면 십자 할퀴기</div>
     <div><b>곰곰 얼굴</b>지워지면 3×3 쿵</div>
-    <div><b>삐약 얼굴</b>지워지면 알 3개로 줄 채우기</div>
+    <div><b>삐약 얼굴</b>지워지면 자기 줄에 알 3개</div>
   </div>
 </div>
 
@@ -237,22 +240,19 @@ function clearCells(cells, depth, lineCount) {
     // faces fire: their effects can hit other faces -> domino
     const extra = new Map();
     const names = [];
+    const chicks = [];
     for (const f of faceHits) {
       abilities++;
       names.push(KINDS[f.kind].name);
-      if (f.kind === 0) {
-        for (let i = 0; i < N; i++) { extra.set(f.r * N + i, [f.r, i]); extra.set(i * N + f.c, [i, f.c]); }
-        shake = Math.max(shake, 0.3);
-      } else if (f.kind === 1) {
-        for (let r = f.r - 1; r <= f.r + 1; r++) for (let c = f.c - 1; c <= f.c + 1; c++) if (inb(r, c)) extra.set(r * N + c, [r, c]);
-        shake = Math.max(shake, 0.45);
-      } else {
-        layEggs(3);
-      }
+      if (f.kind === 2) { chicks.push(f); continue; }
+      abilityRange(f).forEach(([r, c]) => extra.set(r * N + c, [r, c]));
+      shake = Math.max(shake, f.kind === 1 ? 0.45 : 0.3);
     }
+    seenAbility();
     chainNow = depth + 1; bestChain = Math.max(bestChain, chainNow);
     cutin(names.map(n => n + "!").join(" "), chainNow > 1 ? "연쇄 " + chainNow : faceHits.length > 1 ? "얼굴 " + faceHits.length + "개 동시" : "");
     const extraCells = [...extra.values()].filter(([r, c]) => board[r][c]);
+    for (const f of chicks) chickEggs(board, f).forEach(([r, c]) => { board[r][c] = { kind: 2, face: false, egg: true, pop: 1 }; });
     later(0.3, () => {
       if (extraCells.length) clearCells(extraCells, depth + 1, 1);
       else resolve(depth + 1);
@@ -260,18 +260,47 @@ function clearCells(cells, depth, lineCount) {
   });
 }
 
-function layEggs(n) {
-  // fill the emptiest-but-nearly-full line so the egg can complete it
-  let bestLine = null, bestEmpty = 99;
-  for (let r = 0; r < N; r++) { const e = board[r].filter(x => !x).length; if (e > 0 && e < bestEmpty) { bestEmpty = e; bestLine = { row: r }; } }
-  for (let c = 0; c < N; c++) { const e = board.filter(row => !row[c]).length; if (e > 0 && e < bestEmpty) { bestEmpty = e; bestLine = { col: c }; } }
-  if (!bestLine) return;
-  let laid = 0;
-  for (let i = 0; i < N && laid < n; i++) {
-    const [r, c] = bestLine.row !== undefined ? [bestLine.row, i] : [i, bestLine.col];
-    if (!board[r][c]) { board[r][c] = { kind: 2, face: false, egg: true, pop: 1 }; laid++; }
-  }
+// ---------- shared ability rules (runtime and preview use the same functions) ----------
+function abilityRange(f) {
+  const out = [];
+  if (f.kind === 0) { for (let i = 0; i < N; i++) { out.push([f.r, i]); if (i !== f.r) out.push([i, f.c]); } }
+  else if (f.kind === 1) { for (let r = f.r - 1; r <= f.r + 1; r++) for (let c = f.c - 1; c <= f.c + 1; c++) if (inb(r, c)) out.push([r, c]); }
+  return out;
 }
+// chick: 3 eggs into its own row or column, whichever is closer to full, nearest cells first
+function chickEggs(b, f, n = 3) {
+  const rowE = [], colE = [];
+  for (let i = 0; i < N; i++) { if (!b[f.r][i]) rowE.push([f.r, i]); if (!b[i][f.c]) colE.push([i, f.c]); }
+  const pick = !rowE.length ? colE : !colE.length ? rowE : (colE.length < rowE.length ? colE : rowE);
+  const d = ([r, c]) => Math.abs(r - f.r) + Math.abs(c - f.c);
+  return pick.sort((a, b2) => d(a) - d(b2)).slice(0, n);
+}
+function simulate(b0) {
+  const b = b0.map(row => row.map(t => t && !t.clearing ? { kind: t.kind, face: t.face, egg: t.egg } : null));
+  const waves = []; let maxDepth = 0, guard = 0;
+  const lineStep = depth => { const L = fullLines(b); if (L.length) clearStep(lineCells(L), depth); };
+  const clearStep = (cells, depth) => {
+    if (guard++ > 60) return;
+    const live = cells.filter(([r, c]) => b[r][c]);
+    if (!live.length) { lineStep(depth); return; }
+    const faces = live.filter(([r, c]) => b[r][c].face).map(([r, c]) => ({ r, c, kind: b[r][c].kind }));
+    const wave = { depth, cells: live, fire: [], eggs: [] }; waves.push(wave);
+    live.forEach(([r, c]) => b[r][c] = null);
+    if (!faces.length || depth >= CHAIN_CAP) { lineStep(depth); return; }
+    wave.fire = faces; maxDepth = Math.max(maxDepth, depth + 1);
+    const extra = new Map();
+    faces.filter(f => f.kind !== 2).forEach(f => abilityRange(f).forEach(([r, c]) => extra.set(r * N + c, [r, c])));
+    const extraCells = [...extra.values()].filter(([r, c]) => b[r][c]);
+    faces.filter(f => f.kind === 2).forEach(f => chickEggs(b, f).forEach(([r, c]) => { b[r][c] = { kind: 2, face: false, egg: true }; wave.eggs.push([r, c]); }));
+    if (extraCells.length) clearStep(extraCells, depth + 1); else lineStep(depth + 1);
+  };
+  lineStep(0);
+  return { waves, maxDepth };
+}
+
+// first-run tip: hidden for the rest of the session once a face has fired
+let abilitySeen = false;
+function seenAbility() { if (!abilitySeen) { abilitySeen = true; document.getElementById("tip").hidden = true; } }
 
 function checkOver() {
   if (tray.filter(Boolean).some(anyFit)) return;
@@ -308,6 +337,12 @@ function drawCell(x, y, s, t, alpha) {
   if (t.clearing) sc = 1 + t.clearing * 1.5;
   ctx.translate(x + s / 2, y + s / 2); ctx.scale(sc, sc);
   const k = KINDS[t.kind], m = s * 0.06, w = s - m * 2;
+  if (t.face && !t.egg) { // faces are the chain switches: glow ring + slightly raised
+    const pulse = 0.5 + 0.5 * Math.sin(now * 4 + x * 0.05);
+    ctx.fillStyle = "rgba(255,226,120," + (0.45 + 0.35 * pulse) + ")";
+    ctx.beginPath(); ctx.arc(0, 0, s * (0.6 + 0.04 * pulse), 0, Math.PI * 2); ctx.fill();
+    ctx.scale(1.06, 1.06);
+  }
   ctx.shadowColor = "rgba(59,47,37,.25)"; ctx.shadowOffsetY = s * 0.04; ctx.shadowBlur = s * 0.05;
   ctx.fillStyle = "#fffdf8"; rr(-w / 2, -w / 2, w, w, s * 0.22); ctx.fill();
   ctx.shadowColor = "transparent";
@@ -338,23 +373,41 @@ function draw() {
   ctx.fillStyle = "rgba(59,47,37,.06)";
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { rr(c * cell + cell * 0.1, r * cell + cell * 0.1, cell * 0.8, cell * 0.8, cell * 0.15); ctx.fill(); }
   // ghost + line preview
-  let preview = null;
+  let sim = null;
   if (drag && drag.snap) {
     const { r0, c0 } = drag.snap, p = tray[drag.slot];
     const tmp = board.map(row => row.slice());
-    p.cells.forEach(([dr, dc]) => tmp[r0 + dr][c0 + dc] = { kind: p.kind });
-    preview = lineCells(fullLines(tmp));
-    ctx.fillStyle = KINDS[p.kind].color + "33";
-    for (const [r, c] of preview) { rr(c * cell + 2, r * cell + 2, cell - 4, cell - 4, cell * 0.2); ctx.fill(); }
+    p.cells.forEach(([dr, dc], i) => tmp[r0 + dr][c0 + dc] = { kind: p.kind, face: i === p.face });
+    sim = simulate(tmp);
+    for (const w of sim.waves) {
+      ctx.fillStyle = w.depth === 0 ? KINDS[p.kind].color + "40" : "rgba(59,47,37,.16)";
+      for (const [r, c] of w.cells) { rr(c * cell + 2, r * cell + 2, cell - 4, cell - 4, cell * 0.2); ctx.fill(); }
+    }
     drawPiece(p, c0 * cell, r0 * cell, cell, 0.35);
   }
   for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
     const t = board[r][c]; if (!t) continue;
     const a = t.clearing ? Math.max(0, 1 - t.clearing * 4) : 1;
     drawCell(c * cell, r * cell, cell, t, a);
-    if (preview && preview.some(([pr, pc]) => pr === r && pc === c) && t.face) {
-      ctx.strokeStyle = "#3b2f25"; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
-      rr(c * cell + 1, r * cell + 1, cell - 2, cell - 2, cell * 0.22); ctx.stroke(); ctx.setLineDash([]);
+  }
+  if (sim) {
+    for (const w of sim.waves) {
+      for (const [r, c] of w.eggs) { // predicted eggs
+        ctx.save(); ctx.globalAlpha = 0.55; ctx.fillStyle = "#fbf1d6"; ctx.strokeStyle = KINDS[2].color; ctx.lineWidth = 2; ctx.setLineDash([3, 3]);
+        ctx.beginPath(); ctx.ellipse((c + 0.5) * cell, (r + 0.53) * cell, cell * 0.26, cell * 0.32, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+      }
+      for (const f of w.fire) { // numbered badge = chain step this face fires on
+        const x = (f.c + 0.82) * cell, y = (f.r + 0.18) * cell;
+        ctx.fillStyle = "#3b2f25"; ctx.beginPath(); ctx.arc(x, y, cell * 0.2, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fffdf8"; ctx.font = cell * 0.28 + "px Jua, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(String(w.depth + 1), x, y + 1); ctx.textBaseline = "alphabetic";
+      }
+    }
+    if (sim.maxDepth > 0) {
+      const txt = sim.maxDepth > 1 ? "연쇄 " + sim.maxDepth + " 예상!" : "능력 발동!";
+      ctx.font = cell * 0.6 + "px Jua, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.lineJoin = "round";
+      ctx.lineWidth = cell * 0.14; ctx.strokeStyle = "#fffdf8"; ctx.fillStyle = "#e8574a";
+      ctx.strokeText(txt, W / 2, cell * 0.75); ctx.fillText(txt, W / 2, cell * 0.75);
     }
   }
   ctx.restore();
@@ -476,6 +529,9 @@ window.__sp = {
   setTray(specs) { tray = specs.map(([kind, shape, face]) => { const cells = SHAPES[kind][shape];
     return { id: idSeq++, kind, cells, face, h: Math.max(...cells.map(x => x[0])) + 1, w: Math.max(...cells.map(x => x[1])) + 1 }; }); },
   place: (s, r, c) => place(s, r, c),
+  simulatePlace(slot, r0, c0) { const p = tray[slot]; const tmp = board.map(row => row.slice());
+    p.cells.forEach(([dr, dc], i) => tmp[r0 + dr][c0 + dc] = { kind: p.kind, face: i === p.face });
+    const s2 = simulate(tmp); return { maxDepth: s2.maxDepth, waves: s2.waves.length }; },
 };
 
 layout(); reset();
