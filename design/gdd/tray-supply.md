@@ -1,9 +1,10 @@
 # 트레이 공급 (Tray Supply)
 
-> **Status**: In Design
+> **Status**: Designed (pending `/design-review` in a fresh session)
 > **Author**: user (위임) + Claude (`/design-system`)
 > **Last Updated**: 2026-11-07
 > **Last Verified**: 2026-11-07
+> **Creative Director Review (CD-GDD-ALIGN)**: NOT ASSESSED 2026-11-07 — skipped (review_mode lean; not a PHASE-GATE)
 > **Implements Pillar**: 기둥 2 크루가 곧 전략 · 기둥 3 보이는 연쇄 · 기둥 4 한 판 더
 
 ## Summary
@@ -345,8 +346,7 @@ The crew_piece_count formula is defined as:
 
 **양방향성**: board-rules Dependencies는 트레이 공급을 Hard downstream으로 적고 있다 (`tray-supply.md` 행 — 트레이 칸 수·재충전 규칙·`face_index` 결정
 소유) — 일치. crew-definition Interactions는 트레이를 downstream으로 적는다 — 일치 (Q3 해소: 크루 사이 비율은 크루 가방, 크루 데이터에 필드 없음).
-placement-input은 트레이를 "데이터 계약(의존 아님)"으로 적는다 — 일치. systems-index #6 Depends On(보드 & 조각 규칙, 크루 정의, 시드 RNG)과 일치하며,
-#10 스테이지 & 목표·#11 판 진행 흐름·#30 무한 모드가 트레이 공급을 Depends On에 이미 갖고 있다. 수정 필요 없음.
+placement-input은 트레이를 "데이터 계약(의존 아님)"으로 적는다 — 일치. systems-index #6 Depends On(보드 & 조각 규칙, 크루 정의, 시드 RNG)과 일치하며, index의 #10 스테이지 & 목표·#11 판 진행 흐름·#30 무한 모드가 트레이 공급을 Depends On에 이미 갖고 있다. 수정 필요 없음.
 
 ## Visual/Audio Requirements
 

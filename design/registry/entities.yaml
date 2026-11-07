@@ -272,12 +272,27 @@ formulas:
     source: design/gdd/crew-definition.md
     referenced_by:
       - design/gdd/crew-definition.md
+      - design/gdd/tray-supply.md
     variables:
       - shape_weight
       - shape_cells
     output_range: [1, 6]
     expression: "E_c = sum(w_s*|s|)/sum(w_s); team E_T = sum(share_c*E_c)"
     notes: "Per-crew balance metric; lint range 2.0-5.0. MVP values 2.00 (piyak) to 4.75 (gomgom). Tray supply provides share_c."
+    added: 2026-11-07
+    revised: ""
+  - name: crew_share
+    status: active
+    source: design/gdd/tray-supply.md
+    referenced_by:
+      - design/gdd/tray-supply.md
+      - design/gdd/crew-definition.md
+    variables:
+      - team_size
+      - crew_bag_copies
+    output_range: [0.333, 1]
+    expression: "share_c = k/(n*k) = 1/n; p(c,s) = share_c * p(s|c)"
+    notes: "Crew bag: each refill draws crew tokens without replacement; n=3, k=1, full refills -> every tray has exactly one piece per team crew. Confirms crew-definition F2 share_c = 1/3."
     added: 2026-11-07
     revised: ""
   - name: chain_playback_time
@@ -361,6 +376,7 @@ constants:
       - design/gdd/scoring.md
       - design/gdd/placement-input.md
       - design/gdd/crew-definition.md
+      - design/gdd/tray-supply.md
     value: 6
     unit: cells
     added: 2026-11-07
@@ -417,6 +433,17 @@ constants:
       - design/gdd/chain-resolver.md
     value: 4.0
     unit: seconds (max chain playback at speed 1.0)
+    added: 2026-11-07
+    revised: ""
+  - name: tray_size
+    status: active
+    source: design/gdd/tray-supply.md
+    referenced_by:
+      - design/gdd/tray-supply.md
+      - design/gdd/board-rules.md
+      - design/gdd/placement-input.md
+    value: 3
+    unit: slots
     added: 2026-11-07
     revised: ""
 # Example:

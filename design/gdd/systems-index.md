@@ -59,7 +59,7 @@
 | 3 | 시드 RNG (Seeded RNG) (inferred) | Core | MVP | Not Started | — (ADR only) | — |
 | 4 | 점수 & 연쇄 배율 (Scoring) | Gameplay | MVP | Designed | [design/gdd/scoring.md](scoring.md) | 연쇄 해석기 |
 | 5 | 크루 정의 & 능력 (Crew Definition) | Gameplay | MVP | Designed | [design/gdd/crew-definition.md](crew-definition.md) | 연쇄 해석기, 보드 & 조각 규칙 |
-| 6 | 트레이 공급 (Tray Supply) | Gameplay | MVP | Not Started | design/gdd/tray-supply.md | 보드 & 조각 규칙, 크루 정의, 시드 RNG |
+| 6 | 트레이 공급 (Tray Supply) | Gameplay | MVP | Designed | [design/gdd/tray-supply.md](tray-supply.md) | 보드 & 조각 규칙, 크루 정의, 시드 RNG |
 | 7 | 드래그 & 배치 입력 (Drag & Placement Input) (inferred) | Core | MVP | Designed | [design/gdd/placement-input.md](placement-input.md) | 보드 & 조각 규칙 |
 | 8 | 연쇄 미리보기 (Chain Preview) | Gameplay | MVP | Designed | [design/gdd/chain-preview.md](chain-preview.md) | 연쇄 해석기, 드래그 & 배치 입력 |
 | 9 | 칸 종류 & 방해물 (Cell Types & Obstacles) | Gameplay | MVP | Not Started | design/gdd/obstacles.md | 보드 & 조각 규칙, 연쇄 해석기 |
@@ -251,7 +251,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 | Design docs started | 2 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 7/22 (시드 RNG 포함; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
+| MVP systems designed | 8/22 (시드 RNG 포함; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
 | Vertical Slice systems designed | 0/2 |
 
 ---
@@ -284,6 +284,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 - [x] `/design-system scoring` (2026-11-07, Designed — `/design-review` 대기; F6 깊이 배율 소유 확정(정수 %, 상한 400); 판 진행 흐름·연쇄 미리보기 → 점수 의존 추가 제안 — scoring Q5)
 - [x] `/design-system placement-input` (2026-11-07, Designed — `/design-review` 대기; UX Flag: 드래그 상호작용 패턴 `/ux-design`; 판 진행 흐름 Depends On에 드래그 & 배치 입력 추가 제안 — placement-input Q1)
 - [x] `/design-system crew-definition` (2026-11-07, Designed — `/design-review` 대기; MVP 6명 냥이·곰곰·삐약·개굴·깡총·몽실, 새 프리미티브 불필요(chain-resolver Q3 해소), 얼굴 위치 board-rules Q2 해소; UX Flag: 팀 편성 크루 카드 `/ux-design`)
+- [x] `/design-system tray-supply` (2026-11-07, Designed — `/design-review` 대기; 크루 가방(매 트레이 팀 3인 각 1조각) + 모양 가방 + `FIXED` 스테이지 시드 + 최소 구제(1칸, 표시 전) + `tray_script`; 컨셉 트레이 랜덤 Open Question·board-rules Q3·crew-definition Q3 해소; 스테이지 & 목표에 트레이 필드 제안; UX Flag: 트레이 영역 `/ux-design`)
 - [x] `/design-system chain-preview` (2026-11-07, Designed — `/design-review` 대기; "구조는 보이고 값은 숨긴다" — 예상 점수 기본 숨김; 배지 숫자 = `stage` (chain-resolver 규칙 9 문구 정리 필요 — chain-preview Q1); UX Flag: 게임플레이 화면 `banner_band`; 판 진행 흐름 #11 → 연쇄 미리보기, 연쇄 미리보기 → 점수(Soft) 의존 추가 제안 — chain-preview Q4)
 - [ ] `/architecture-decision` — 결정적 연쇄 해석기 (첫 critical ADR, 해석기 GDD와 병행)
 - [ ] Run `/design-review` on each completed GDD
