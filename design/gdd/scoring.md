@@ -202,6 +202,9 @@ The placement_total formula is defined as:
 웨이브 1: 냥이 십자 대상 중 차 있던 10칸(곰곰 얼굴 포함), 능력 칸 → 10 × 100 × 10 × 150 / 10000 = 150; 곰곰 발동(k = 1) → 30.
 웨이브 2: 곰곰 3×3 중 차 있던 6칸 → 6 × 100 × 10 × 200 / 10000 = 120. **total = 1 + 80 + 20 + 150 + 30 + 120 = 401**.
 (칸 수는 픽스처가 정한다; AC-S09가 같은 식을 정확한 픽스처로 고정한다.)
+**도달 가능성 주의 (systems-designer 리뷰, D11)**: 실제 해석기에서 웨이브 0에 7번 행으로 지워진 냥이의 십자 대상은 **5번 열 7칸뿐**이다(행은 이미 비어 있음,
+chain-resolver AC-03). 따라서 "웨이브 1 능력 칸 10"은 산술 픽스처로는 유효하지만 해석기가 만들 수 없는 이벤트 목록이다. 해석기 출력과 맞춘 값은
+웨이브 1 = 7칸 → 7 × 15 = 105, **total = 1 + 80 + 20 + 105 + 30 + 120 = 356**. AC-S09·AC-S06(qa-lead 소관)을 이 값으로 맞출지는 Q8.
 
 **F6. 배치 총점 상한 (검증용)**
 
@@ -341,38 +344,60 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 
 ## Acceptance Criteria
 
-> *Specialist note*: `qa-lead` not consulted — Section H는 lean에서도 spawn 대상이지만 Agent 도구 없음. Review manually before production.
-> Story type: **Logic** → 자동 단위 테스트 `tests/unit/scoring/` (BLOCKING). 픽스처는 **손으로 쓴 이벤트 목록**(해석기 없이)과 테스트 전용 `ScoringRules`
-> (시작값 사본)로 만든다 — 실제 튜닝 값이 바뀌어도 테스트 기대값이 흔들리지 않게 한다. AC-S12만 해석기와 묶는 통합 테스트다.
+> **qa-lead 검토 (2026-11-07, 사용자 위임 — 질문 없이 진행)**. 각 AC 앞 태그 = 스토리 유형 → 증거 위치·게이트:
+> `[Logic]` 자동 단위 테스트 `tests/unit/<system>/<system>_<feature>_test.gd` (BLOCKING) · `[Integration]` `tests/integration/<system>/` (BLOCKING) ·
+> `[UI]` 화면별 보존 스크린샷 `production/qa/evidence/` (BLOCKING) · `[Visual/Feel]` 보존 스크린샷/녹화 + 리드 서명 (BLOCKING) · `[Config]` 데이터 로드·스모크 (ADVISORY) ·
+> `[Perf]` `tests/performance/<system>/` — 시간 측정은 결정적이지 않아 CI 차단 스위트 밖에서 돌리고 임계값 초과 시 실패로 보고 (ADVISORY; 5개 스토리 유형 밖의 qa-lead 추가 분류) ·
+> `[Playtest]` `/playtest-report` 설계 검증 (ADVISORY — 스토리 완료 조건 아님).
+> **결정성**: 테스트 실행 중 보드를 무작위 생성하지 않는다. 픽스처는 커밋된 파일 `tests/fixtures/boards/*.txt`(보드 문자열)와 `tests/fixtures/parity/`이며,
+> "시드 판"은 오프라인에서 한 번 생성해 커밋한 파일이다. 모든 `stage_seed`·`rng_seed`는 픽스처에 적는다.
+> **불변식 (미리보기 = 런타임 = 점수)**은 하나의 테스트 `tests/integration/preview_parity/preview_parity_test.gd`가 소유하고 정의는 chain-preview AC-P02다 —
+> 다른 GDD의 같은 AC는 그 테스트의 단언 조각을 가리킬 뿐 별도 테스트를 만들지 않는다.
+> debug assert 검증은 gdUnit4 `assert_error(...)`로 포착한다 (포착되지 않으면 구현이 assert 직전 `push_error`를 내고 `is_push_error`로 확인).
+> 이 GDD의 테스트 파일: `tests/unit/scoring/scoring_{rules,formula,stage_total}_test.gd`. 픽스처는 **손으로 쓴 이벤트 목록**(해석기 없이,
+> `tests/fixtures/scoring/*.events.json`)과 테스트 전용 `ScoringRules`(시작값 사본)로 만든다 — 실제 튜닝 값이 바뀌어도 기대값이 흔들리지 않게 한다.
+> AC-S12만 해석기·미리보기와 묶는 통합 단언이다.
 
 **규칙 (Section C)**
 
-- **AC-S01 (규칙 1·2, 순수성)** — **GIVEN** 이벤트 목록 E와 규칙 R, **WHEN** `score_placement(E, R)`를 두 번 부르면, **THEN** 두 `ScoreBreakdown`이 필드까지 같고 E·R은 호출 전과 같다.
-  **AND** 점수 모듈 코드에 부동소수 리터럴·`float` 연산이 없다 (정적 검사).
-- **AC-S02 (규칙 5, 줄 없는 배치)** — **GIVEN** `PLACED(cells 4개)`, `CHAIN_END(waves=0)`, **WHEN** 채점, **THEN** `total = 4`, `waves[]` 비어 있음.
-- **AC-S03 (규칙 6, 줄 칸/능력 칸 구분)** — **GIVEN** 웨이브 1 `CELLS_CLEARED`에 `by=LINE` 8칸·`by=ABILITY` 3칸·`by=BOTH` 1칸, `WAVE_BEGIN.rows=[2], cols=[]`, **WHEN** 채점, **THEN** `line_cells = 9`, `ability_cells = 3`,
-  `clear_points = (9 × 100 + 3 × 100) × 10 × 150 / 10000 = 180`.
-- **AC-S04 (규칙 6, KEEP 칸)** — **GIVEN** `CELLS_CLEARED.kept`에 2칸, `CELL_MODIFIED` 2개, **WHEN** 채점, **THEN** 그 2칸은 점수에 들어가지 않는다.
-- **AC-S05 (규칙 9, 발동·피즐)** — **GIVEN** 웨이브 0에 `FACE_ACTIVATED` 2개, 웨이브 6에 `FACE_FIZZLED(DEPTH_CAP)` 1개, **WHEN** 채점, **THEN** 웨이브 0 `activation_points = 40`, 웨이브 6 `activation_points = 0`,
-  피즐 점수 0 (`fizzle_points = 0`). **AND** `fizzle_points`만 5로 바꾸면 total이 정확히 5 늘어난다.
-- **AC-S06 (규칙 11·12, 누계)** — **GIVEN** `ACTIVE` 상태에서 total 4·85·401인 배치 3번, **WHEN** 각 커밋 후 읽으면, **THEN** `stage_score`는 4·89·490, `best_placement = 401`. **AND** 재시도 시 둘 다 0.
-- **AC-S07 (규칙 14, 크루 무관)** — **GIVEN** 같은 이벤트 목록에서 `crew_id`만 다른 크루로 바꾼 두 벌, **WHEN** 채점, **THEN** total이 같다.
+- **AC-S01 [Logic] (규칙 1·2, 순수성)** — **GIVEN** 이벤트 목록 E와 규칙 R, **WHEN** `score_placement(E, R)`를 두 번 부르면, **THEN** 두 `ScoreBreakdown`이 필드까지 같고 E·R은 호출 전과 같다.
+  **AND** 점수 모듈 소스에 부동소수 리터럴·`float` 연산이 없다 (정적 검사).
+- **AC-S02 [Logic] (규칙 5, 줄 없는 배치)** — **GIVEN** `PLACED(cells 4개)`, `CHAIN_END(waves=0)`, **WHEN** 채점, **THEN** `total = 4`, `waves[]` 비어 있음.
+- **AC-S03 [Logic] (규칙 6, 줄 칸/능력 칸 구분)** — **GIVEN** 웨이브 1 `CELLS_CLEARED`에 `by=LINE` 8칸·`by=ABILITY` 3칸·`by=BOTH` 1칸, `WAVE_BEGIN.rows=[2], cols=[]`, **WHEN** 채점,
+  **THEN** `line_cells = 9`, `ability_cells = 3`, `clear_points = (9 × 100 + 3 × 100) × 10 × 150 / 10000 = 180`.
+- **AC-S04 [Logic] (규칙 6, KEEP 칸)** — **GIVEN** `CELLS_CLEARED.kept`에 2칸, `CELL_MODIFIED` 2개, **WHEN** 채점, **THEN** 그 2칸은 점수에 들어가지 않는다 (kept 없는 같은 목록보다 정확히 그 2칸 몫만큼 낮다).
+- **AC-S05 [Logic] (규칙 9, 발동·피즐)** — **GIVEN** 웨이브 0에 `FACE_ACTIVATED` 2개, 웨이브 6에 `FACE_FIZZLED(DEPTH_CAP)` 1개, **WHEN** 채점, **THEN** 웨이브 0 `activation_points = 40`,
+  웨이브 6 `activation_points = 0`, 피즐 점수 0 (`fizzle_points = 0`). **AND** `fizzle_points`만 5로 바꾸면 total이 정확히 5 늘어난다.
+- **AC-S05b [Logic] (규칙 9, 동시 얼굴)** — **GIVEN** 웨이브 1에 `FACE_ACTIVATED` 3개(같은 웨이브 동시 발동), **WHEN** 채점, **THEN** 웨이브 1 `activation_points = 3 × ⌊20 × 150 / 100⌋ = 90`.
+- **AC-S06 [Logic] (규칙 11·12, 누계)** — **GIVEN** `ACTIVE` 상태에서 total 4·85·401인 배치 3번, **WHEN** 각 커밋 후 읽으면, **THEN** `stage_score`는 4·89·490, `best_placement = 401`.
+  **AND** 재시도 시 둘 다 0.
+- **AC-S07 [Logic] (규칙 14, 크루 무관)** — **GIVEN** 같은 이벤트 목록에서 `crew_id`만 다른 크루로 바꾼 두 벌, **WHEN** 채점, **THEN** total이 같다.
 
 **공식 (Section D)**
 
-- **AC-S08 (F1·F2·F3 표)** — **GIVEN** 시작값, **WHEN** 함수를 직접 부르면, **THEN** `placement_points(6) = 6`; `depth_mult_pct(0..6) = 100,150,200,250,300,350,400`; `line_mult_pct(0,1,2,3,7) = 100,100,200,300,700`.
-  **AND** `depth_step_pct = 50`, `depth_mult_max_pct = 400`, `k = 8`이면 400 (상한).
-- **AC-S09 (F4·F5, 도미노 골든 값)** — **GIVEN** F5 Example의 이벤트 목록(1칸 배치; 웨이브 0 행 8칸 LINE + 냥이 발동; 웨이브 1 ABILITY 10칸 + 곰곰 발동; 웨이브 2 ABILITY 6칸),
+- **AC-S08 [Logic] (F1·F2·F3 표)** — **GIVEN** 시작값, **WHEN** 함수를 직접 부르면, **THEN** `placement_points(6) = 6`; `depth_mult_pct(0..6) = 100,150,200,250,300,350,400`;
+  `line_mult_pct(0,1,2,3,7) = 100,100,200,300,700`. **AND** `depth_step_pct = 50`, `depth_mult_max_pct = 400`, `k = 8`이면 400 (상한).
+- **AC-S09 [Logic] (F4·F5, 도미노 골든 값)** — **GIVEN** F5 Example의 이벤트 목록(1칸 배치; 웨이브 0 행 8칸 LINE + 냥이 발동; 웨이브 1 ABILITY 10칸 + 곰곰 발동; 웨이브 2 ABILITY 6칸),
   **WHEN** 채점, **THEN** 웨이브별 `clear_points = 80, 150, 120`, `activation_points = 20, 30, 0`, **total = 401**.
-- **AC-S10 (F4, 프로토타입 일치)** — **GIVEN** 웨이브 0 행 1 + 열 1 (15칸, L=2) 한 웨이브, **WHEN** 채점, **THEN** `clear_points = 300`. **AND** 웨이브 2 ABILITY 9칸이면 180.
-- **AC-S11 (F4 내림)** — **GIVEN** `cell_points = 7`, `depth_step_pct = 33`, 웨이브 1 LINE 5칸, **WHEN** 채점, **THEN** `clear_points = ⌊5 × 100 × 7 × 133 / 10000⌋ = 46` (칸마다가 아니라 웨이브에서 한 번 내림).
-- **AC-S12 (규칙 3, 미리보기 = 결과)** — **GIVEN** chain-resolver AC-14의 판 50개와 모든 유효 배치, **WHEN** 미리보기 경로와 실제 배치 경로의 `events`를 각각 채점하면,
-  **THEN** `ScoreBreakdown`이 100% 같다. (통합 테스트 `tests/integration/scoring/`)
-- **AC-S13 (F6, 상한·데이터 검증)** — **GIVEN** 64칸 전부 LINE·L=16·k=6인 합성 웨이브, **WHEN** 채점, **THEN** 오버플로 없이 F6 범위 안의 정수. **AND** `cell_points = 0` 또는 `depth_mult_max_pct = 50`인
-  `ScoringRules`는 로드가 거부되고 오류에 노브 이름·값이 적힌다.
-- **AC-S14 (성능)** — **GIVEN** 연쇄 6단 최악 근사 이벤트 목록, **WHEN** headless 데스크톱에서 `score_placement` 10,000회, **THEN** 평균 ≤ 0.1ms/회.
-- **AC-S15 (노브 데이터화)** — **GIVEN** `ScoringRules` 파일에서 `depth_step_pct`만 100으로 바꾸면, **WHEN** AC-S09 픽스처를 채점, **THEN** 코드 변경 없이 웨이브 1·2 배율이 200·300으로 바뀐다
+- **AC-S10 [Logic] (F4, 프로토타입 일치)** — **GIVEN** 웨이브 0 행 1 + 열 1 (15칸, L=2) 한 웨이브, **WHEN** 채점, **THEN** `clear_points = 300`. **AND** 웨이브 2 ABILITY 9칸이면 180.
+- **AC-S11 [Logic] (F4 내림)** — **GIVEN** `cell_points = 7`, `depth_step_pct = 33`, 웨이브 1 LINE 5칸, **WHEN** 채점, **THEN** `clear_points = ⌊5 × 100 × 7 × 133 / 10000⌋ = 46`
+  (칸마다가 아니라 웨이브에서 한 번 내림).
+- **AC-S16 [Logic] (F2·F5, 상한 도달 배치)** — **GIVEN** 웨이브 0–5 각 발동 1개 + 웨이브 6 ABILITY 9칸과 `FACE_FIZZLED(DEPTH_CAP)` 2개 + `DEPTH_CAP_REACHED`, **WHEN** 채점,
+  **THEN** 웨이브 6 `depth_mult_pct = 400`, `clear_points = 9 × 100 × 10 × 400 / 10000 = 360`, `activation_points = 0`, 피즐 2개는 `fizzle_points × 2`(시작값 0)만 더한다.
+- **AC-S13 [Logic] (F6, 상한·데이터 검증)** — **GIVEN** 64칸 전부 LINE·L=16·k=6인 합성 웨이브, **WHEN** 채점, **THEN** 오버플로 없이 F6 `total_max` 이하의 양의 정수.
+  **AND** `cell_points = 0` 또는 `depth_mult_max_pct = 50`인 `ScoringRules`는 로드가 거부되고 오류에 노브 이름·값이 적힌다.
+- **AC-S15 [Config] (노브 데이터화)** — **GIVEN** `ScoringRules` 파일에서 `depth_step_pct`만 100으로 바꾸면, **WHEN** AC-S09 픽스처를 채점, **THEN** 코드 변경 없이 웨이브 1·2 배율이 200·300
   (`clear_points = 80, 200, 180`, `activation_points = 20, 40, 0`, total = 521).
+
+**미리보기 = 결과 (불변식)**
+
+- **AC-S12 [Integration] (규칙 3)** — 불변식 테스트 `tests/integration/preview_parity/preview_parity_test.gd`(정의: chain-preview AC-P02)의 **점수 단언**: 모든 사례에서
+  `score_placement(미리보기 events) == score_placement(커밋 events)`(`ScoreBreakdown` 모든 필드) `==` 커밋 후 `stage_score` 증가분 `==` 미리보기 예상 총점(chain-preview AC-P03).
+  상한 도달·동시 얼굴·알 재점화·줄 없음 명명 픽스처를 반드시 포함한다.
+
+**성능**
+
+- **AC-S14 [Perf]** — **GIVEN** 연쇄 6단 최악 근사 이벤트 목록, **WHEN** headless 데스크톱에서 `score_placement` 10,000회, **THEN** 평균 ≤ 0.1ms/회.
 
 ## Open Questions
 
@@ -383,7 +408,8 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 | Q3 | T2 크루 레벨업(+20% 상한)이 점수에 닿는가 — 닿으면 별 기준이 과금·육성에 좌우 (안티 기둥). 권장: 닿지 않음 | economy-designer · 크루 레벨업 GDD | `/design-system crew-levelup` |
 | Q4 | 방해물 겹 벗기기(`CELL_MODIFIED`)·특정 칸 지우기에 별도 점수가 필요한가 | 칸 종류 & 방해물 GDD | `/design-system obstacles` |
 | Q5 | systems-index: 판 진행 흐름 → 점수, (예상 점수 표시 시) 연쇄 미리보기 → 점수 의존 추가 | producer · `/map-systems` | 해당 GDD 작성 전 |
-| Q6 | chain-resolver F6 변수명 `depth_step_bonus`(float) → `depth_step_pct`(int) 정렬 | chain-resolver 개정 | 다음 `/design-review chain-resolver` |
+| Q6 | ~~chain-resolver F6 변수명 정렬~~ — **해소**: chain-resolver F6을 이 문서 F2 식·변수명·상한으로 교체 (chain-resolver D14) | — | 해소 |
+| Q8 | AC-S09/AC-S06 골든 값 401이 해석기로 도달 불가능한 픽스처(웨이브 1 능력 칸 10 > 최대 7)에 기댄다 — 도달 가능한 356으로 바꿀지, "산술 전용 픽스처"로 명시할지 | qa-lead | 다음 AC 개정 |
 | Q7 | 스테이지 클리어 시 남은 조각 보너스를 둘 것인가 — 둔다면 스테이지 & 목표 소유, 이 문서의 누계에 더하는 항으로 | 스테이지 & 목표 GDD | `/design-system stage-goals` |
 
 ### Decision Log (사용자 위임 "진행부탁 알아서 다" — 질문 없이 권장안 채택)
@@ -399,4 +425,5 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 | D7 | 점수 확정 시점 | 해석 결과 커밋과 같은 순간, 연출과 무관 | 연출 재생 중 누적 — 스킵·중단 시 점수 불일치 |
 | D8 | 미리보기 표시 권장 | 총점 한 줄 (결정은 미리보기 GDD) | 웨이브별 상세 — "가장 큰 숫자 찾기" 퇴화 위험 |
 | D9 | 크루·과금 보정 | MVP 없음, T2도 비권장 (Q3) | 크루별 점수 가중 — "과금 = 수치 우위" 안티 기둥 |
+| D11 | F5 예시 도달 가능성 (systems-designer 리뷰) | 예시 401은 유지하되 해석기 도달 불가 주석 + 도달 가능 값 356 병기, AC 수정은 qa-lead(Q8) | 예시만 356으로 교체 — AC-S09와 즉시 모순 |
 | D10 | 감점·콤보 유지 보너스 | 없음 (턴 사이 콤보 없음 — 점수는 배치 단위로 닫힘) | 연속 배치 콤보 — 미리보기로 보이지 않는 상태가 생겨 기둥 3 약화 |

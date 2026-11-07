@@ -107,8 +107,8 @@ Fantasy `[B] No` (Foundation layer; standard tier라 Player Fantasy 섹션 자�
     어느 칸을 고를지(삐약: 더 꽉 찬 줄의 빈칸, 얼굴에 가까운 순)는 연쇄 해석기/크루 정의 GDD 소관이다.
     선택을 돕는 조회 함수 `line_fill_count`(F5)와 `empty_cells_in_line`은 이 문서가 제공한다.
 13. **안정 보드 불변식** — 플레이어가 다음 조각을 놓을 수 있는 시점(해석기 종료 후)의 보드에는 완성 줄이
-    없다. 해석기는 완성 줄이 없어질 때까지 줄 지우기를 계속하거나, 깊이 상한에 도달해도 남은 완성 줄을
-    마저 지운다는 규칙을 해석기 GDD에서 보장해야 한다 (provisional 계약 — 해석기 GDD에서 확정).
+    없다. **확정** — chain-resolver 규칙 10·D5: 깊이 상한 웨이브도 정상적으로 지워지고(얼굴만 피즐), 그 웨이브에는
+    FILL이 없어 새 완성 줄이 생기지 않는다 (Q1 해소, D13).
     스테이지 초기 보드도 이 불변식을 만족해야 한다 (규칙 16).
 
 **막힘 판정**
@@ -400,60 +400,74 @@ to produce per-asset visual descriptions, dimensions, and generation prompts fro
 
 ## Acceptance Criteria
 
-> *Specialist note*: `qa-lead` not consulted — Section H는 lean에서도 spawn 대상이지만 이 실행에는 Agent 도구가 없어 생략.
-> Review manually before production. Story type: **Logic** → 자동 단위 테스트 `tests/unit/board_rules/` (BLOCKING).
-> 픽스처는 보드 문자열 팩토리(예: `"........"` 8행, `#` = 조각 칸, `F` = 얼굴, `E` = 알)로 만들고 인라인 매직 넘버를 쓰지 않는다.
+> **qa-lead 검토 (2026-11-07, 사용자 위임 — 질문 없이 진행)**. 각 AC 앞 태그 = 스토리 유형 → 증거 위치·게이트:
+> `[Logic]` 자동 단위 테스트 `tests/unit/<system>/<system>_<feature>_test.gd` (BLOCKING) · `[Integration]` `tests/integration/<system>/` (BLOCKING) ·
+> `[UI]` 화면별 보존 스크린샷 `production/qa/evidence/` (BLOCKING) · `[Visual/Feel]` 보존 스크린샷/녹화 + 리드 서명 (BLOCKING) · `[Config]` 데이터 로드·스모크 (ADVISORY) ·
+> `[Perf]` `tests/performance/<system>/` — 시간 측정은 결정적이지 않아 CI 차단 스위트 밖에서 돌리고 임계값 초과 시 실패로 보고 (ADVISORY; 5개 스토리 유형 밖의 qa-lead 추가 분류) ·
+> `[Playtest]` `/playtest-report` 설계 검증 (ADVISORY — 스토리 완료 조건 아님).
+> **결정성**: 테스트 실행 중 보드를 무작위 생성하지 않는다. 픽스처는 커밋된 파일 `tests/fixtures/boards/*.txt`(보드 문자열)와 `tests/fixtures/parity/`이며,
+> "시드 판"은 오프라인에서 한 번 생성해 커밋한 파일이다. 모든 `stage_seed`·`rng_seed`는 픽스처에 적는다.
+> **불변식 (미리보기 = 런타임 = 점수)**은 하나의 테스트 `tests/integration/preview_parity/preview_parity_test.gd`가 소유하고 정의는 chain-preview AC-P02다 —
+> 다른 GDD의 같은 AC는 그 테스트의 단언 조각을 가리킬 뿐 별도 테스트를 만들지 않는다.
+> debug assert 검증은 gdUnit4 `assert_error(...)`로 포착한다 (포착되지 않으면 구현이 assert 직전 `push_error`를 내고 `is_push_error`로 확인).
+> 이 GDD의 테스트 파일: `tests/unit/board_rules/board_rules_{shape,placement,lines,no_moves,stage_load}_test.gd`. 픽스처는 보드 문자열 팩토리
+> (`.` 빈칸, `#` 조각 칸, `F` 얼굴, `E` 알)로 만들고 인라인 매직 넘버를 쓰지 않는다 (경계값 자체가 요점인 AC 제외).
 
 **규칙 (Section C)**
 
-- **AC-01 (규칙 1, 데이터)** — **GIVEN** 데이터 `board_width = 8`, `board_height = 8`, **WHEN** 빈 보드를 만들면,
-  **THEN** 64칸 모두 `EMPTY`이고 데이터를 7×9로 바꾸면 코드 수정 없이 63칸 보드가 만들어진다.
-- **AC-02 (규칙 3, 모양 검증)** — **GIVEN** 빈 목록·중복 오프셋·`min(dr) ≠ 0`·떨어진 두 칸·7칸(`max_piece_cells = 6`)·9×1 모양 각각,
-  **WHEN** 모양 데이터를 로드하면, **THEN** 6개 모두 거부되고 오류에 모양 id와 위반 조건이 적힌다. 프로토타입의 15개 모양은 모두 통과한다.
-- **AC-03 (규칙 4, 회전 없음)** — **GIVEN** 가로 1×3 모양만 가진 조각, **WHEN** 세로로만 3칸 비어 있는 보드에서 `any_fit`을 부르면, **THEN** 거짓.
-- **AC-04 (규칙 5, 얼굴 1칸)** — **GIVEN** `face_index`가 null인 조각 인스턴스, **WHEN** `allow_faceless_pieces = false` 스테이지에서
-  검증하면 **THEN** 거부되고, `true` 스테이지에서는 **THEN** 통과한다. `face_index = 칸 수`인 인스턴스는 항상 거부된다.
-- **AC-05 (규칙 7, 배치 판정)** — **GIVEN** 빈 8×8 보드와 ㄴ자 `[(0,0),(1,0),(1,1)]`, **WHEN** 앵커 (6,0), (7,0), (6,7)로 `can_place`,
-  **THEN** 참, 거짓, 거짓. **AND** (6,0)의 한 칸에 `TILE`이 있으면 거짓.
-- **AC-06 (규칙 8, 배치 적용·순수성)** — **GIVEN** 보드 B와 얼굴 인덱스 2인 3칸 조각, **WHEN** `place(B, piece, (0,0))`,
+- **AC-01 [Logic] (규칙 1, 데이터)** — **GIVEN** 데이터 `board_width = 8`, `board_height = 8`, **WHEN** 빈 보드를 만들면, **THEN** 64칸 모두 `EMPTY`.
+  **AND** 데이터만 7×9로 바꾸면 코드 수정 없이 63칸 보드가 만들어진다.
+- **AC-02 [Logic] (규칙 3, 모양 검증)** — **GIVEN** 빈 목록·중복 오프셋·`min(dr) ≠ 0`·떨어진 두 칸·7칸(`max_piece_cells = 6`)·9×1 모양 각각,
+  **WHEN** 모양 데이터를 로드하면, **THEN** 6개 모두 거부되고 오류에 모양 id와 위반 조건이 적힌다.
+  **AND [Config]** 실제 카탈로그 15개 모양은 로드 오류 0건.
+- **AC-03 [Logic] (규칙 4, 회전 없음)** — **GIVEN** 가로 1×3 모양만 가진 조각, **WHEN** 세로로만 3칸 비어 있는 보드에서 `any_fit`을 부르면, **THEN** 거짓.
+- **AC-04 [Logic] (규칙 5, 얼굴 1칸)** — **GIVEN** `face_index`가 null인 조각 인스턴스, **WHEN** `allow_faceless_pieces = false` 스테이지에서
+  검증하면 **THEN** 거부되고, `true` 스테이지에서는 **THEN** 통과한다. **AND** `face_index = 칸 수`인 인스턴스는 두 설정 모두에서 거부된다.
+- **AC-05 [Logic] (규칙 7, 배치 판정 — 무효 배치 경계)** — **GIVEN** 빈 8×8 보드와 ㄴ자 `[(0,0),(1,0),(1,1)]`, **WHEN** 앵커 (6,0), (7,0), (6,7), (−1,0)으로 `can_place`,
+  **THEN** 참, 거짓(아래로 벗어남), 거짓(오른쪽으로 벗어남), 거짓(음수 앵커). **AND** (6,0) 배치의 한 칸에 `TILE`이 있으면 거짓.
+- **AC-06 [Logic] (규칙 8, 배치 적용·순수성)** — **GIVEN** 보드 B와 얼굴 인덱스 2인 3칸 조각, **WHEN** `place(B, piece, (0,0))`,
   **THEN** 반환 보드의 3칸이 `TILE(PIECE)`이고 정확히 오프셋 2의 칸만 `is_face = true`이며, **AND** B는 호출 전과 칸 단위로 같다.
-- **AC-07 (규칙 9·10, 줄 판정·합집합)** — **GIVEN** 7번 행과 3번 열이 (7,3)만 빠진 보드, **WHEN** 1칸 조각을 (7,3)에 놓고 `full_lines`·`line_cells`,
-  **THEN** 행 [7], 열 [3] 순서로 반환되고 칸 집합은 15칸(F4), row-major로 정렬된다.
-- **AC-08 (규칙 11, 비우기)** — **GIVEN** 얼굴 칸 1개를 포함한 완성 행, **WHEN** `clear_cells`, **THEN** 8칸이 `EMPTY`가 되고 반환 목록에
-  `is_face = true`인 칸이 정확히 1개, `crew_id`가 그 조각의 크루다. **AND** 빈칸을 포함한 범위를 넘겨도 오류 없이 실제 비워진 칸만 반환된다.
-- **AC-09 (규칙 12, 채우기)** — **GIVEN** 빈칸 2개를 가진 행, **WHEN** 그 2칸에 알을 `fill_cells`, **THEN** 두 칸이 `TILE(EGG, is_face=false)`이고
-  그 행이 `full_lines`에 나타난다. **AND** 차 있는 칸을 대상으로 넘기면 debug 빌드에서 assert가 발생한다.
-- **AC-10 (규칙 15, 막힘)** — **GIVEN** 체크무늬로 빈칸이 떨어져 있는 보드와 남은 조각 [1×2, 2×2], **WHEN** `no_moves`, **THEN** 참.
-  **AND** 남은 조각에 1칸 조각을 추가하면 거짓. **AND** 빈 목록이면 거짓.
-- **AC-11 (규칙 16, 초기 보드)** — **GIVEN** 행 0이 꽉 찬 스테이지 초기 보드 데이터, **WHEN** 스테이지를 로드하면, **THEN** 로드가 거부되고 오류에 행 번호가 적힌다.
-- **AC-12 (규칙 2, 칸 종류 플래그)** — **GIVEN** 테스트용 칸 종류 `TEST_STONE (blocks=true, counts=true, removable=false)`를 데이터로만 등록,
+- **AC-07 [Logic] (규칙 9·10, 줄 판정·합집합)** — **GIVEN** 7번 행과 3번 열이 (7,3)만 빠진 보드, **WHEN** 1칸 조각을 (7,3)에 놓고 `full_lines`·`line_cells`,
+  **THEN** 행 [7], 열 [3] 순서로 반환되고 칸 집합은 15칸(F4, 교차 칸 1회), row-major로 정렬된다.
+- **AC-08 [Logic] (규칙 11, 비우기 — 동시 얼굴 경계)** — **GIVEN** 얼굴 칸 1개를 포함한 완성 행, **WHEN** `clear_cells`, **THEN** 8칸이 `EMPTY`가 되고 반환 목록에
+  `is_face = true`인 칸이 정확히 1개, `crew_id`가 그 조각의 크루다. **AND** 행과 열이 함께 완성되고 교차 칸이 얼굴이며 행·열에 다른 얼굴이 2개 더 있으면,
+  반환 목록의 얼굴은 정확히 3개이고 교차 칸 얼굴은 한 번만 나온다. **AND** 빈칸을 포함한 범위를 넘겨도 오류 없이 실제 비워진 칸만 반환된다.
+- **AC-09 [Logic] (규칙 12, 채우기)** — **GIVEN** 빈칸 2개를 가진 행, **WHEN** 그 2칸에 알을 `fill_cells`, **THEN** 두 칸이 `TILE(EGG, is_face=false)`이고
+  그 행이 `full_lines`에 나타난다. **AND** 차 있는 칸을 대상으로 넘기면 debug assert가 발생하고 보드는 바뀌지 않는다.
+- **AC-10 [Logic] (규칙 15, 막힘)** — **GIVEN** 체크무늬로 빈칸이 떨어져 있는 보드와 남은 조각 [1×2, 2×2], **WHEN** `no_moves`, **THEN** 참.
+  **AND** 남은 조각에 1칸 조각을 추가하면 거짓. **AND** 빈 목록이면 거짓. **AND** 64칸이 모두 찬 보드와 [1칸 조각]이면 참.
+- **AC-11 [Logic] (규칙 16, 초기 보드)** — **GIVEN** 행 0이 꽉 찬 초기 보드 데이터 / 열 5가 꽉 찬 초기 보드 데이터, **WHEN** 스테이지를 로드하면,
+  **THEN** 둘 다 로드가 거부되고 오류에 각각 행 번호 0·열 번호 5가 적힌다.
+- **AC-12 [Logic] (규칙 2, 칸 종류 플래그)** — **GIVEN** 테스트용 칸 종류 `TEST_STONE (blocks=true, counts=true, removable=false)`를 데이터로만 등록,
   **WHEN** 그 칸을 포함한 행이 완성되어 `clear_cells`, **THEN** 그 칸만 남고 7칸이 비워진다 — 보드 규칙 코드 변경 없음.
-- **AC-13 (규칙 17, 결정성)** — **GIVEN** 고정 보드·조각 픽스처 100개, **WHEN** 모든 함수를 두 번씩 호출하면, **THEN** 결과와 반환 순서가 바이트 단위로 같다.
-  (해석기 단계: 미리보기 예측 = 실제 결과 테스트는 연쇄 해석기 GDD의 AC.)
+- **AC-13 [Logic] (규칙 17, 결정성)** — **GIVEN** 커밋된 보드·조각 픽스처 100개, **WHEN** 공개 함수를 각각 두 번씩 호출하면, **THEN** 결과와 반환 순서가 같다.
 
 **공식 (Section D)**
 
-- **AC-14 (F1·F4·F5)** — **GIVEN** 8×8 보드, **WHEN** 2×3 조각의 `anchor_count`, R=2·C=1의 `line_cell_count`, 6칸 찬 행의 `line_fill_count`를 계산하면,
+- **AC-14 [Logic] (F1·F4·F5)** — **GIVEN** 8×8 보드, **WHEN** 2행×3열 조각의 `anchor_count`, R=2·C=1의 `line_cell_count`, 6칸 찬 행의 `line_fill_count`를 계산하면,
   **THEN** 42, 22, 6.
-- **AC-15 (F6, 성능 예산)** — **GIVEN** 빈칸 10개가 흩어진 최악 근사 보드와 6칸 조각 3개, **WHEN** headless 데스크톱에서 `no_moves`를 1,000회 반복하면,
-  **THEN** 평균 ≤ 0.2ms/회. 저가 Android 실기기 측정은 T0 그레이박스에서 (목표: 매 앵커 변경 `can_place` + 미리보기 합계가 프레임 예산 안).
+- **AC-15 [Perf] (F6, 성능 예산)** — **GIVEN** 빈칸 10개가 흩어진 최악 근사 보드와 6칸 조각 3개, **WHEN** headless 데스크톱에서 `no_moves`를 1,000회 반복하면,
+  **THEN** 평균 ≤ 0.2ms/회. 실기기 프레임 예산은 chain-preview AC-P17이 소유한다.
 
-**시스템 간 (provisional — 하위 GDD 작성 시 확정)**
+**재충전 후 막힘 (경계)**
 
-- **AC-16 (판 진행 흐름)** — **GIVEN** 마지막 트레이 조각으로 줄을 지운 직후, **WHEN** 해석기가 끝나고 트레이가 재충전되면,
-  **THEN** `no_moves`는 재충전된 3조각으로 정확히 1회 평가된다 (해결 중에는 0회).
-- **AC-17 (스테이지 & 목표)** — **GIVEN** 같은 배치에서 목표 달성과 `no_moves = true`가 함께 성립, **WHEN** 판이 끝나면, **THEN** 결과는 클리어다.
+- **AC-16 [Logic] (규칙 15 + Edge Cases, 재충전 직후 판정 입력)** — **GIVEN** 같은 보드에서 (a) 재충전 대기(남은 조각 []), (b) 재충전된 3조각 모두 안 들어감,
+  (c) 재충전된 3조각 중 1개만 들어감, **WHEN** `no_moves`, **THEN** 거짓, 참, 거짓. 호출 시점(해석·재충전 뒤 정확히 1회)은 tray-supply AC-21 통합 테스트가 소유한다.
+- **AC-17 [Integration] (스테이지 & 목표, provisional)** — **GIVEN** 같은 배치에서 목표 달성과 `no_moves = true`가 함께 성립, **WHEN** 판이 끝나면, **THEN** 결과는 클리어다.
+  (판 진행 흐름 GDD 작성 시 그쪽 AC로 이관.)
+
+> 삭제: 이전 AC-16(판 진행 흐름 호출 횟수)은 tray-supply AC-21과 중복이라 그쪽으로 합쳤다. 이전 AC-13의 "미리보기 = 결과" 언급은 불변식 테스트로 대체.
 
 ## Open Questions
 
 | # | 질문 | 담당 | 해결 시점 |
 |---|---|---|---|
-| Q1 | 깊이 상한 도달 시 남은 완성 줄을 어떻게 처리하나 (불변식 13 보장 방식) | systems-designer · 연쇄 해석기 GDD | `/design-system chain-resolver` |
-| Q2 | 얼굴 위치: 모양별 고정(`face_cell`) vs 트레이 무작위 — 크루 개성(기둥 2)과 계획성(기둥 3) 중 무엇에 무게를 두나 | game-designer · 크루 정의 / 트레이 공급 GDD | `/design-system crew-definition` |
-| Q3 | 재충전 조각이 하나도 안 들어가는 "즉사 재충전"을 트레이 공급이 보정하나 | systems-designer · 트레이 공급 GDD | `/design-system tray-supply` |
+| Q1 | ~~깊이 상한 도달 시 남은 완성 줄 처리~~ — **해소**: chain-resolver 규칙 10·D5 (규칙 13 확정) | — | 해소 |
+| Q2 | ~~얼굴 위치: 고정 vs 트레이 무작위~~ — **해소**: crew-definition D4 (`face_cell = −1`, 트레이가 시드 RNG로 균등 — tray-supply 규칙 10) | — | 해소 |
+| Q3 | ~~"즉사 재충전" 보정~~ — **해소**: tray-supply 규칙 13 최소 구제 (1칸, 표시 전) | — | 해소 |
 | Q4 | 스테이지별 보드 크기(예: 6×6 튜토리얼)가 필요한가 — MVP는 전역 8×8 (D3) | level-designer · 스테이지 & 목표 GDD | 10스테이지 데이터 작성 시 |
 | Q5 | 떨어진 칸 모양(D4)을 풀 비전 크루에서 허용할 가치가 있나 | game-designer | T2 크루 확장 시 |
-| Q6 | systems-index에 판 진행 흐름 → 보드 & 조각 규칙 직접 의존 추가 | producer · `/map-systems` | 판 진행 흐름 GDD 작성 전 |
+| Q6 | ~~systems-index에 판 진행 흐름 → 보드 & 조각 규칙 직접 의존 추가~~ — **해소**: systems-index 반영됨 (2026-11-07) | — | 해소 |
 
 ### Decision Log (사용자 위임 "진행부탁 알아서 다" — 질문 없이 권장안 채택)
 
@@ -471,3 +485,4 @@ to produce per-asset visual descriptions, dimensions, and generation prompts fro
 | D10 | 초기 보드에 완성 줄 | 로드 거부 | 시작 시 자동 해결 — 무료 연쇄, 스테이지 의도 왜곡 |
 | D11 | 반환 순서 | 행 먼저·오름차순, row-major | 정렬 없음 — 미리보기/해석기 순서 불일치 위험 |
 | D12 | 실패 조건 경계 | "놓을 곳 없음"만 이 시스템; 제한 조각 수 소진은 스테이지 & 목표 | 두 조건 모두 보드 규칙 — 스테이지 데이터 의존 발생 |
+| D13 | Open Question 정리 (systems-designer 리뷰) | Q1(chain-resolver 규칙 10)·Q2(crew-definition D4)·Q3(tray-supply 규칙 13)·Q6(systems-index) 해소 표시, 규칙 13 provisional 해제 | 미표시 유지 — 하류 문서가 이미 정한 사항을 미결로 오독 |

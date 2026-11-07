@@ -299,6 +299,35 @@ The link_rate formula is defined as:
 낮은 크루는 "연쇄에 안 끼는 크루"로 보고 모양·파라미터를 조정한다 (Open Question Q1: 깡총).
 **Example:** 보드에 다른 얼굴 4개 → 냥이가 하나 이상 깨울 추정 확률 1 − 0.778⁴ ≈ **0.63**, 깡총 1 − 0.917⁴ ≈ 0.29.
 
+**F4a. 웨이브 0 유효 범위 보정과 기대 자손 수** (systems-designer 리뷰, D15 — F3·F4는 빈 판 기준이라 웨이브 0을 과대평가한다)
+
+웨이브 0에서 발동하는 얼굴은 **자기 줄이 같은 웨이브에 이미 지워져** 그 줄의 대상 칸이 비어 있다. 행으로 지워진 경우(열도 대칭):
+
+`R_c^eff = R_c − |T_c(fr, fc) ∩ row(fr)| + 1 (얼굴)`, `m_c = R_c^eff × φ × f_face` (CLEAR), `m_삐약 = P(Bin(H − 1, φ) ≥ H − count) × n_fill × f_face` (FILL — 얼굴 칸 포함 빈칸이 `count` 이하면 알이 반대 축 줄을 완성; `n_fill` = 그 줄의 원래 찬 칸 수 ≈ 5.5)
+
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| R_c^eff | float | 0 – R_c | calculated (8×8 전수) | 웨이브 0 유효 대상 칸 평균 |
+| φ | float | 0.3 – 0.6 (추정 0.45) | 자동 플레이 측정 대상 | 안정 보드 채움 비율 |
+| f_face | float | 0.2 – 0.35 (추정 0.24) | 1 / (E_T + 배치당 알 ≈ 0.7) | 찬 칸 중 얼굴 비율 |
+| m_c | float | ≥ 0 | calculated | 발동 1회가 다음 웨이브로 깨우는 얼굴 기대 수 (= λ 추정) |
+
+| 크루 | R_c (F3) | R_c^eff (웨이브 0) | m (웨이브 0, φ 0.45) | 비고 |
+|---|---|---|---|---|
+| 냥이 | 14.0 | **7.0** (반대 축 한 줄뿐; 행·열 동시 완성 교차점이면 0 = 헛손질) | 0.76 | F3의 "2배 우위"는 웨이브 0에서 1.46배(곰곰 대비)로 줄어든다 |
+| 개굴 | 8.75 | **8.75** (대각선은 행과 얼굴에서만 만남) | 0.95 | 웨이브 0에서는 가장 높다 |
+| 곰곰 | 6.56 | **4.81** | 0.52 | |
+| 깡총 | 5.25 | **3.75** | 0.41 | 개굴 대비 0.43 · 냥이 대비 0.53 — `min_link_ratio` 0.4 경계선 |
+| 삐약 | — | 반대 축 줄 완성 확률 P(Bin(7, φ) ≥ 5) ≈ 0.15 × 줄의 얼굴 ≈ 1.3 | **0.20** | 냥이 대비 0.26 — 기준 0.4 **미달 예상** (Q8) |
+| 몽실 | — | 반대 축에 3칸만 채움, 그 축 나머지 5칸이 모두 차야 완성 ≈ φ⁵ | ≈ 0.05 | 매우 낮음 — 궁합표 곰곰→몽실 ◎은 "구멍 밖 5칸이 찬 줄" 전제 (Q8) |
+
+**Output Range / 기본 팀 기대 연쇄 (냥이+곰곰+삐약, 무작위 배치, φ 0.45 — 근사, T0 자동 플레이로 교체할 값):** 한 줄(8칸)에 얼굴 기대 ≈ 2.0개
+(놓은 조각 얼굴 ≈ 0.55 + 다른 칸 6 × 0.24) → 팀 평균 m ≈ 0.49 (웨이브 0), ≈ 0.5 (웨이브 ≥ 1, 깨워진 냥이는 십자 대부분이 살아 있음; 보드가 비며 φ 감소).
+줄을 지운 배치 기준 P(`chain_depth` ≥ 1) ≈ **0.9**, ≥ 2 ≈ **0.5–0.6**, ≥ 3 ≈ **0.25–0.3**, ≥ 4 ≈ **0.1–0.15**, 상한 6 ≈ **1–2%**; E[`chain_depth`] ≈ 1.8–2.0.
+줄 지우기가 배치의 ≈ 35–45%이므로 "연쇄 2+"는 무작위 배치에서도 4–5배치마다 1회 — **도미노는 충분히 자주 일어난다.** 오히려 "연쇄 1"(능력 발동)은
+거의 모든 줄 지우기에 붙으므로, 스테이지 "연쇄 N" 목표는 N ≥ 3부터 의미가 있다 (스테이지 & 목표 GDD 참고값).
+**Example:** 냥이 얼굴이 7번 행 완성으로 지워짐 → 대상은 5번 열 7칸(F3의 14칸 아님), φ 0.45면 찬 칸 ≈ 3.2개, 그중 얼굴 ≈ 0.76개.
+
 **F5. 범위 겹침 (궁합 S1)**
 
 The coverage_overlap formula is defined as:
@@ -445,51 +474,73 @@ board-rules Interactions는 "크루 → 보드 규칙: 크루별 모양 목록, 
 
 ## Acceptance Criteria
 
-> *Specialist note*: `qa-lead` not consulted — Section H는 lean에서도 spawn 대상이지만 이 실행에는 Agent 도구가 없어 생략. Review manually before production.
-> AC-01–15·19·20은 `tests/unit/crew_definition/`·`tests/integration/crew_definition/` 자동 테스트(Logic/Integration, BLOCKING), AC-16은 플레이테스트 + 흑백 스크린샷, AC-17은 자동 플레이 시뮬레이션(T0), AC-18은 UI 스크린샷 증거.
+> **qa-lead 검토 (2026-11-07, 사용자 위임 — 질문 없이 진행)**. 각 AC 앞 태그 = 스토리 유형 → 증거 위치·게이트:
+> `[Logic]` 자동 단위 테스트 `tests/unit/<system>/<system>_<feature>_test.gd` (BLOCKING) · `[Integration]` `tests/integration/<system>/` (BLOCKING) ·
+> `[UI]` 화면별 보존 스크린샷 `production/qa/evidence/` (BLOCKING) · `[Visual/Feel]` 보존 스크린샷/녹화 + 리드 서명 (BLOCKING) · `[Config]` 데이터 로드·스모크 (ADVISORY) ·
+> `[Perf]` `tests/performance/<system>/` — 시간 측정은 결정적이지 않아 CI 차단 스위트 밖에서 돌리고 임계값 초과 시 실패로 보고 (ADVISORY; 5개 스토리 유형 밖의 qa-lead 추가 분류) ·
+> `[Playtest]` `/playtest-report` 설계 검증 (ADVISORY — 스토리 완료 조건 아님).
+> **결정성**: 테스트 실행 중 보드를 무작위 생성하지 않는다. 픽스처는 커밋된 파일 `tests/fixtures/boards/*.txt`(보드 문자열)와 `tests/fixtures/parity/`이며,
+> "시드 판"은 오프라인에서 한 번 생성해 커밋한 파일이다. 모든 `stage_seed`·`rng_seed`는 픽스처에 적는다.
+> **불변식 (미리보기 = 런타임 = 점수)**은 하나의 테스트 `tests/integration/preview_parity/preview_parity_test.gd`가 소유하고 정의는 chain-preview AC-P02다 —
+> 다른 GDD의 같은 AC는 그 테스트의 단언 조각을 가리킬 뿐 별도 테스트를 만들지 않는다.
+> debug assert 검증은 gdUnit4 `assert_error(...)`로 포착한다 (포착되지 않으면 구현이 assert 직전 `push_error`를 내고 `is_push_error`로 확인).
+> 이 GDD의 테스트 파일: `tests/unit/crew_definition/crew_definition_{schema,lint,abilities}_test.gd`(테스트 전용 크루 데이터 `tests/fixtures/crews/`),
+> `tests/integration/crew_definition/crew_definition_resolve_test.gd`(실제 MVP 레지스트리 + chain-resolver). 증거: `production/qa/evidence/crew-definition/`.
 
 **스키마 & 검증 (규칙 1–5, 11–13)**
-- **AC-01** — **GIVEN** MVP 레지스트리(6명), **WHEN** 로드, **THEN** 오류 0건·린트 경고 0건이고 `all()`이 6개, `starter_ids()` = {nyangi, gomgom, piyak}을 반환한다.
-- **AC-02** — **GIVEN** `primitive: "clear_spiral"`(어휘 밖)인 테스트 크루, **WHEN** 로드, **THEN** 데이터 로드 오류이며 그 크루의 id와 필드 이름을 메시지에 포함한다.
-- **AC-03** — **GIVEN** 7칸 모양 / 끊긴 모양 / 정규화 안 된 모양을 가진 테스트 크루 각각, **WHEN** 로드, **THEN** 셋 모두 로드 오류 (board-rules 규칙 3).
-- **AC-04** — **GIVEN** 같은 크루에 같은 모양 2회, 또는 `weight = 0`, 또는 `face_cell = 칸 수`, **WHEN** 로드, **THEN** 각각 로드 오류.
-- **AC-05** — **GIVEN** 두 크루의 `id`·`colour_slot`·`silhouette_feature`·`body_pattern` 중 하나가 같은 MVP 레지스트리, **WHEN** 로드, **THEN** 로드 오류 (항목별 4케이스).
-- **AC-06** — **GIVEN** `lay_eggs_*` 단계가 있고 `fill_visual = null`인 크루, **WHEN** 로드, **THEN** 로드 오류.
-- **AC-07** — **GIVEN** 일반 등급 `clear_cross{reach: −1}` 크루와 희귀 등급 `clear_cross{reach: 2}` 크루, **WHEN** 로드, **THEN** 로드 오류(규칙 7·10); 둘 다 일반 등급이면 로드는 되고 린트 경고 1건.
-- **AC-08** — **GIVEN** 시그니처 모양이 1개뿐인 테스트 크루, **WHEN** 로드, **THEN** 로드 성공 + 린트 경고 "signature shapes < 2".
-- **AC-09** — **GIVEN** 로드된 레지스트리, **WHEN** `crew_abilities`를 만든다, **THEN** 팀 구성과 무관하게 6개 id 모두의 `steps`를 담는다 (규칙 8).
-- **AC-10** — **GIVEN** 판 진행 중, **WHEN** 어떤 코드가 `CrewDef` 필드를 쓰려 한다, **THEN** 실패한다 (읽기 전용 — 구현 방식은 ADR; 테스트는 로드 후 리소스 해시가 판 전후 동일함을 확인).
+- **AC-01 [Config]** — **GIVEN** 실제 MVP 레지스트리(6명), **WHEN** 로드, **THEN** 오류 0건·린트 경고 0건이고 `all()`이 6개, `starter_ids()` = {nyangi, gomgom, piyak}.
+- **AC-02 [Logic]** — **GIVEN** `primitive: "clear_spiral"`(어휘 밖)인 테스트 크루, **WHEN** 로드, **THEN** 로드 오류이며 메시지에 그 크루의 id와 필드 이름이 있다.
+- **AC-03 [Logic]** — **GIVEN** 7칸 모양 / 끊긴 모양 / 정규화 안 된 모양을 가진 테스트 크루 각각, **WHEN** 로드, **THEN** 셋 모두 로드 오류 (board-rules 규칙 3).
+- **AC-04 [Logic]** — **GIVEN** 같은 크루에 같은 모양 2회 / `weight = 0` / `face_cell = 칸 수` 각각, **WHEN** 로드, **THEN** 각각 로드 오류.
+  **AND** `face_cell = 칸 수 − 1`(경계 안)은 로드 성공.
+- **AC-05 [Logic]** — **GIVEN** 두 크루의 `id`·`colour_slot`·`silhouette_feature`·`body_pattern` 중 하나만 같은 레지스트리 4벌, **WHEN** 로드, **THEN** 4벌 모두 로드 오류이고 메시지에 중복 필드 이름이 있다.
+- **AC-06 [Logic]** — **GIVEN** `lay_eggs_*` 단계가 있고 `fill_visual = null`인 크루, **WHEN** 로드, **THEN** 로드 오류.
+- **AC-07 [Logic]** — **GIVEN** 일반 등급 `clear_cross{reach: −1}` 크루와 희귀 등급 `clear_cross{reach: 2}` 크루, **WHEN** 로드, **THEN** 로드 오류(규칙 7·10);
+  **AND** 둘 다 일반 등급이면 로드 성공 + 린트 경고 정확히 1건.
+- **AC-08 [Logic]** — **GIVEN** 시그니처 모양이 1개뿐인 테스트 크루, **WHEN** 로드, **THEN** 로드 성공 + 린트 경고 "signature shapes < 2" 1건.
+- **AC-09 [Logic]** — **GIVEN** 로드된 레지스트리와 팀 3인, **WHEN** `crew_abilities`를 만든다, **THEN** 팀 밖 크루를 포함한 6개 id 모두의 `steps`를 담는다 (규칙 8).
+- **AC-10 [Integration] (읽기 전용)** — **GIVEN** 로드 직후 각 `CrewDef` 리소스의 직렬화 해시, **WHEN** 기록된 배치 목록으로 한 판을 끝까지 자동 재생하면,
+  **THEN** 판 뒤 해시가 모두 같다. (쓰기 차단 구현 방식은 ADR.)
 
-**MVP 크루 6명 (규칙 14) — chain-resolver `resolve`로 검증**
-- **AC-11** — **GIVEN** 얼굴 (3,3) 하나만 비어 있고 나머지 63칸이 찬 8×8 스냅샷 보드, **WHEN** 각 CLEAR 크루 능력의 대상 계산(chain-resolver 프리미티브 함수)을 직접 호출, **THEN** 다음 웨이브 대상 수가 냥이 14 · 개굴 13 · 곰곰 8 · 깡총 8이고, 깡총 대상에 (3,2)(2,3)(4,4) 같은 거리 1 칸이 하나도 없다.
-- **AC-12** — **GIVEN** 몽실 얼굴 (0,0)이 지워지고 (0,1)·(1,0)이 빈칸, **WHEN** 발동, **THEN** 털뭉치가 offsets 순서대로 (0,0)·(0,1)·(1,0) 3칸에 놓이고(`ABILITY_EFFECT.cells` 순서 동일) 각 칸은 `TILE(origin = EGG, crew_id = mongsil)`이며, (−1,0)·(0,−1)은 보드 밖이라 버려진다.
-- **AC-13** — **GIVEN** 삐약 프로토타입 시나리오(chain-resolver F5 예시: 얼굴 (3,5), 3번 행 빈칸 2개), **WHEN** 발동, **THEN** 알 2개가 (3,5)·(3,1) 순서로 놓이고 다음 웨이브에 3번 행이 지워진다.
-- **AC-14** — **GIVEN** 같은 보드·같은 배치, **WHEN** `rng_seed`를 1000개 다른 값으로 바꿔 6명 각각 해석, **THEN** 모든 결과(`events`, `final_board`)가 같다 (MVP 크루 RNG 미사용).
+**MVP 크루 6명 (규칙 14) — 실제 데이터 + chain-resolver**
+- **AC-11 [Integration]** — **GIVEN** 얼굴 칸 (3,3)만 비어 있고 나머지 63칸이 찬 8×8 스냅샷 보드, **WHEN** 각 CLEAR 크루 능력의 대상 계산(chain-resolver 프리미티브)을 직접 호출,
+  **THEN** 대상 수가 냥이 14 · 개굴 13 · 곰곰 8 · 깡총 8이고, 깡총 대상에 거리 1 칸((3,2)(2,3)(4,4) 등)이 하나도 없다.
+- **AC-12 [Integration]** — **GIVEN** 몽실 얼굴 (0,0)이 지워지고 (0,1)·(1,0)이 빈칸, **WHEN** 발동, **THEN** 털뭉치가 offsets 순서대로 (0,0)·(0,1)·(1,0) 3칸에 놓이고
+  (`ABILITY_EFFECT.cells` 순서 동일) 각 칸은 `TILE(origin = EGG, crew_id = mongsil)`이며, (−1,0)·(0,−1)은 보드 밖이라 버려진다.
+- **AC-13 [Integration]** — **GIVEN** 삐약 프로토타입 시나리오(chain-resolver F5: 얼굴 (3,5), 3번 행 빈칸 2개), **WHEN** 발동, **THEN** 알 2개가 (3,5)·(3,1) 순서로 놓이고 다음 웨이브에 3번 행이 지워진다.
+- **AC-14 [Integration]** — **GIVEN** 같은 보드·같은 배치, **WHEN** `rng_seed`를 고정 목록 0–999로 바꿔 6명 각각 해석, **THEN** 모든 `events`·`final_board`가 같다 (MVP 크루 RNG 미사용).
+  **AND** 6명 각각의 얼굴이 불변식 테스트(chain-preview AC-P02) 픽스처에 최소 1회 발동한다.
 
 **지표 (F1–F5)**
-- **AC-15** — **GIVEN** MVP 데이터, **WHEN** 검증 도구가 F1·F2·F3·F5를 계산, **THEN** 냥이 p(I3_H) = 0.25, E = {냥이 3.33, 곰곰 4.75, 삐약 2.00, 개굴 3.75, 깡총 4.00, 몽실 3.25} (±0.01), 모든 E가 2.0–5.0 안, R_c 평균이 F3 표와 같고(±0.01), O(냥이, 개굴) = O(곰곰, 깡총) = 0.
+- **AC-15 [Config]** — **GIVEN** MVP 데이터, **WHEN** 검증 도구가 F1·F2·F3·F5를 계산, **THEN** 냥이 p(I3_H) = 0.25, E = {냥이 3.33, 곰곰 4.75, 삐약 2.00, 개굴 3.75, 깡총 4.00, 몽실 3.25} (±0.01),
+  모든 E가 2.0–5.0 안, R_c 평균이 F3 표와 같고(±0.01), O(냥이, 개굴) = O(곰곰, 깡총) = 0. 튜닝으로 값이 바뀌면 이 표를 함께 갱신한다.
 
 **플레이어 판독 (기둥 2·3)**
-- **AC-16** — **GIVEN** 처음 보는 플레이테스터 5명, **WHEN** 각 크루 능력이 한 번 발동하는 것을 본 직후 "이 크루는 어디를 지우나/채우나?"를 묻는다, **THEN** 6명 각각에 대해 5명 중 4명 이상이 범위 모양을 맞힌다. 그리고 **흑백 스크린샷**에서 판 위 6명을 모두 구분한다 (art-bible 4절 검수 기준 — `production/qa/evidence/` 보관).
-- **AC-18** — **GIVEN** 팀 편성 화면, **WHEN** 6명의 크루 카드를 표시, **THEN** 카드마다 능력 도해 대상 칸이 해당 크루의 AC-11/12 대상 모양과 일치하고(스크린샷 증거), 숫자 가중치가 화면에 나오지 않는다.
+- **AC-16 [Visual/Feel]** — **GIVEN** 판 위에 6명이 모두 있는 실행 화면, **WHEN** 흑백 스크린샷을 찍으면, **THEN** 6명이 실루엣·무늬만으로 서로 다르다 (art-bible 4절 검수 기준),
+  스크린샷 보관 + 아트 리드 서명.
+- **AC-16b [Playtest]** — **GIVEN** 처음 보는 플레이테스터 5명, **WHEN** 각 크루 능력 발동을 한 번 본 직후 "이 크루는 어디를 지우나/채우나?"를 묻는다,
+  **THEN** 6명 각각에 대해 5명 중 4명 이상이 범위 모양을 맞힌다. 미달 크루는 Open Questions로.
+- **AC-18 [UI]** — **GIVEN** 팀 편성 화면, **WHEN** 6명의 크루 카드를 표시, **THEN** 카드마다 능력 도해 대상 칸이 AC-11/12 대상 모양과 같고 숫자 가중치가 없다 (카드 6장 스크린샷).
 
 **시뮬레이션 (궁합 가설)**
-- **AC-17** — **GIVEN** T0 자동 플레이 봇(같은 시드 세트 200판 × 추천 팀 3개), **WHEN** λ(A→B)를 F4로 집계, **THEN** 모든 크루의 평균 λ(A→·)가 최고 크루의 40% 이상이다. 미달 크루는 Open Question Q1의 조정 대상으로 기록하고, 궁합표 ◎ 칸이 같은 행의 △ 칸보다 λ가 높은지 보고한다 (가설 검증 — 결과는 이 문서 개정으로 반영).
+- **AC-17 [Playtest]** (튜닝 입력 — 통과/실패 게이트 아님) — **GIVEN** T0 자동 플레이 봇(고정 시드 세트 200판 × 추천 팀 3개), **WHEN** λ(A→B)를 F4로 집계,
+  **THEN** 모든 크루의 평균 λ(A→·)가 최고 크루의 40% 이상인지와 궁합표 ◎ 칸이 같은 행 △ 칸보다 λ가 높은지 보고한다. 미달 크루는 Q1 조정 대상으로 기록.
 
 **교차 시스템**
-- **AC-19** — **GIVEN** 스테이지 초기 보드에 팀 밖 크루(개굴) 얼굴이 있고 팀은 기본 3인, **WHEN** 그 얼굴이 줄 지우기로 지워진다, **THEN** 개굴 능력이 발동한다 (규칙 8).
-- **AC-20** — **GIVEN** 레벨 데이터가 있는 T2 빌드(또는 레벨 값을 주입한 테스트), **WHEN** 같은 보드·배치를 레벨 1과 최대 레벨로 해석, **THEN** `events`의 대상 칸·깊이가 같다 (규칙 9).
+- **AC-19 [Integration]** — **GIVEN** 초기 보드에 팀 밖 크루(개굴) 얼굴이 있고 팀은 기본 3인, **WHEN** 그 얼굴이 줄 지우기로 지워진다, **THEN** 개굴 능력이 발동한다 (규칙 8).
+- **AC-20 [Integration] (T2 — MVP 스토리에서 제외)** — **GIVEN** 레벨 값을 주입한 테스트, **WHEN** 같은 보드·배치를 레벨 1과 최대 레벨로 해석, **THEN** `events`의 대상 칸·깊이가 같다 (규칙 9).
 
 ## Open Questions
 
 | # | 질문 | 담당 | 해결 시점 |
 |---|---|---|---|
-| Q1 | 깡총의 연결률(L̂ 0.083, 궁합 ◎ 1칸)이 낮아 "연쇄에 안 끼는 특별 크루"가 될 위험 — AC-17 미달 시 조정 순서: 모양 가중치(작은 조각 추가) → offsets(거리 2 고리 16칸 등). 크기만 키우는 조정은 규칙 7 위반 아님(단일 크루)이나 기둥 2 정신에 비춰 검토 | game-designer · systems-designer | T0 자동 플레이 (AC-17) |
-| Q2 | 냥이 지배 위험: 평균 범위 14로 최대, 조각도 작음(E 3.33). 기본 팀에서 냥이만 노리는 단조로운 플레이가 나오면 `reach` 하향 대신 모양 가중치(I4_H↑)로 조정할지 | systems-designer | T0 플레이테스트 + `/balance-check` |
+| Q1 | 깡총의 연결률(L̂ 0.083, 궁합 ◎ 1칸)이 낮아 "연쇄에 안 끼는 특별 크루"가 될 위험 — AC-17 미달 시 조정 순서: 모양 가중치(작은 조각 추가) → offsets(거리 2 고리 16칸 등). 크기만 키우는 조정은 규칙 7 위반 아님(단일 크루)이나 기둥 2 정신에 비춰 검토. **수치 점검(F4a)**: 웨이브 0 보정 후 깡총 m 0.41 = 냥이 대비 0.53, 개굴 대비 0.43 — 기준 0.4 **경계선 통과 예상**. 위험은 깡총보다 채우기 크루(Q8)가 크다 | game-designer · systems-designer | T0 자동 플레이 (AC-17) |
+| Q2 | 냥이 지배 위험: 평균 범위 14로 최대, 조각도 작음(E 3.33). 기본 팀에서 냥이만 노리는 단조로운 플레이가 나오면 `reach` 하향 대신 모양 가중치(I4_H↑)로 조정할지. **수치 점검(F4a)**: 발동의 대부분이 일어나는 웨이브 0에서 냥이 유효 범위는 7칸(곰곰 4.8칸의 1.46배, 개굴 8.75보다 작음) — 지배 위험 **낮음**, `reach` 유지. 깨워진(웨이브 ≥ 1) 냥이만 ≈ 2배 우위 | systems-designer | T0 플레이테스트 + `/balance-check` |
 | Q3 | 크루 사이 비율을 균등(1/3)으로 둘지, 크루별 `pool_share`를 크루 데이터에 둘지 — 지금은 트레이 공급 소관으로 두고 크루 데이터에 필드를 만들지 않음 | systems-designer · 트레이 공급 GDD | `/design-system tray-supply` |
 | Q4 | 냥이·곰곰·깡총 세 크루가 "귀" 계열 돌출 — art-bible 3절 "같은 돌출 유형 공유 금지" 위반인가. 위반이면 깡총을 뿔 유형 동물로 교체 (능력·모양은 유지) | art-director | art-bible 5절 작성 시 |
 | Q5 | 몽실 털뭉치를 플레이어 용어로 "알"이라 부를지 "털뭉치"라 부를지 — 규칙상 같은 칸이라 튜토리얼 문구 통일 필요 | writer · ux-designer | 튜토리얼 / UX 스펙 |
 | Q6 | 등급 3단계(COMMON/RARE/SPECIAL)와 MVP 배정(일반 3 · 희귀 2 · 특별 1)이 가챠 확률·천장 설계에 맞는가 | economy-designer · 가챠 GDD | `/design-system gacha` |
+| Q8 | 채우기 크루 연결률: F4a 추정 λ 삐약 ≈ 0.20(냥이 대비 0.26), 몽실 ≈ 0.05 — `min_link_ratio` 0.4 미달 예상. 단 알은 *다음 배치*의 줄 완성도 돕는데 λ는 이를 세지 않는다. (a) FILL 크루용 보조 지표 λ₊ = "낳은 알이 이번 또는 다음 3배치 안에 줄 지우기에 포함된 비율"을 AC-17에 추가할지, (b) 미달이면 1차 노브 삐약 `count` 3 → 4 (줄 완성 확률 0.15 → 0.39, λ ≈ 0.5). 프로토타입 값 3은 T0 측정 전까지 유지 | systems-designer · qa-lead (AC-17) | T0 자동 플레이 |
 | Q7 | `CrewDef` 리소스 분할(하위 리소스 vs 인라인), `steps`를 Custom Resource로 둘지 Dictionary로 둘지, 런타임 불변 보장 방식, 4.7 typed-return override 영향 | technical-director | `/architecture-decision` (chain-resolver Q7과 같은 ADR) |
 
 ### Decision Log (사용자 위임 "진행부탁 알아서 다" — 질문 없이 권장안 채택)
@@ -510,3 +561,4 @@ board-rules Interactions는 "크루 → 보드 규칙: 크루별 모양 목록, 
 | D12 | id 수명 | 영구 불변, 삭제 없음, `obtainable = false`로 은퇴 | 삭제 허용 — 세이브·스테이지 보드 손상 |
 | D13 | 색 데이터 | 크루는 `colour_slot`만, hex는 팔레트 리소스 | 크루에 hex 직접 — art-bible 개정 시 6곳 수정, 명도 띠 검증 불가 |
 | D14 | 궁합 | 원리 3개 + 방향 궁합표를 **가설**로 두고 자동 플레이 λ로 검증 | 확정 수치표 — 시뮬레이션 전에는 근거 없음 |
+| D15 | 웨이브 0 보정 (systems-designer 리뷰) | F4a 추가: 웨이브 0 얼굴은 자기 줄이 이미 비어 있으므로 유효 범위·기대 자손 수로 Q1·Q2 재점검, 기본 팀 연쇄 빈도 추정, 채우기 크루 위험을 Q8로 분리. 파라미터 값은 바꾸지 않음 | 빈 판 기준 R_c·L̂만 사용 — 냥이 우위 2배 과대, 채우기 크루 미달 위험 누락 |

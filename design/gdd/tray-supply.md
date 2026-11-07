@@ -258,7 +258,7 @@ The rescue_pick formula is defined as:
 | w_s | int | 1–10 | data file | 크루 정의 가중치 |
 
 **Output Range:** |R| = 0이면 구제 없음(정직한 실패). 아니면 교체 정확히 1칸.
-**Example:** 빈칸이 가로로 이어진 3칸 한 줄뿐인 보드, 기본 팀 후보 [냥이 I4_H, 곰곰 O4, 삐약 D2_V] — 모두 불가.
+**Example:** 빈 자리가 가로로 이어진 3칸 틈 하나와 서로 떨어진 외톨이 빈칸들뿐인 보드(안정 보드는 모든 행·열에 빈칸이 있어야 하므로 "빈칸 3개뿐"은 불가 — systems-designer 리뷰, D14), 기본 팀 후보 [냥이 I4_H, 곰곰 O4, 삐약 D2_V] — 모두 불가.
 F(냥이) = {I3_H}, F(곰곰) = ∅, F(삐약) = {D1, D2_H} → R = {냥이 칸, 삐약 칸}, 각 **0.5**. 삐약 칸이 뽑히면 D1 = 2/4, D2_H = 2/4.
 곰곰 칸과 뽑히지 않은 칸은 그대로 (불가 조각 2개가 남는다 — 보장은 "다음 한 수"뿐).
 
@@ -408,55 +408,76 @@ art-bible 원칙: 스티커북 질감, 색약 백업(무늬·모양) — 트레�
 
 ## Acceptance Criteria
 
-> *Specialist note*: `qa-lead` not consulted — Section H는 lean에서도 spawn 대상이지만 이 실행에는 Agent 도구가 없어 생략. Review manually before production.
-> 모든 AC는 headless 단위 테스트(`tests/unit/tray_supply/`) 대상이며 고정 `stage_seed` 픽스처를 쓴다 (결정성 규칙).
+> **qa-lead 검토 (2026-11-07, 사용자 위임 — 질문 없이 진행)**. 각 AC 앞 태그 = 스토리 유형 → 증거 위치·게이트:
+> `[Logic]` 자동 단위 테스트 `tests/unit/<system>/<system>_<feature>_test.gd` (BLOCKING) · `[Integration]` `tests/integration/<system>/` (BLOCKING) ·
+> `[UI]` 화면별 보존 스크린샷 `production/qa/evidence/` (BLOCKING) · `[Visual/Feel]` 보존 스크린샷/녹화 + 리드 서명 (BLOCKING) · `[Config]` 데이터 로드·스모크 (ADVISORY) ·
+> `[Perf]` `tests/performance/<system>/` — 시간 측정은 결정적이지 않아 CI 차단 스위트 밖에서 돌리고 임계값 초과 시 실패로 보고 (ADVISORY; 5개 스토리 유형 밖의 qa-lead 추가 분류) ·
+> `[Playtest]` `/playtest-report` 설계 검증 (ADVISORY — 스토리 완료 조건 아님).
+> **결정성**: 테스트 실행 중 보드를 무작위 생성하지 않는다. 픽스처는 커밋된 파일 `tests/fixtures/boards/*.txt`(보드 문자열)와 `tests/fixtures/parity/`이며,
+> "시드 판"은 오프라인에서 한 번 생성해 커밋한 파일이다. 모든 `stage_seed`·`rng_seed`는 픽스처에 적는다.
+> **불변식 (미리보기 = 런타임 = 점수)**은 하나의 테스트 `tests/integration/preview_parity/preview_parity_test.gd`가 소유하고 정의는 chain-preview AC-P02다 —
+> 다른 GDD의 같은 AC는 그 테스트의 단언 조각을 가리킬 뿐 별도 테스트를 만들지 않는다.
+> debug assert 검증은 gdUnit4 `assert_error(...)`로 포착한다 (포착되지 않으면 구현이 assert 직전 `push_error`를 내고 `is_push_error`로 확인).
+> 이 GDD의 테스트 파일: `tests/unit/tray_supply/tray_supply_{structure,generation,rescue,script,determinism}_test.gd`,
+> `tests/integration/tray_supply/tray_supply_{refill_flow,script_stages}_test.gd`. 모든 테스트는 픽스처에 적힌 고정 `stage_seed`를 쓰고,
+> 시드에 따라 달라지는 결과는 골든 파일(`tests/fixtures/tray/*.golden.json`)과 비교한다.
 
 **구조 (규칙 1–6)**
 
-- **AC-01 (규칙 2)** — **GIVEN** 꽉 찬 트레이 [A, B, C], **WHEN** `consume(1)`, **THEN** 스냅샷은 [A, 빈 칸, C]이고 A·C의 칸 인덱스·인스턴스가 그대로다.
-- **AC-02 (규칙 3)** — **GIVEN** 조각 1개 남은 트레이, **WHEN** `refill`을 부르면, **THEN** 거부(오류/무시)되고 트레이는 바뀌지 않는다. **AND** 빈 트레이에 `refill(board, ∞)` → 정확히 3개.
-- **AC-03 (규칙 3, budget)** — **GIVEN** 빈 트레이와 `budget = 2`, **WHEN** `refill`, **THEN** 조각 2개 + 빈 칸 1개(`PARTIAL`). `budget = 0` → 변화 없음, 상태 `EXHAUSTED`.
-- **AC-04 (규칙 4, 정직성)** — **GIVEN** 재충전된 트레이에서 조각 1개를 놓아 남은 2개가 모두 `any_fit = false`가 된 보드, **WHEN** 판이 계속 진행되면,
-  **THEN** 남은 2개 인스턴스(모양·crew_id·face_index)는 소비될 때까지 바이트 단위로 같다.
+- **AC-01 [Logic] (규칙 2)** — **GIVEN** 꽉 찬 트레이 [A, B, C], **WHEN** `consume(1)`, **THEN** 스냅샷은 [A, 빈 칸, C]이고 A·C의 칸 인덱스·인스턴스가 그대로다.
+- **AC-02 [Logic] (규칙 3)** — **GIVEN** 조각 1개 남은 트레이, **WHEN** `refill`을 부르면, **THEN** debug assert가 나고 트레이 스냅샷은 바뀌지 않는다.
+  **AND** 빈 트레이에 `budget ≥ 3`으로 `refill` → 정확히 3개, 상태 `FULL`.
+- **AC-03 [Logic] (규칙 3, budget 경계)** — **GIVEN** 빈 트레이, **WHEN** `budget = 2`로 `refill`, **THEN** 조각 2개 + 빈 칸 1개, 상태 `PARTIAL`. **AND** `budget = 0` → 변화 없음, 상태 `EXHAUSTED`.
+- **AC-04 [Logic] (규칙 4, 정직성)** — **GIVEN** 재충전된 트레이에서 조각 1개를 놓아 남은 2개가 모두 `any_fit = false`가 된 보드, **WHEN** 기록된 배치를 이어 가면,
+  **THEN** 남은 2개 인스턴스(모양·crew_id·face_index)는 소비될 때까지 필드 단위로 같다.
 
 **생성 (규칙 7–12, F1·F2·F4)**
 
-- **AC-05 (규칙 8, F1)** — **GIVEN** 팀 3인, `crew_bag_copies = 1`, 구제가 일어나지 않는 빈 보드, **WHEN** 재충전 100회, **THEN** 모든 트레이에 세 크루가 정확히 1개씩.
-- **AC-06 (F1, k = 2)** — **GIVEN** `crew_bag_copies = 2`, **WHEN** 재충전 100회(조각 300개), **THEN** 연속 6조각 구간(가방 경계 정렬)마다 크루당 정확히 2개이고, 같은 크루 사이 다른 조각 수 ≤ 8.
-- **AC-07 (규칙 9, F2)** — **GIVEN** 냥이 단독 팀(모양 가중치 합 12), **WHEN** 조각 120개 생성, **THEN** 12개 단위 구간마다 I3_H 3·I3_V 3·I4_H 2·L3_A 2·L4_A 1·J4_A 1개 정확히.
-- **AC-08 (규칙 10, F4)** — **GIVEN** `face_cell = −1`인 5칸 모양만 가진 테스트 크루, **WHEN** 시드 1,000개로 조각 1개씩 생성, **THEN** 각 얼굴 칸 빈도가 200 ± 50 (χ² p > 0.01).
+- **AC-05 [Logic] (규칙 8, F1)** — **GIVEN** 팀 3인, `crew_bag_copies = 1`, 구제가 일어나지 않는 빈 보드, **WHEN** 재충전 100회, **THEN** 모든 트레이에 세 크루가 정확히 1개씩.
+- **AC-06 [Logic] (F1, k = 2)** — **GIVEN** `crew_bag_copies = 2`, **WHEN** 재충전 100회(조각 300개), **THEN** 가방 경계에 맞춘 연속 6조각 구간마다 크루당 정확히 2개이고,
+  같은 크루 사이 다른 조각 수 ≤ 8.
+- **AC-07 [Logic] (규칙 9, F2)** — **GIVEN** 냥이 단독 팀(모양 가중치 합 12), **WHEN** 조각 120개 생성, **THEN** 12개 단위 구간마다 I3_H 3·I3_V 3·I4_H 2·L3_A 2·L4_A 1·J4_A 1개.
+- **AC-08 [Logic] (규칙 10, F4)** — **GIVEN** `face_cell = −1`인 5칸 모양만 가진 테스트 크루, **WHEN** 고정 시드 0–999로 조각 1개씩 생성, **THEN** 각 얼굴 칸 빈도가 200 ± 50.
   **AND** `face_cell = 2`로 바꾸면 1,000개 모두 `face_index = 2`.
-- **AC-09 (규칙 11)** — **GIVEN** `allow_faceless_pieces = false`, `faceless_share = 1.0`, **WHEN** 재충전 10회, **THEN** 얼굴 없는 조각 0개 + 린트 경고 1회.
+- **AC-09 [Logic] (규칙 11)** — **GIVEN** `allow_faceless_pieces = false`, `faceless_share = 1.0`, **WHEN** 재충전 10회, **THEN** 얼굴 없는 조각 0개 + 린트 경고 1회.
   **AND** `allow_faceless_pieces = true`면 30개 모두 `face_index = null`, `crew_id = null`.
-- **AC-10 (F7)** — **GIVEN** 제한 20조각, 팀 3인, k = 1, 구제 없음, **WHEN** 판 전체 공급, **THEN** 크루별 조각 수가 각각 6 또는 7.
+- **AC-10 [Logic] (F7)** — **GIVEN** 제한 20조각, 팀 3인, k = 1, 구제 없음, **WHEN** 판 전체 공급, **THEN** 크루별 조각 수가 각각 6 또는 7이고 합이 20, 마지막 재충전은 `PARTIAL`(조각 2개).
 
 **구제 (규칙 13–15, F5·F6)**
 
-- **AC-11 (규칙 13)** — **GIVEN** F5 예시 보드(가로 3칸 빈 줄만)와 후보가 [냥이 I4_H, 곰곰 O4, 삐약 D2_V]가 되도록 고른 시드, **WHEN** `refill`, **THEN** 정확히 1칸이 바뀌고,
-  바뀐 칸은 냥이(I3_H) 또는 삐약(D1/D2_H) 칸이며 그 조각의 `any_fit = true`, 곰곰 칸은 O4 그대로. `TRAY_RESCUED` 로그 1건.
-- **AC-12 (규칙 13.2)** — **GIVEN** 빈칸이 서로 떨어진 1칸뿐이고 팀에 1칸 모양이 없는 보드(냥이+곰곰+개굴), **WHEN** `refill`, **THEN** 교체 0칸, `TRAY_RESCUED` 없음, 판 진행 흐름의 `no_moves` = 참.
-- **AC-13 (규칙 13.5, 결정성)** — **GIVEN** 같은 `stage_seed`·팀으로 두 판을 돌리되 한 판만 3번째 재충전에서 구제가 일어나도록 보드를 만든다, **WHEN** 두 판의 4번째 이후 재충전을 비교하면, **THEN** 같다.
-- **AC-14 (규칙 15·21)** — **GIVEN** `tray_script` 항목이 지금 보드에 하나도 안 들어가는 상황, **WHEN** 그 항목으로 재충전, **THEN** 교체 없이 스크립트 그대로 채운다.
+- **AC-11 [Logic] (규칙 13)** — **GIVEN** F5 예시 보드(가로 3칸 빈 줄만)와 후보가 [냥이 I4_H, 곰곰 O4, 삐약 D2_V]가 되는 고정 시드, **WHEN** `refill`, **THEN** 정확히 1칸이 바뀌고
+  그 칸은 냥이 칸 또는 삐약 칸이며 바뀐 조각은 `any_fit = true`, 곰곰 칸은 O4 그대로, `TRAY_RESCUED` 1건. 어느 칸·모양으로 바뀌는지는 골든 `rescue_f5.golden.json`과 같다.
+- **AC-12 [Logic] (규칙 13.2, 구제 실패 → 막힘)** — **GIVEN** 빈칸이 서로 떨어진 1칸뿐이고 팀(냥이+곰곰+개굴)에 1칸 모양이 없는 보드, **WHEN** `refill`, **THEN** 교체 0칸,
+  `TRAY_RESCUED` 없음, 재충전된 트레이로 `no_moves = true` (board-rules AC-16 (b)).
+- **AC-13 [Logic] (규칙 13.5, 결정성)** — **GIVEN** 같은 `stage_seed`·팀으로 두 판을 돌리되 한 판만 3번째 재충전에서 구제가 일어나도록 보드를 만든다, **WHEN** 4번째 이후 재충전을 비교하면, **THEN** 같다.
+- **AC-14 [Logic] (규칙 15·21)** — **GIVEN** `tray_script` 항목이 지금 보드에 하나도 안 들어가는 상황, **WHEN** 그 항목으로 재충전, **THEN** 교체 없이 스크립트 그대로 채운다.
 
 **스테이지 오버라이드 (규칙 19–22)**
 
-- **AC-15 (규칙 19–20, 자동 플레이 검증)** — **GIVEN** 튜토리얼 스크립트 [[D1 얼굴 없음], [I3_H team_slot 0 face 1], [`*` team_slot 1, `*` team_slot 2]] + `after_script = GENERATE`,
-  **WHEN** 4번 재충전, **THEN** 1–3번은 스크립트 그대로(1번은 조각 1개 + 빈 칸 2개), 4번은 생성 모드 크루 가방 0번(`seed_crew(0)`)으로 채워진다. **AND** 각 MVP 스크립트 스테이지는
-  기록된 해법 배치 목록으로 자동 플레이했을 때 막힘 없이 끝난다 (레벨 데이터 회귀 테스트).
-- **AC-16 (규칙 22)** — **GIVEN** `team_slot = 3`(팀 3인)인 스크립트 / `allow_faceless_pieces = false` 스테이지의 `crew = null` 지정 / 카탈로그에 없는 모양 id, **WHEN** 스테이지 로드, **THEN** 각각 로드 오류.
+- **AC-15 [Logic] (규칙 19–20)** — **GIVEN** 튜토리얼 스크립트 [[D1 얼굴 없음], [I3_H team_slot 0 face 1], [`*` team_slot 1, `*` team_slot 2]] + `after_script = GENERATE`,
+  **WHEN** 4번 재충전, **THEN** 1–3번은 스크립트 그대로(1번은 조각 1개 + 빈 칸 2개), 4번은 생성 모드 크루 가방 0번(`seed_crew(0)`)으로 채워진다.
+- **AC-15b [Integration] (레벨 데이터 회귀)** — **GIVEN** 각 MVP 스크립트 스테이지와 커밋된 해법 배치 목록, **WHEN** 자동 재생하면, **THEN** 모든 배치가 `can_place = true`이고 막힘 없이 끝난다.
+  (스테이지 & 목표 GDD의 스테이지 데이터가 생기면 활성화.)
+- **AC-16 [Logic] (규칙 22)** — **GIVEN** `team_slot = 3`(팀 3인)인 스크립트 / `allow_faceless_pieces = false` 스테이지의 `crew = null` 지정 / 카탈로그에 없는 모양 id, **WHEN** 스테이지 로드,
+  **THEN** 각각 로드 오류.
 
 **결정성·재현 (규칙 16–18, F3)**
 
-- **AC-17 (규칙 17)** — **GIVEN** 같은 (`stage_seed`, 팀, 설정, 배치 목록), **WHEN** 판을 두 번 재생, **THEN** 모든 재충전의 스냅샷이 같다. **AND** 해석기 `rng_seed`를 바꿔도 트레이 순서는 같다 (스트림 분리).
-- **AC-18 (규칙 18, `FIXED`)** — **GIVEN** `FIXED` 스테이지, **WHEN** 원탭 재시작을 3번, **THEN** 첫 트레이가 매번 같다. **AND** 팀 슬롯 순서만 바꾼 팀(같은 3인)이면 크루별 모양 순서는 같고 칸 순서만 다를 수 있다.
-- **AC-19 (규칙 18, `PER_ATTEMPT`)** — **GIVEN** `PER_ATTEMPT` 스테이지, **WHEN** 시도 0·1·2, **THEN** `stage_seed`가 서로 다르고 같은 시도 번호면 같다.
-- **AC-20 (규칙 16)** — **GIVEN** 트레이 모듈 소스, **WHEN** 정적 검사(grep), **THEN** 전역 `randi`/`randf`/`randomize` 호출이 없다.
+- **AC-17 [Logic] (규칙 17)** — **GIVEN** 같은 (`stage_seed`, 팀, 설정, 배치 목록), **WHEN** 판을 두 번 재생, **THEN** 모든 재충전의 스냅샷이 같다.
+  **AND** 해석기 `rng_seed`를 바꿔도 트레이 순서는 같다 (스트림 분리).
+- **AC-18 [Logic] (규칙 18, `FIXED`)** — **GIVEN** `FIXED` 스테이지, **WHEN** 원탭 재시작을 3번, **THEN** 첫 트레이가 매번 같다.
+  **AND** 팀 슬롯 순서만 바꾼 같은 3인 팀이면, 크루마다 받는 모양 순서열이 원래 팀과 같다 (칸 위치는 비교하지 않는다).
+- **AC-19 [Logic] (규칙 18, `PER_ATTEMPT`)** — **GIVEN** `PER_ATTEMPT` 스테이지, **WHEN** 시도 0·1·2, **THEN** `stage_seed`가 서로 다르고 같은 시도 번호면 같다.
+- **AC-20 [Logic] (규칙 16)** — **GIVEN** 트레이 모듈 소스, **WHEN** 정적 검사, **THEN** 전역 `randi`/`randf`/`randomize` 호출이 없다.
 
 **교차 시스템 / 지표**
 
-- **AC-21 (board-rules AC-16 연동)** — **GIVEN** 마지막 트레이 조각을 놓은 직후, **WHEN** 해석·연출이 끝나고 재충전되면, **THEN** 판 진행 흐름의 `no_moves` 평가는 재충전된(구제 적용 후) 트레이로 정확히 1회.
-- **AC-22 (F6, T0 자동 플레이)** — **GIVEN** MVP 10스테이지 × 추천 팀 3종 × 시드 50, **WHEN** 자동 플레이 로그 집계, **THEN** 팀·스테이지별 ρ ≤ 0.10 (넘는 조합은 스테이지 & 목표 / 크루 정의에 조정 요청으로 기록 — 실패가 아니라 튜닝 입력).
-- **AC-23 (성능)** — **GIVEN** 최악 근사 보드(빈칸 10개 흩어짐)와 6칸 모양만 가진 팀, **WHEN** headless 데스크톱에서 `refill`(구제 포함) 1,000회, **THEN** 1회 평균 < 0.5 ms.
+- **AC-21 [Integration] (재충전 후 막힘 — board-rules AC-16 호출 시점 소유)** — **GIVEN** 마지막 트레이 조각으로 줄을 지운 직후(판 진행 흐름 또는 그 커밋 하네스), **WHEN** 해석·연출이 끝나고
+  재충전되면, **THEN** `no_moves`는 해석·연출 중 0회, 재충전(구제 적용 후) 트레이로 정확히 1회 호출된다. **AND** 그 3조각이 모두 안 들어가는 픽스처(AC-12)에서는 판이 실패로 끝나고,
+  1개라도 들어가는 픽스처에서는 판이 계속된다.
+- **AC-22 [Playtest]** (튜닝 입력 — 게이트 아님) — **GIVEN** MVP 10스테이지 × 추천 팀 3종 × 고정 시드 50, **WHEN** 자동 플레이 로그 집계, **THEN** 팀·스테이지별 ρ를 보고하고
+  ρ > 0.10인 조합은 스테이지 & 목표 / 크루 정의에 조정 요청으로 기록한다.
+- **AC-23 [Perf]** — **GIVEN** 최악 근사 보드(빈칸 10개 흩어짐)와 6칸 모양만 가진 팀, **WHEN** headless 데스크톱에서 `refill`(구제 포함) 1,000회, **THEN** 1회 평균 < 0.5 ms.
 
 ## Open Questions
 
@@ -486,4 +507,5 @@ art-bible 원칙: 스티커북 질감, 색약 백업(무늬·모양) — 트레�
 | D10 | 시드 파생 | (stage_seed, 스트림, 인덱스) 해시로 뽑기마다 독립 시드 → 구제가 이후 순서를 흔들지 않음 | 판당 RNG 1개 순차 소비 — 구제·스크립트 여부로 이후 전체가 달라져 재현·테스트 어려움 |
 | D11 | 스테이지 오버라이드 | `tray_script`(모양 id 또는 `*`, team_slot/crew_id/null, 얼굴 고정/RNG/없음) + `after_script` GENERATE/LOOP, 스크립트엔 구제 없음 | 스테이지별 고정 시드만으로 튜토리얼 — 원하는 순서를 시드 탐색으로 찾아야 함; 스크립트에도 구제 — 설계 의도 훼손 |
 | D12 | 플레이어 조작 | MVP에 보관·리롤 없음, 유료 리롤 영구 금지 | 보관 칸 — 범위 증가·재검증 필요 (T2 이후 재검토 가능); 유료 리롤 — 안티 기둥 |
+| D14 | F5 예시 보드 (systems-designer 리뷰) | "빈칸 3칸 한 줄뿐" → "3칸 틈 + 외톨이 빈칸들" (결과 동일: F(냥이) = {I3_H}, F(삐약) = {D1, D2_H}) | 원래 문구 — 불변식 13(완성 줄 0)과 모순되는 보드 |
 | D13 | 재충전 크기 | `min(tray_size, budget)`, 남는 칸 빈 칸 | 제한 조각을 넘겨 3개 채우고 쓰지 못하게 — 놓을 수 없는 조각 표시는 혼란 |

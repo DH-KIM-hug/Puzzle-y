@@ -494,62 +494,78 @@ to produce per-asset visual descriptions, dimensions, and generation prompts fro
 
 ## Acceptance Criteria
 
-> *Specialist note*: `qa-lead` not consulted — Section H는 lean에서도 spawn 대상이지만 이 실행에는 Agent 도구가 없어 생략.
-> Review manually before production. Story type: **Logic** → 자동 단위 테스트 `tests/unit/chain_resolver/` (BLOCKING).
+> **qa-lead 검토 (2026-11-07, 사용자 위임 — 질문 없이 진행)**. 각 AC 앞 태그 = 스토리 유형 → 증거 위치·게이트:
+> `[Logic]` 자동 단위 테스트 `tests/unit/<system>/<system>_<feature>_test.gd` (BLOCKING) · `[Integration]` `tests/integration/<system>/` (BLOCKING) ·
+> `[UI]` 화면별 보존 스크린샷 `production/qa/evidence/` (BLOCKING) · `[Visual/Feel]` 보존 스크린샷/녹화 + 리드 서명 (BLOCKING) · `[Config]` 데이터 로드·스모크 (ADVISORY) ·
+> `[Perf]` `tests/performance/<system>/` — 시간 측정은 결정적이지 않아 CI 차단 스위트 밖에서 돌리고 임계값 초과 시 실패로 보고 (ADVISORY; 5개 스토리 유형 밖의 qa-lead 추가 분류) ·
+> `[Playtest]` `/playtest-report` 설계 검증 (ADVISORY — 스토리 완료 조건 아님).
+> **결정성**: 테스트 실행 중 보드를 무작위 생성하지 않는다. 픽스처는 커밋된 파일 `tests/fixtures/boards/*.txt`(보드 문자열)와 `tests/fixtures/parity/`이며,
+> "시드 판"은 오프라인에서 한 번 생성해 커밋한 파일이다. 모든 `stage_seed`·`rng_seed`는 픽스처에 적는다.
+> **불변식 (미리보기 = 런타임 = 점수)**은 하나의 테스트 `tests/integration/preview_parity/preview_parity_test.gd`가 소유하고 정의는 chain-preview AC-P02다 —
+> 다른 GDD의 같은 AC는 그 테스트의 단언 조각을 가리킬 뿐 별도 테스트를 만들지 않는다.
+> debug assert 검증은 gdUnit4 `assert_error(...)`로 포착한다 (포착되지 않으면 구현이 assert 직전 `push_error`를 내고 `is_push_error`로 확인).
+> 이 GDD의 테스트 파일: `tests/unit/chain_resolver/chain_resolver_{basic,order,fill,depth_cap,primitives,events,rng}_test.gd`.
 > 픽스처는 board-rules와 같은 보드 문자열 팩토리(`.` 빈칸, `#` 조각 칸, `E` 알, 얼굴은 크루 문자 `N` 냥이 · `G` 곰곰 · `P` 삐약)와
 > 테스트 전용 능력 표(냥이 `clear_cross(−1)`, 곰곰 `clear_area(1)`, 삐약 `lay_eggs_in_own_line(3, fuller, nearest)`)로 만든다 — 실제 크루
-> 데이터가 바뀌어도 해석기 테스트가 깨지지 않게 한다. 기대값은 이벤트 목록 스냅샷(골든 파일)으로 비교한다.
+> 데이터가 바뀌어도 해석기 테스트가 깨지지 않게 한다. 기대값은 커밋된 이벤트 목록 골든 파일(`tests/fixtures/parity/<fixture>.events.json`)과 비교한다.
+> 아래 AC-01·03·04·04b·07·08의 픽스처는 불변식 테스트(chain-preview AC-P02)의 명명 경계 픽스처로 재사용된다.
 
 **규칙 (Section C)**
 
-- **AC-01 (규칙 1·6, 줄 없음)** — **GIVEN** 빈 8×8 보드와 1칸 조각, **WHEN** `resolve`, **THEN** 이벤트는 `PLACED`, `CHAIN_END(chain_depth=0, waves=0)` 2개이고
+- **AC-01 [Logic] (규칙 1·6, 줄 없음)** — **GIVEN** 빈 8×8 보드와 1칸 조각, **WHEN** `resolve`, **THEN** 이벤트는 `PLACED`, `CHAIN_END(chain_depth=0, waves=0)` 2개이고
   `final_board`는 `place` 결과와 칸 단위로 같다.
-- **AC-02 (규칙 2, 순수성)** — **GIVEN** 보드 B, **WHEN** `resolve(B, …)`를 부르면, **THEN** B는 호출 전과 칸 단위로 같다. **AND** 같은 입력으로 두 번 부르면
+- **AC-02 [Logic] (규칙 2, 순수성)** — **GIVEN** 보드 B, **WHEN** `resolve(B, …)`를 부르면, **THEN** B는 호출 전과 칸 단위로 같다. **AND** 같은 입력으로 두 번 부르면
   `events`가 `seq`·필드까지 동일하다.
-- **AC-03 (규칙 6·9, 기본 도미노)** — **GIVEN** 7번 행이 (7,3)만 빈 보드, (7,5)에 냥이 얼굴, 5번 열의 (4,5)에 곰곰 얼굴(그 밖의 얼굴 없음),
+- **AC-03 [Logic] (규칙 6·9, 기본 도미노)** — **GIVEN** 7번 행이 (7,3)만 빈 보드, (7,5)에 냥이 얼굴, 5번 열의 (4,5)에 곰곰 얼굴(그 밖의 얼굴 없음),
   **WHEN** (7,3)에 1칸 조각을 놓으면, **THEN** 웨이브 0에서 7번 행이 지워지고 냥이 발동(stage 1) → 웨이브 1에서 십자 대상과 함께 (4,5) 곰곰이 지워져
-  발동(stage 2) → 웨이브 2에서 (4,5) 주변 3×3의 차 있는 칸이 지워지고 종료, `chain_depth = 2`, `waves = 3`.
-- **AC-04 (규칙 9, 동시 얼굴 순서)** — **GIVEN** 한 번에 지워지는 행에 얼굴 3개 (7,6) 곰곰, (7,1) 냥이, (7,4) 삐약, **WHEN** `resolve`, **THEN** `FACE_ACTIVATED.order_index`
+  발동(stage 2) → 웨이브 2에서 (4,5) 주변 3×3의 차 있는 칸이 지워지고 종료, `chain_depth = 2`, `waves = 3`. **AND** 전체 `events`가 골든 `domino_ng.events.json`과 같다.
+- **AC-04 [Logic] (규칙 9, 동시 얼굴 순서)** — **GIVEN** 한 번에 지워지는 행에 얼굴 3개 (7,6) 곰곰, (7,1) 냥이, (7,4) 삐약, **WHEN** `resolve`, **THEN** `FACE_ACTIVATED.order_index`
   1·2·3이 각각 (7,1)·(7,4)·(7,6)이고 세 얼굴 모두 `stage = 1`.
-- **AC-05 (규칙 15, CLEAR 스냅샷)** — **GIVEN** 같은 웨이브에서 냥이와 삐약이 발동하고 삐약의 알 칸이 냥이 십자 범위 안, **WHEN** `resolve`, **THEN** 그 알은
-  다음 웨이브 `CELLS_CLEARED`에 없다 (알이 줄을 완성하지 않는 한).
-- **AC-06 (규칙 16, FILL 순차)** — **GIVEN** 같은 행에서 지워지는 삐약 2마리, 그 행이 빈칸만 남음, **WHEN** `resolve`, **THEN** 앞 삐약(row-major)의 알 3개가 먼저 놓이고
+- **AC-04b [Logic] (규칙 9·15, 동시 얼굴 — 중복 발동 없음)** — **GIVEN** 행 7과 열 3이 함께 완성되고 교차 칸 (7,3)이 냥이 얼굴, **WHEN** `resolve`, **THEN** (7,3)의
+  `FACE_ACTIVATED`는 정확히 1개. **AND** 같은 웨이브에서 줄과 능력 범위에 동시에 든 얼굴(`by = BOTH`)도 정확히 1회 발동한다.
+- **AC-05 [Logic] (규칙 15, CLEAR 스냅샷)** — **GIVEN** 같은 웨이브에서 냥이와 삐약이 발동하고 삐약의 알 칸이 냥이 십자 범위 안, **WHEN** `resolve`, **THEN** 그 알은
+  다음 웨이브 `CELLS_CLEARED`에 없다 (알이 줄을 완성하는 경우는 AC-07).
+- **AC-06 [Logic] (규칙 16, FILL 순차)** — **GIVEN** 같은 행에서 지워지는 삐약 2마리, 그 행이 빈칸만 남음, **WHEN** `resolve`, **THEN** 앞 삐약(row-major)의 알 3개가 먼저 놓이고
   뒤 삐약은 남은 빈칸에서만 고르며 두 `ABILITY_EFFECT.cells`가 겹치지 않는다.
-- **AC-07 (규칙 12, 알 재점화)** — **GIVEN** 삐약 얼굴 (3,5), (3,5) 삐약이 5번 열 줄 지우기로 지워진 직후 3번 행의 빈칸이 (3,1)·(3,5) 2개뿐, (3,2)에 냥이 얼굴, **WHEN** 삐약 발동, **THEN** 알 2개로
-  3번 행이 완성되어 다음 웨이브의 `WAVE_BEGIN.causes`에 `LINE`이 있고 rows = [3], 그 웨이브에서 (3,2) 냥이가 stage 2로 발동한다.
-- **AC-08 (규칙 10, 상한 동작)** — **GIVEN** 연쇄 7단이 가능한 픽스처와 `depth_cap = 6`, **WHEN** `resolve`, **THEN** stage 1~6 발동, 웨이브 6의 얼굴은 모두
+- **AC-07 [Logic] (규칙 12, 알 재점화)** — **GIVEN** 삐약 얼굴 (3,5), (3,5) 삐약이 5번 열 줄 지우기로 지워진 직후 3번 행의 빈칸이 (3,1)·(3,5) 2개뿐, (3,2)에 냥이 얼굴,
+  **WHEN** 삐약 발동, **THEN** 알 2개로 3번 행이 완성되어 다음 웨이브의 `WAVE_BEGIN.causes`에 `LINE`이 있고 rows = [3], 그 웨이브에서 (3,2) 냥이가 stage 2로 발동한다.
+- **AC-08 [Logic] (규칙 10, 상한 도달)** — **GIVEN** 연쇄 7단이 가능한 픽스처와 `depth_cap = 6`, **WHEN** `resolve`, **THEN** stage 1~6 발동, 웨이브 6의 얼굴은 모두
   `FACE_FIZZLED(DEPTH_CAP)`, `DEPTH_CAP_REACHED` 정확히 1회, `CHAIN_END.cap_reached = true`, `final_board`에 완성 줄 0개.
-- **AC-09 (규칙 I, 상한은 데이터)** — **GIVEN** AC-08 픽스처, **WHEN** 데이터만 `depth_cap = 3`으로 바꾸면, **THEN** 코드 변경 없이 `chain_depth = 3`, 웨이브 3에서 피즐.
+  **AND** `depth_cap = 7`로 같은 픽스처를 풀면 `cap_reached = false`, `DEPTH_CAP_REACHED` 0회 (상한 직전 경계).
+- **AC-09 [Logic] (규칙 I, 상한은 데이터)** — **GIVEN** AC-08 픽스처, **WHEN** 데이터만 `depth_cap = 3`으로 바꾸면, **THEN** 코드 변경 없이 `chain_depth = 3`, 웨이브 3에서 피즐.
   **AND** `depth_cap = 0`이면 웨이브 0의 모든 얼굴이 피즐하고 `chain_depth = 0`.
-- **AC-10 (규칙 8, 종료)** — **GIVEN** 무작위 생성이 아닌 고정 픽스처 200개(얼굴 밀집 보드 포함), **WHEN** `resolve`, **THEN** 모두 `waves ≤ min(depth_cap, F_board) + 1`이고
+- **AC-10 [Logic] (규칙 8, 종료)** — **GIVEN** 커밋된 고정 픽스처 200개(얼굴 밀집 보드 포함), **WHEN** `resolve`, **THEN** 모두 `waves ≤ min(depth_cap, F_board) + 1`이고
   `max_waves_guard`에 닿지 않는다.
-- **AC-11 (규칙 14·18, 프리미티브 어휘·검증)** — **GIVEN** 얼굴 (0,0)에서 프리미티브 7종 각각, **WHEN** 대상을 계산하면, **THEN** 보드 밖 칸이 없고 F4 크기와 일치한다
+- **AC-11 [Logic] (규칙 14·18, 프리미티브 어휘·검증)** — **GIVEN** 얼굴 (0,0)에서 프리미티브 7종 각각, **WHEN** 대상을 계산하면, **THEN** 보드 밖 칸이 없고 F4 크기와 일치한다
   (모서리 `clear_area(1)` = 4칸). **AND** 알 수 없는 id, `radius = −1`, 빈 능력 목록 데이터는 로드가 거부되고 오류에 크루 id·위반 조건이 적힌다.
-- **AC-12 (규칙 19, 이벤트 스키마)** — **GIVEN** AC-03 픽스처, **WHEN** `events`를 검사하면, **THEN** `seq`는 0부터 빈틈없이 증가, 웨이브 안 순서가 규칙 19와 같고,
+- **AC-12 [Logic] (규칙 19, 이벤트 스키마)** — **GIVEN** AC-03 픽스처, **WHEN** `events`를 검사하면, **THEN** `seq`는 0부터 빈틈없이 증가, 웨이브 안 순서가 규칙 19와 같고,
   모든 `CELLS_CLEARED.cells`가 row-major, 모든 칸이 정확히 한 번만 지워진다(웨이브를 가로질러 중복 없음).
-- **AC-13 (규칙 21, 훅 기본값·주입)** — **GIVEN** 테스트 훅 `can_activate = false`(특정 modifier), **WHEN** 그 얼굴이 지워지면, **THEN** `FACE_FIZZLED(SUPPRESSED)`이고
-  해석기 코드 변경 없음. **AND** 훅을 주입하지 않으면 AC-03과 같은 결과.
+- **AC-13 [Logic] (규칙 21, 훅 기본값·주입)** — **GIVEN** 테스트 훅 `can_activate = false`(특정 modifier), **WHEN** 그 얼굴이 지워지면, **THEN** `FACE_FIZZLED(SUPPRESSED)`이고
+  해석기 코드 변경 없음. **AND** 훅을 주입하지 않으면 AC-03 골든과 같다.
+- **AC-23 [Logic] (규칙 6 전제, 무효 배치)** — **GIVEN** `can_place = false`인 (조각, 앵커) — 겹침 1건, 보드 밖 1건, **WHEN** `resolve`, **THEN** 각각 debug assert가 나고
+  입력 보드는 바뀌지 않는다 (해석기는 거짓 배치를 해석하지 않는다).
 
 **미리보기·RNG (TD 조건)**
 
-- **AC-14 (규칙 3, 미리보기 = 결과)** — **GIVEN** 고정 시드로 생성한 판 50개와 각 판의 모든 유효 배치, **WHEN** 미리보기 경로(보드 사본 + `resolve`)와 판 진행 흐름의
-  실제 배치 경로로 각각 해석하면, **THEN** `events`와 `final_board` 해시가 100% 일치한다. (통합 테스트 `tests/integration/chain_resolver/`)
-- **AC-15 (규칙 22–24, RNG)** — **GIVEN** AC-03 픽스처, **WHEN** `rng_seed`를 0, 1, 2³¹−1로 바꿔 해석하면, **THEN** MVP 프리미티브만 쓰는 한 결과가 모두 같다. **AND** 해석기 코드에
-  전역 `randi`/`randf`/`randomize` 호출이 없다 (정적 검사).
-- **AC-16 (규칙 25, 재계산 트리거)** — **GIVEN** 드래그 중 같은 앵커에 60프레임 머무름, **WHEN** 미리보기가 갱신되면, **THEN** `resolve` 호출은 1회. 앵커가 3번 바뀌면 3회.
-  (입력·미리보기 GDD와 공동 — provisional)
+- **AC-14 [Integration] (규칙 3, 미리보기 = 결과)** — 불변식 테스트 `tests/integration/preview_parity/preview_parity_test.gd`(정의: chain-preview AC-P02)의
+  **해석기 단언**: 모든 사례에서 미리보기 경로와 실제 커밋 경로의 `ChainResult`가 같다 — `events`(`seq`·모든 필드), `final_board` 칸 단위, `chain_depth`, `waves`, `cap_reached`.
+- **AC-15 [Logic] (규칙 22–24, RNG)** — **GIVEN** AC-03 픽스처, **WHEN** `rng_seed`를 0, 1, 2³¹−1로 바꿔 해석하면, **THEN** 결과가 모두 같다 (MVP 프리미티브는 RNG 미사용).
+  **AND** 해석기 소스에 전역 `randi`/`randf`/`randomize` 호출이 없다 (정적 검사, 같은 테스트 파일).
+- **AC-22 [Logic] (F7)** — **GIVEN** `stage_seed = 1201`, **WHEN** `seed_for(1201, 2)`를 미리보기 쪽과 커밋 쪽에서 각각 부르면, **THEN** 같은 값.
+  **AND** `placement_index` 0–99의 100개 값이 서로 다르다. (시드 RNG ADR 확정 후 해시 골든값 추가)
 
 **공식 (Section D)**
 
-- **AC-17 (F8, 성능)** — **GIVEN** 연쇄 6단 + 얼굴 밀집 최악 근사 픽스처, **WHEN** headless 데스크톱에서 `resolve` 1,000회, **THEN** 평균 ≤ 1ms/회. 저가 Android 실기기
-  측정은 T0 그레이박스에서 (목표: 앵커 변경 1회의 `can_place` + `resolve` + 미리보기 표시가 한 프레임 안).
-- **AC-18 (F1·F2·F3)** — **GIVEN** AC-03·AC-08 픽스처, **WHEN** 요약을 읽으면, **THEN** `chain_depth`는 2·6, `waves`는 3·7, 모든 `FACE_ACTIVATED.stage = wave + 1`.
-- **AC-19 (F4)** — **GIVEN** 빈 8×8 보드와 얼굴 (3,5), **WHEN** `clear_cross(−1)`, `clear_area(1)`, `clear_diagonals(−1)` 대상 크기를 구하면, **THEN** 15, 9, 12 (주대각 6 + 반대각 7 − 얼굴 1).
-- **AC-20 (F5)** — **GIVEN** 삐약 (3,5), 3번 행 빈칸 {(3,1),(3,5)}, 5번 열 빈칸 4개, **WHEN** `lay_eggs_in_own_line(3, fuller, nearest)`, **THEN** 알은 [(3,5), (3,1)] 순서로 2개.
+- **AC-17 [Perf] (F8, 성능)** — **GIVEN** 연쇄 6단 + 얼굴 밀집 최악 근사 픽스처, **WHEN** headless 데스크톱에서 `resolve` 1,000회, **THEN** 평균 ≤ 1ms/회.
+  실기기 프레임 예산은 chain-preview AC-P17이 소유한다.
+- **AC-18 [Logic] (F1·F2·F3)** — **GIVEN** AC-03·AC-08 픽스처, **WHEN** 요약을 읽으면, **THEN** `chain_depth`는 2·6, `waves`는 3·7, 모든 `FACE_ACTIVATED.stage = wave + 1`.
+- **AC-19 [Logic] (F4)** — **GIVEN** 빈 8×8 보드와 얼굴 (3,5), **WHEN** `clear_cross(−1)`, `clear_area(1)`, `clear_diagonals(−1)` 대상 크기를 구하면, **THEN** 15, 9, 12 (주대각 6 + 반대각 7 − 얼굴 1).
+- **AC-20 [Logic] (F5)** — **GIVEN** 삐약 (3,5), 3번 행 빈칸 {(3,1),(3,5)}, 5번 열 빈칸 4개, **WHEN** `lay_eggs_in_own_line(3, fuller, nearest)`, **THEN** 알은 [(3,5), (3,1)] 순서로 2개.
   **AND** 행·열 빈칸 수가 같으면 행을 고른다.
-- **AC-21 (F6 인계)** — **GIVEN** 웨이브 0·1·2에서 지워진 칸, **WHEN** 점수 시스템이 이벤트를 읽으면, **THEN** 각 칸의 깊이를 `CELLS_CLEARED.wave`로 정확히 얻는다
-  (해석기 이벤트에 점수 필드 없음). 점수 값 자체의 검증은 점수 GDD의 AC.
-- **AC-22 (F7)** — **GIVEN** 같은 `stage_seed`·`placement_index`, **WHEN** 미리보기와 실제 배치가 시드를 요청하면, **THEN** 같은 `rng_seed`를 받는다. (시드 RNG ADR 확정 후 갱신)
+- **AC-21 [Logic] (F6 인계)** — **GIVEN** AC-03·AC-08 픽스처의 `events`, **WHEN** 검사하면, **THEN** 모든 `CELLS_CLEARED`에 정수 `wave`가 있고 그 값이 직전 `WAVE_BEGIN.wave`와 같다.
+  **AND** 이벤트 스키마에 점수 필드가 없다. 점수 값 검증은 scoring AC.
+
+> 삭제: 이전 AC-16(재계산 트리거 횟수)은 chain-preview AC-P13·placement-input AC-07과 중복 — 소유는 chain-preview AC-P13.
 
 ## Open Questions
 
@@ -557,7 +573,7 @@ to produce per-asset visual descriptions, dimensions, and generation prompts fro
 |---|---|---|---|
 | Q1 | 깊이 상한 6이 실제로 자주 닿는가, 닿으면 피즐 얼굴이 "손해"로 느껴지는가 — **부분 해소**: 점수 쪽은 scoring D6(`fizzle_points` = 0 노브)로 정함. 빈도 추정(systems-designer 리뷰, 기본 팀·무작위 배치): 줄을 지운 배치 중 상한 6 도달 ≈ 1–2% — 드묾. 체감은 T0 플레이테스트 | systems-designer · 점수 GDD | T0 플레이테스트 |
 | Q2 | 동시 얼굴 순서: row-major vs "트리거에 가까운 순"(연출상 더 자연스러울 수 있음). MVP는 row-major 고정 (D3) | game-designer · 연출 GDD | `/design-system chain-presentation` |
-| Q3 | 크루 6명을 MVP 어휘 7종으로 "새 동작" 6개로 만들 수 있는가 — 부족하면 새 프리미티브 추가 (예: `clear_crew_tiles`, `swap`은 계약 17상 금지) | game-designer · 크루 정의 GDD | `/design-system crew-definition` |
+| Q3 | ~~크루 6명을 MVP 어휘 7종으로 "새 동작" 6개로 만들 수 있는가~~ — **해소**: crew-definition 규칙 6 (기존 7종만으로 6명 구성) | game-designer · 크루 정의 GDD | 해소 (crew-definition) |
 | Q4 | RNG 프리미티브를 허용할 것인가 (시드로 미리보기에 보이면 기둥 3 위반이 아닌가) | creative-director · game-designer | T2 크루 확장 전 |
 | Q5 | 이벤트 목록을 리플레이/버그 리포트용으로 저장할 것인가 (결정적이므로 배치 기록만으로 재현 가능) | lead-programmer | 세이브 / ADR |
 | Q6 | systems-index에 스테이지 & 목표 → 연쇄 해석기 직접 의존 추가 (`chain_depth`·지워진 칸 사용) | producer · `/map-systems` | 스테이지 GDD 작성 전 |
@@ -579,3 +595,5 @@ to produce per-asset visual descriptions, dimensions, and generation prompts fro
 | D10 | 방해물 확장 | 훅 3종(`pre_clear`, `can_activate`, `target_filter`) + 기본값 | 칸 종류별 분기 — 방해물마다 해석기 수정 |
 | D11 | 능력 표 범위 | 팀이 아니라 크루 레지스트리 전체 | 팀 3명만 — 스테이지가 팀 밖 크루 얼굴을 미리 깔 수 없음 |
 | D12 | 발동했지만 효과 없는 얼굴 | `chain_depth`에 셈 (얼굴은 발동했고 플레이어가 컷인을 봄) | 세지 않음 — 화면의 "연쇄 N"과 요약이 어긋남 |
+| D13 | 미리보기 배지 숫자 (systems-designer 리뷰, chain-preview Q1 해소) | 배지 = `stage`, `order_index`는 연출 순서·`source_order` 전용 — 규칙 9·이벤트 표·규칙 26 문구 수정 | 배지 = `order_index` — 동시 발동 얼굴에 1·2·3이 붙어 "3단 연쇄"로 오독 (chain-preview D3) |
+| D14 | F6 사본 정렬 (systems-designer 리뷰, scoring Q6 해소) | scoring F2의 정수식·변수명(`depth_step_pct`, 상한 `depth_mult_max_pct`)으로 교체 | float `depth_step_bonus` 유지 — 소유 문서와 이름·상한 불일치 |

@@ -210,7 +210,7 @@ The preview_frame_cost formula is defined as:
 
 The banner_tier formula is defined as:
 
-`banner(result) = NONE if chain_depth = 0 · ABILITY if chain_depth = 1 · CHAIN(N) if 2 ≤ chain_depth ∧ ¬cap_reached · CHAIN_MAX(N) if cap_reached`
+`banner(result) = NONE if chain_depth = 0 · CHAIN_MAX(N) if chain_depth ≥ 1 ∧ cap_reached · ABILITY if chain_depth = 1 · CHAIN(N) if chain_depth ≥ 2` (위에서부터 먼저 맞는 것 — `depth_cap = 0`이면 `cap_reached`여도 `NONE`: "연쇄 0 최대!"는 거짓, chain-presentation Edge Cases와 같음; `depth_cap = 1`이면 `CHAIN_MAX`가 `ABILITY`보다 우선. D11)
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
@@ -411,73 +411,90 @@ to produce per-asset visual descriptions, dimensions, and generation prompts fro
 
 ## Acceptance Criteria
 
-> *Specialist note*: `qa-lead` not consulted — Section H는 lean에서도 spawn 대상이지만 이 실행에는 Agent 도구가 없어 생략. Review manually before production.
-> Story types: 모델·트리거·일치 = **Logic/Integration** → `tests/unit/chain_preview/`, `tests/integration/chain_preview/` (BLOCKING);
-> 화면 = **UI/Visual** → `production/qa/evidence/` 스크린샷 보관 (BLOCKING). 픽스처는 chain-resolver AC와 같은 보드 문자열 팩토리·테스트 전용 능력 표를 쓴다.
-> 표시 검증은 렌더 픽셀이 아니라 `PreviewModel`(규칙 3)을 비교한다 — 픽셀은 스크린샷 AC만.
+> **qa-lead 검토 (2026-11-07, 사용자 위임 — 질문 없이 진행)**. 각 AC 앞 태그 = 스토리 유형 → 증거 위치·게이트:
+> `[Logic]` 자동 단위 테스트 `tests/unit/<system>/<system>_<feature>_test.gd` (BLOCKING) · `[Integration]` `tests/integration/<system>/` (BLOCKING) ·
+> `[UI]` 화면별 보존 스크린샷 `production/qa/evidence/` (BLOCKING) · `[Visual/Feel]` 보존 스크린샷/녹화 + 리드 서명 (BLOCKING) · `[Config]` 데이터 로드·스모크 (ADVISORY) ·
+> `[Perf]` `tests/performance/<system>/` — 시간 측정은 결정적이지 않아 CI 차단 스위트 밖에서 돌리고 임계값 초과 시 실패로 보고 (ADVISORY; 5개 스토리 유형 밖의 qa-lead 추가 분류) ·
+> `[Playtest]` `/playtest-report` 설계 검증 (ADVISORY — 스토리 완료 조건 아님).
+> **결정성**: 테스트 실행 중 보드를 무작위 생성하지 않는다. 픽스처는 커밋된 파일 `tests/fixtures/boards/*.txt`(보드 문자열)와 `tests/fixtures/parity/`이며,
+> "시드 판"은 오프라인에서 한 번 생성해 커밋한 파일이다. 모든 `stage_seed`·`rng_seed`는 픽스처에 적는다.
+> **불변식 (미리보기 = 런타임 = 점수)**은 하나의 테스트 `tests/integration/preview_parity/preview_parity_test.gd`가 소유하고 정의는 chain-preview AC-P02다 —
+> 다른 GDD의 같은 AC는 그 테스트의 단언 조각을 가리킬 뿐 별도 테스트를 만들지 않는다.
+> debug assert 검증은 gdUnit4 `assert_error(...)`로 포착한다 (포착되지 않으면 구현이 assert 직전 `push_error`를 내고 `is_push_error`로 확인).
+> 이 GDD의 테스트 파일: `tests/unit/chain_preview/chain_preview_{source,model,trigger,lifecycle}_test.gd`,
+> `tests/integration/preview_parity/preview_parity_test.gd`(불변식 — 이 GDD가 소유), `tests/integration/chain_preview/chain_preview_pool_test.gd`.
+> 표시 검증은 렌더 픽셀이 아니라 `PreviewModel`(규칙 3)을 비교한다 — 픽셀은 `[UI]` AC만. 증거: `production/qa/evidence/chain-preview/`.
 
-**미리보기 == 런타임 (기둥 3)**
+**미리보기 == 런타임 == 점수 (기둥 3 — 불변식)**
 
-- **AC-P01 (규칙 1·2, 단일 구현)** — **GIVEN** 미리보기 모듈 소스, **WHEN** 정적 검사하면, **THEN** board-rules 판정 함수(`full_lines`, `line_cells`, `clear_cells`, `fill_cells`
-  등)·프리미티브 구현을 직접 참조하지 않고 해석기 호출은 `resolve` 하나뿐이다. **AND** `score_placement` 외 점수 계산 코드가 없다.
-- **AC-P02 (규칙 1·4, 표시 = 결과)** — **GIVEN** chain-resolver AC-14의 고정 시드 판 50개와 각 판의 모든 유효 (조각, 앵커), **WHEN** 미리보기 경로로 만든 `PreviewModel`과
-  판 진행 흐름 실제 배치 경로의 `ChainResult`로 만든 `PreviewModel`을 비교하면, **THEN** 지워질 칸(웨이브 번호 포함)·배지(칸, 숫자/종류)·예상 알(칸, 순서)·배너 단계가
-  100% 같다. **AND** 각 칸이 실제로 지워진 칸 집합과 지워질 칸 윤곽 집합이 정확히 같다(누락·추가 0). (통합 테스트)
-- **AC-P03 (규칙 13, 예상 점수 = 실제 점수)** — **GIVEN** AC-P02 픽스처와 `show_predicted_score = true`, **WHEN** 미리보기의 예상 총점과 커밋 후 `stage_score` 증가분을 비교하면,
-  **THEN** 1점도 다르지 않다 (scoring AC-S12와 공동).
-- **AC-P04 (규칙 9, 디버그 불일치 감지)** — **GIVEN** 테스트용으로 미리보기에 다른 `rng_seed`를 주입한 랜덤 프리미티브 테스트 픽스처, **WHEN** 커밋하면, **THEN** 디버그 빌드에서
-  `PREVIEW_MISMATCH`가 발생한다. **AND** 정상 `ctx`에서는 AC-P02 픽스처 전체에서 0회.
-- **AC-P05 (규칙 8, 캐시 무해)** — **GIVEN** 같은 드래그 경로(앵커 수열 20개, 반복 포함), **WHEN** `preview_cache_size` 0과 16으로 각각 재생하면, **THEN** 매 단계 `PreviewModel`이
-  같다. **AND** 커밋으로 `board_version`이 바뀐 뒤 같은 앵커를 밟으면 캐시를 쓰지 않고 새 보드로 `resolve`한다.
+- **AC-P01 [Logic] (규칙 1·2, 단일 구현)** — **GIVEN** 미리보기 모듈 소스, **WHEN** 정적 검사하면, **THEN** board-rules 판정 함수(`full_lines`, `line_cells`, `clear_cells`, `fill_cells`)·
+  프리미티브 구현을 직접 참조하지 않고 해석기 호출은 `resolve` 하나뿐이다. **AND** `score_placement` 외 점수 계산 코드가 없다.
+- **AC-P02 [Integration] (규칙 1·4, 불변식 테스트 정의)** — `tests/integration/preview_parity/preview_parity_test.gd`
+  - **GIVEN** 커밋된 사례 목록 `tests/fixtures/parity/cases.json`. 사례 = (보드 파일, 조각 인스턴스, 앵커, `stage_seed`, `placement_index`, `depth_cap`), `rng_seed = seed_for(stage_seed, placement_index)`(F7)를
+    두 경로에 같은 값으로 쓴다. 구성: (i) 명명 경계 픽스처 — 줄 없음(chain-resolver AC-01), 도미노(AC-03), 한 행 동시 얼굴 3개(AC-04), 행·열 교차 얼굴(AC-04b),
+    알 재점화(AC-07), 상한 도달 `depth_cap = 6`(AC-08), `depth_cap = 0`, 64칸 전부 지움, MVP 크루 6명 각 1회 이상 발동; (ii) 오프라인에서 `stage_seed` 1–50으로 한 번 생성해
+    커밋한 판 50개 × 트레이 3조각 × `can_place = true`인 모든 앵커(row-major 순서). 테스트는 보드를 생성하지 않는다.
+  - **WHEN** 각 사례를 (A) 미리보기 경로 — 공개 진입점으로 보드 사본에서 `PreviewModel`을 만들고(`show_predicted_score = true`) — 와 (B) 실제 커밋 경로 — 게임이 쓰는 커밋 함수
+    (판 진행 흐름 작성 전에는 같은 함수를 부르는 `CommitHarness`)로 라이브 보드에 `resolve` → `final_board` 커밋 → `score_placement` → `stage_score` 가산 — 로 실행하면,
+  - **THEN** (1) `ChainResult` A == B: `events` 전 필드, `final_board` 칸 단위, `chain_depth`·`waves`·`cap_reached` (chain-resolver AC-14);
+    (2) `PreviewModel` A == `build_preview_model(ChainResult B)`: 지워질 칸(웨이브 번호 포함)·배지(칸, 숫자/종류)·예상 알(칸, 순서)·배너 단계, 그리고 윤곽 칸 집합 == B에서 실제 지워진 칸 집합(누락·추가 0);
+    (3) `ScoreBreakdown` A == B == `stage_score` 증가분 == 미리보기 예상 총점 (scoring AC-S12, AC-P03). 실패 메시지는 사례 id와 처음 다른 필드를 적는다.
+  - **AND** 전체 실행을 두 번 하면 결과가 같다. **AND** 도입 시 AC-P04의 시드 불일치 주입으로 이 테스트가 실패하는 것을 한 번 확인한다 (보지 못한 실패는 게이트가 아니다).
+- **AC-P03 [Integration] (규칙 13, 예상 점수 = 실제 점수)** — AC-P02의 단언 (3). 별도 테스트 없음.
+- **AC-P04 [Logic] (규칙 9, 디버그 불일치 감지)** — **GIVEN** 테스트 전용 랜덤 프리미티브 픽스처와 미리보기에만 다른 `rng_seed`를 주입, **WHEN** 커밋하면, **THEN** debug 빌드에서
+  `PREVIEW_MISMATCH`가 1회 발생한다. **AND** 정상 `ctx`에서는 AC-P02 사례 전체에서 0회.
+- **AC-P05 [Logic] (규칙 8, 캐시 무해)** — **GIVEN** 같은 드래그 경로(앵커 수열 20개, 반복 포함), **WHEN** `preview_cache_size` 0과 16으로 각각 재생하면, **THEN** 매 단계 `PreviewModel`이 같다.
+  **AND** 커밋으로 `board_version`이 바뀐 뒤 같은 앵커를 밟으면 캐시를 쓰지 않고 새 보드로 `resolve`한다(호출 1회 증가).
 
 **모델 규칙**
 
-- **AC-P06 (규칙 5, 배지 = stage)** — **GIVEN** chain-resolver AC-03 픽스처(냥이 → 곰곰), **WHEN** 모델을 만들면, **THEN** (7,5) 냥이 배지 1, (4,5) 곰곰 배지 2, 배너 `CHAIN(2)`
-  "연쇄 2 예상!". **AND** AC-04 픽스처(한 행 얼굴 3개)에서 세 배지가 모두 1.
-- **AC-P07 (F3, 배너 단계)** — **GIVEN** `chain_depth` 0·1·3과 상한 도달(AC-08 픽스처), **WHEN** 배너를 구하면, **THEN** 각각 `NONE`·`ABILITY`·`CHAIN(3)`·`CHAIN_MAX(6)`.
-  **AND** `preview_detail = NO_BANNER`이면 모두 `NONE`.
-- **AC-P08 (피즐·알)** — **GIVEN** AC-08 픽스처, **WHEN** 모델을 만들면, **THEN** 웨이브 6의 얼굴은 숫자 배지가 아니라 졸음 배지이고 숫자 배지 최대값 = 6. **GIVEN** AC-07
-  픽스처(알 재점화), **THEN** 예상 알 2개가 `ABILITY_EFFECT.cells` 순서와 같고, 알이 완성한 3번 행 칸은 다음 웨이브 번호로, (3,2) 냥이는 배지 2로 표시된다.
-- **AC-P09 (규칙 13, 점수 기본 숨김)** — **GIVEN** 기본 설정, **WHEN** 어떤 미리보기든, **THEN** 모델에 점수 필드가 없고 `score_placement` 호출 0회.
-- **AC-P10 (규칙 14, 비교 도구 없음)** — **GIVEN** 드래그 중, **WHEN** 모델을 검사하면, **THEN** 현재 (조각, 앵커) 하나의 결과만 담고, 다른 앵커·다른 트레이 조각의 결과는 없다.
-- **AC-P11 (규칙 17, 숨김은 표시됨)** — **GIVEN** `preview_detail = FIRST_STAGE_ONLY`와 AC-03 픽스처, **WHEN** 모델을 만들면, **THEN** 냥이 배지 1, 곰곰 칸은 "…" 배지,
-  웨이브 2 윤곽 없음, 배너 `ABILITY`. 숨긴 요소 위치에 거짓 요소(빈 표시·다른 숫자)가 없다.
+- **AC-P06 [Logic] (규칙 5, 배지 = stage)** — **GIVEN** chain-resolver AC-03 픽스처, **WHEN** 모델을 만들면, **THEN** (7,5) 냥이 배지 1, (4,5) 곰곰 배지 2, 배너 `CHAIN(2)` "연쇄 2 예상!".
+  **AND** AC-04 픽스처(한 행 동시 얼굴 3개)에서 세 배지가 모두 1.
+- **AC-P07 [Logic] (F3, 배너 단계)** — **GIVEN** `chain_depth` 0·1·3과 상한 도달(AC-08 픽스처), **WHEN** 배너를 구하면, **THEN** 각각 `NONE`·`ABILITY`·`CHAIN(3)`·`CHAIN_MAX(6)`.
+  **AND** `depth_cap = 0` 픽스처는 `NONE`. **AND** `preview_detail = NO_BANNER`이면 모두 `NONE`.
+- **AC-P08 [Logic] (상한 피즐·알)** — **GIVEN** AC-08 픽스처, **WHEN** 모델을 만들면, **THEN** 웨이브 6의 얼굴은 졸음 배지이고 숫자 배지 최대값 = 6. **AND GIVEN** AC-07 픽스처(알 재점화),
+  **THEN** 예상 알 2개가 `ABILITY_EFFECT.cells` 순서와 같고, 알이 완성한 3번 행 칸은 다음 웨이브 번호로, (3,2) 냥이는 배지 2로 표시된다.
+- **AC-P09 [Logic] (규칙 13, 점수 기본 숨김)** — **GIVEN** 기본 설정, **WHEN** AC-P02 명명 픽스처 각각의 모델을 만들면, **THEN** 모델에 점수 필드가 없고 `score_placement` 호출 0회.
+- **AC-P10 [Logic] (규칙 14, 비교 도구 없음)** — **GIVEN** 드래그 중, **WHEN** 모델을 검사하면, **THEN** 현재 (조각, 앵커) 하나의 결과만 담는다.
+- **AC-P11 [Logic] (규칙 17, 숨김은 표시됨)** — **GIVEN** `preview_detail = FIRST_STAGE_ONLY`와 AC-03 픽스처, **WHEN** 모델을 만들면, **THEN** 냥이 배지 1, 곰곰 칸 "…" 배지,
+  웨이브 2 윤곽 없음, 배너 `ABILITY`. 숨긴 요소 자리에 다른 요소(빈 배지·다른 숫자)가 없다.
 
 **트리거·생명주기**
 
-- **AC-P13 (규칙 6, 재계산 횟수)** — **GIVEN** 드래그 중 같은 유효 앵커에 60프레임, **WHEN** 미리보기가 갱신되면, **THEN** `resolve` 1회 (chain-resolver AC-16과 공동).
-  **AND** 무효 앵커 사이 이동 30프레임 동안 0회, 유효 앵커 3번 변경 시 (캐시 비우고) 3회, (3,2)→(3,3)→(3,2)→(3,3) 경로는 캐시 16에서 2회 (F6).
-- **AC-P14 (규칙 7, 같은 프레임)** — **GIVEN** 녹화한 입력 재생, **WHEN** 앵커가 바뀌는 프레임을 검사하면, **THEN** 같은 프레임에 고스트 위치와 `PreviewModel` 앵커가 같다 (지연 0프레임).
-- **AC-P15 (규칙 10·11, 지우기)** — **GIVEN** `SHOWING`, **WHEN** `anchor_changed(null)` / `drag_ended(RETURNED)` / `drag_ended(CANCELLED)` / 입력 `LOCKED`이면, **THEN** 같은 프레임에 `HIDDEN`.
-  `drag_ended(COMMITTED)`이면 0.06s 페이드 후 `HIDDEN`(모션 줄이기 시 0s). 어느 경우든 보드·점수·트레이가 바뀌지 않는다(규칙 12).
+- **AC-P13 [Logic] (규칙 6·F6, `resolve` 호출 수 소유)** — **GIVEN** 드래그 중 같은 유효 앵커에 60프레임, **WHEN** 미리보기가 갱신되면, **THEN** `resolve` 1회.
+  **AND** 무효 앵커 사이 이동 30프레임 동안 0회, 유효 앵커 3번 변경 시(캐시 0) 3회, (3,2)→(3,3)→(3,2)→(3,3) 경로는 캐시 16에서 2회.
+- **AC-P14 [Logic] (규칙 7, 같은 프레임)** — **GIVEN** 커밋된 입력 이벤트 녹화 파일 재생, **WHEN** 앵커가 바뀌는 프레임을 검사하면, **THEN** 같은 프레임에 고스트 앵커와 `PreviewModel` 앵커가 같다.
+- **AC-P15 [Logic] (규칙 10–12, 지우기)** — **GIVEN** `SHOWING`, **WHEN** `anchor_changed(null)` / `drag_ended(RETURNED)` / `drag_ended(CANCELLED)` / 입력 `LOCKED`이면, **THEN** 같은 프레임에 `HIDDEN`.
+  **AND** `drag_ended(COMMITTED)`이면 0.06 s(모션 줄이기 시 0 s) 뒤 `HIDDEN`. 어느 경우든 보드·점수·트레이 스냅샷이 바뀌지 않는다. (무효 놓기 자체는 placement-input AC-11.)
 
 **성능 (F2·F5)**
 
-- **AC-P16 (F2, 데스크톱)** — **GIVEN** 연쇄 6단 + 얼굴 밀집 최악 근사 픽스처, **WHEN** headless 데스크톱에서 `resolve` + `build_preview_model` 1,000회, **THEN** 평균 ≤ 1.2ms/회.
-- **AC-P17 (F2, 실기기)** — **GIVEN** 저가 Android 기준 기기(T0 그레이박스, 기기는 플랫폼 & 화면 GDD가 지정), **WHEN** 최악 픽스처에서 앵커를 매 프레임 바꾸며 10초 쓸면,
-  **THEN** 미리보기 몫 ≤ 4ms/프레임, 프레임 드롭(> 16.7ms) 0회, 앵커가 그대로인 프레임의 미리보기 몫 ≤ 0.5ms. 측정 로그를 `production/qa/evidence/`에 보관.
-- **AC-P18 (F5, 요소 풀)** — **GIVEN** 판 64칸이 모두 지워지는 픽스처, **WHEN** 표시하면, **THEN** 요소 수 ≤ 128이고 드래그 중 노드·리소스 새 할당 0회.
+- **AC-P16 [Perf] (F2, 데스크톱)** — **GIVEN** 연쇄 6단 + 얼굴 밀집 최악 근사 픽스처, **WHEN** headless 데스크톱에서 `resolve` + `build_preview_model` 1,000회, **THEN** 평균 ≤ 1.2ms/회.
+- **AC-P17 [Perf] (F2, 실기기 — 프레임 예산 소유)** — **GIVEN** 저가 Android 기준 기기(T0 그레이박스), **WHEN** 최악 픽스처에서 앵커를 매 프레임 바꾸며 10초 쓸면, **THEN** 미리보기 몫 ≤ 4ms/프레임,
+  프레임 > 16.7ms 0회, 앵커가 그대로인 프레임의 미리보기 몫 ≤ 0.5ms. 측정 로그 보관.
+- **AC-P18 [Integration] (F5, 요소 풀)** — **GIVEN** 64칸이 모두 지워지는 픽스처, **WHEN** 표시 장면에서 앵커를 20번 바꾸면, **THEN** 요소 수 ≤ 128이고
+  첫 표시 뒤 `Performance.OBJECT_NODE_COUNT`가 늘지 않는다.
 
-**가독성 (UI/Visual — 스크린샷 증거)**
+**가독성**
 
-- **AC-P12 (규칙 18–23, 판독)** — **GIVEN** 1080×2400과 720×1600 세로 화면에서 연쇄 3 미리보기(들고 있는 조각 자신의 얼굴 발동 포함), **WHEN** 스크린샷을 찍으면, **THEN**
-  배지 지름이 F1 값 이상, 배지가 끌리는 조각 위에 보이고, 배너가 판 칸과 겹치지 않으며, 배지가 얼굴 이목구비(칸 중앙 50%)를 가리지 않는다. 내부 플레이테스터가 0.5초
-  안에 "연쇄 몇?"에 답한다.
-- **AC-P19 (규칙 19, 색약)** — **GIVEN** AC-P12 화면, **WHEN** 그레이스케일과 제1·2·3색맹 시뮬레이션을 적용하면, **THEN** 지워질 칸·배지·예상 알을 모두 구분할 수 있고
-  얼굴 칸을 1초 안에 모두 찾는다 (art bible 4절 검수 기준). 스크린샷 4장 보관.
-- **AC-P20 (규칙 20, 모션 줄이기)** — **GIVEN** 모션 줄이기 켬, **WHEN** 연쇄 3 미리보기, **THEN** 윤곽이 움직이지 않고(그림자 2px 고정) 배지·배너·알은 같다.
+- **AC-P12 [UI] (규칙 18–23)** — **GIVEN** 1080×2400과 720×1600 세로 화면에서 연쇄 3 미리보기(들고 있는 조각 자신의 얼굴 발동 포함), **WHEN** 스크린샷을 찍으면, **THEN** 배지 지름 ≥ F1 값,
+  배지가 끌리는 조각 위에 보이고, 배너가 판 칸과 겹치지 않으며, 배지가 얼굴 칸 중앙 50%를 가리지 않는다. 화면당 1장 보관.
+- **AC-P19 [UI] (규칙 19, 색약)** — **GIVEN** AC-P12 화면, **WHEN** 그레이스케일과 제1·2·3색맹 시뮬레이션을 적용하면, **THEN** 지워질 칸·배지·예상 알이 서로 다른 모양/무늬로 구분된다
+  (art bible 4절 검수 기준). 스크린샷 4장 보관.
+- **AC-P20 [Logic + UI] (규칙 20, 모션 줄이기)** — **GIVEN** 모션 줄이기 켬, **WHEN** 연쇄 3 미리보기, **THEN** 윤곽 애니메이션 큐 0개(그림자 2px 고정)이고 배지·배너·알 모델은 꺼짐과 같다.
+  스크린샷 1장 보관.
 
-**퇴화 위험 관찰 (플레이테스트 — 자동화 대상 아님)**
+**설계 검증 (플레이테스트 — 자동화 대상 아님)**
 
-- **AC-P21 (규칙 D)** — **GIVEN** 외부 테스터 ≥ 3명, 스테이지 3개(점수·특정 칸·연쇄 N 목표 각 1), **WHEN** 플레이를 관찰·인터뷰하면, **THEN** (a) "얼굴이 스위치"를 설명 없이
-  말로 설명한다, (b) 특정 칸 목표 스테이지에서 최대 연쇄가 아닌 자리를 의도적으로 고른 배치가 1회 이상 관찰된다. 실패 시 Q3의 `preview_detail` 실험으로 간다.
-  `/playtest-report`로 기록.
+- **AC-P21 [Playtest] (규칙 D, 퇴화 위험)** — **GIVEN** 외부 테스터 ≥ 3명, 스테이지 3개(점수·특정 칸·연쇄 N 목표 각 1), **WHEN** 관찰·인터뷰하면, **THEN** (a) "얼굴이 스위치"를 설명 없이 말한다,
+  (b) 특정 칸 목표 스테이지에서 최대 연쇄가 아닌 자리를 의도적으로 고른 배치가 1회 이상 관찰된다. **AND** 내부 테스터가 AC-P12 화면에서 0.5초 안에 "연쇄 몇?"에 답한다.
+  실패 시 Q3의 `preview_detail` 실험. `/playtest-report`로 기록.
 
 ## Open Questions
 
 | # | 질문 | 담당 | 해결 시점 |
 |---|---|---|---|
-| Q1 | chain-resolver 규칙 9는 "미리보기의 발동 순서 번호가 `order_index`를 그대로 쓴다"고 적었다. 이 문서는 배지 숫자를 `stage`로 정했다 (D3). chain-resolver 문구를 "`stage`(배지), `order_index`(연출 순서)"로 고칠지 | game-designer · chain-resolver 소유자 | `/design-review chain-resolver` 또는 `/consistency-check` |
+| Q1 | ~~chain-resolver 규칙 9 문구(`order_index` = 미리보기 번호)와 D3(`stage`) 충돌~~ — **해소** (systems-designer 리뷰): chain-resolver 규칙 9·이벤트 표·규칙 26을 "`stage`(배지), `order_index`(연출 순서)"로 수정 (chain-resolver D13) | — | 해소 |
 | Q2 | 스테이지 목표 표식을 미리보기에 얹을지 (`goal_markers` 훅: 목표 칸이 지워질 칸에 들면 강조, 연쇄 N 목표 달성 시 배너에 ✓) — 트레이드오프를 보이게 하지만 정보량이 는다 | game-designer · 스테이지 GDD | `/design-system stage-goals` |
 | Q3 | 외부 플레이테스트에서 숫자만 쫓는다면: `preview_detail` `NO_BANNER`/`FIRST_STAGE_ONLY` 비교 실험, 또는 후반 스테이지 기본값 변경 — 단 기둥 3("놓기 전에 결과를 본다")과의 긴장은 creative-director 판단 | creative-director · game-designer | T0/T1 외부 플레이테스트 (AC-P21) |
 | Q4 | systems-index: 판 진행 흐름 #11 Depends On에 연쇄 미리보기 추가(판 흐름이 `ctx` 주입), 연쇄 미리보기 #8 Depends On에 점수(Soft) 추가 | producer · `/map-systems` | 판 진행 흐름 GDD 작성 전 |
@@ -499,3 +516,4 @@ to produce per-asset visual descriptions, dimensions, and generation prompts fro
 | D8 | 커밋 시 결과 재사용 | 판 진행 흐름이 독립 `resolve` + 디버그 비교 | 미리보기 결과를 그대로 커밋 — 빠르지만 불일치 버그를 숨김(비교 대상이 사라짐) |
 | D9 | 오디오 | 미리보기 무음 | 앵커마다 큐 — 쓸어 보기가 시끄러움 |
 | D10 | 미리보기 끄기 설정 | 두지 않음 | 접근성 옵션으로 제공 — 규칙 학습 수단이자 기둥 3 핵심이라 끄면 게임이 다른 게임이 됨 |
+| D11 | F3 배너 우선순위 (systems-designer 리뷰) | `chain_depth = 0` → `NONE`이 `cap_reached`보다 우선, `CHAIN_MAX`는 `ABILITY`보다 우선 | 원래 식 — `depth_cap = 0`에서 "연쇄 0 최대!", `depth_cap = 1`에서 `ABILITY`/`CHAIN_MAX` 동시 성립 |

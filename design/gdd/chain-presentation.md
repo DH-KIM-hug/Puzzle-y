@@ -87,7 +87,7 @@
 11. **`FACE_ACTIVATED`** — 얼굴은 떼어짐 구간 시작에 다른 칸보다 **더 높이** 들린다(그림자 10px, 스케일 1.15, 발동 표정으로 교체).
     `face_lead` 뒤 능력 효과가 시작되고(크루 정의 Game Feel "발동 → 효과 시작 ≤ 0.15s"), 효과가 끝나면 얼굴 스티커는 판에서 떨어져
     **화면 가장자리 컷인 자리로 날아가 "착" 다시 붙는다** — art-bible의 "떼어짐 → 효과 → 다시 붙음" 문법을 얼굴이 완성한다.
-    같은 웨이브의 얼굴은 `order_index` 순서로 `face_gap`씩 엇갈려 들리고 효과도 같은 간격으로 시작한다 (기둥 3: 미리보기 번호와 같은 순서).
+    같은 웨이브의 얼굴은 `order_index` 순서로 `face_gap`씩 엇갈려 들리고 효과도 같은 간격으로 시작한다 (기둥 3: 미리보기 배지는 `stage`라 같은 웨이브 얼굴이 같은 숫자 — 웨이브 안 순서는 이 엇갈림으로만 보인다; chain-preview 규칙 5, chain-resolver D13).
     컷인 규칙은 규칙 14.
 12. **`ABILITY_EFFECT`** — 그 얼굴의 들썩 + `face_lead`에 시작해 `effect_spread(k)`(F2) 창 안에서 재생한다 (떼어짐 구간 후반 ~ 효과 구간).
     - `CLEAR`: 크루별 효과 그림(냥이 할퀴기 선, 곰곰 포옹 원 등 — 크루 정의 Visual/Audio)이 얼굴 칸에서 대상 칸까지 `effect_spread(k)` 동안
@@ -517,61 +517,71 @@ art-bible 4절(잉크/스티커 백 13.2:1). 탭 건너뛰기 안내("탭하면 
 
 ## Acceptance Criteria
 
-> *Specialist note*: `qa-lead` not consulted — Section H는 lean에서도 spawn 대상이지만 이 실행에는 Agent 도구가 없어 생략. Review manually before production.
-> Story types: 타임라인(`build_timeline`)·상태 머신·펄스 게이트 = **Logic** → `tests/unit/chain_presentation/` (BLOCKING). 화면 연출 = **Visual/Feel**
-> → `production/qa/evidence/` 스크린샷/녹화 + lead sign-off (BLOCKING). 픽스처는 chain-resolver AC와 같은 보드 문자열 팩토리로 만든 `ChainResult`
-> 골든 파일을 재사용하고, 시간 비교는 허용 오차 ±1 ms(부동소수 합산)로 한다. 타이밍 값은 테스트 전용 `PresentationTuning` 픽스처(시작값 사본)에서 읽는다.
+> **qa-lead 검토 (2026-11-07, 사용자 위임 — 질문 없이 진행)**. 각 AC 앞 태그 = 스토리 유형 → 증거 위치·게이트:
+> `[Logic]` 자동 단위 테스트 `tests/unit/<system>/<system>_<feature>_test.gd` (BLOCKING) · `[Integration]` `tests/integration/<system>/` (BLOCKING) ·
+> `[UI]` 화면별 보존 스크린샷 `production/qa/evidence/` (BLOCKING) · `[Visual/Feel]` 보존 스크린샷/녹화 + 리드 서명 (BLOCKING) · `[Config]` 데이터 로드·스모크 (ADVISORY) ·
+> `[Perf]` `tests/performance/<system>/` — 시간 측정은 결정적이지 않아 CI 차단 스위트 밖에서 돌리고 임계값 초과 시 실패로 보고 (ADVISORY; 5개 스토리 유형 밖의 qa-lead 추가 분류) ·
+> `[Playtest]` `/playtest-report` 설계 검증 (ADVISORY — 스토리 완료 조건 아님).
+> **결정성**: 테스트 실행 중 보드를 무작위 생성하지 않는다. 픽스처는 커밋된 파일 `tests/fixtures/boards/*.txt`(보드 문자열)와 `tests/fixtures/parity/`이며,
+> "시드 판"은 오프라인에서 한 번 생성해 커밋한 파일이다. 모든 `stage_seed`·`rng_seed`는 픽스처에 적는다.
+> **불변식 (미리보기 = 런타임 = 점수)**은 하나의 테스트 `tests/integration/preview_parity/preview_parity_test.gd`가 소유하고 정의는 chain-preview AC-P02다 —
+> 다른 GDD의 같은 AC는 그 테스트의 단언 조각을 가리킬 뿐 별도 테스트를 만들지 않는다.
+> debug assert 검증은 gdUnit4 `assert_error(...)`로 포착한다 (포착되지 않으면 구현이 assert 직전 `push_error`를 내고 `is_push_error`로 확인).
+> 이 GDD의 테스트 파일: `tests/unit/chain_presentation/chain_presentation_{timeline,state,flash,formulas}_test.gd`,
+> `tests/integration/chain_presentation/chain_presentation_{board,hud}_test.gd`. 픽스처는 불변식 테스트(chain-preview AC-P02)의 명명 경계 `ChainResult` 골든 파일을 재사용한다.
+> 시간은 주입한 가짜 시계로 진행하고(실시간 대기 없음) 비교 허용 오차는 ±1 ms(부동소수 합산). 타이밍 값은 테스트 전용 `PresentationTuning`(시작값 사본)에서 읽는다.
+> 증거: `production/qa/evidence/chain-presentation/`.
 
 **규칙 (Section C)**
 
-- **AC-P01 (규칙 2·3, 판정 금지)** — **GIVEN** 임의의 `ChainResult`, **WHEN** 재생을 끝까지 하면, **THEN** 재생 전후로 게임 보드·`stage_score`·트레이 상태가 바이트 단위로 같고,
-  재생기 코드에 board-rules 판정 함수(`full_lines`, `can_place` 등)·해석기·점수 함수 호출이 없다 (정적 검사).
-- **AC-P02 (규칙 4, 표시 보드)** — **GIVEN** chain-resolver AC-03·AC-07·AC-08 픽스처, **WHEN** 재생 끝, **THEN** 표시 보드가 `final_board`와 칸 단위로 같다.
-  **AND** 이벤트 하나를 일부러 빼고 재생하면 디버그 assert가 난다.
-- **AC-P03 (규칙 5, 결정성)** — **GIVEN** 같은 `events`·`score`·`settings`, **WHEN** `build_timeline`을 두 번 부르면, **THEN** 큐 목록(시각·길이·종류·대상)이 같다.
-- **AC-P04 (규칙 7, 순서)** — **GIVEN** AC-03 픽스처의 타임라인, **WHEN** 큐를 이벤트 `seq`로 정렬해 보면, **THEN** 시작 시각이 단조 증가(같거나 늦음)이고,
-  웨이브 k+1의 첫 떼어짐 큐는 웨이브 k의 마지막 효과 큐가 끝난 뒤 `arrive_hold` 이후에 시작한다.
-- **AC-P05 (규칙 11, 얼굴 순서)** — **GIVEN** chain-resolver AC-04 픽스처(한 행 얼굴 3개), **WHEN** 타임라인을 보면, **THEN** 얼굴 들썩 큐가 `order_index` 1·2·3 순으로
-  `face_gap`(0.06 s) 간격이고 각 효과는 자기 들썩 + `face_lead`(0.12 s)에 시작한다.
-- **AC-P06 (규칙 12, 알)** — **GIVEN** 삐약 알 3개 픽스처(웨이브 0), **WHEN** 타임라인을 보면, **THEN** 알 큐 3개가 `ABILITY_EFFECT.cells` 순서이고 마지막 알이
-  다음 박자 시작보다 `arrive_hold` 이상 먼저 끝난다. **AND** 알로 완성된 줄은 다음 박자에 0.06 s 반짝 큐를 가진다.
-- **AC-P07 (규칙 13·14, 컷인·피즐·상한)** — **GIVEN** chain-resolver AC-08(연쇄 7단 가능, `depth_cap = 6`), **WHEN** 타임라인을 보면, **THEN** 웨이브 0에는 배너 없이 능력 라벨 1개,
-  웨이브 1–5에 "연쇄 2!"…"연쇄 6!" 배너 각 1개, 웨이브 6 얼굴은 꾸벅 큐, 마지막에 "최대 연쇄!" 배너 1개와 `cap_hold`. **AND** `depth_cap = 0` 픽스처는 "최대 연쇄!"가 없다.
-- **AC-P08 (규칙 18, 대비)** — **GIVEN** 얼굴 없는 한 줄 픽스처, **WHEN** 타임라인을 보면, **THEN** 흔들림·펄스·배너·컨페티 큐가 0개이고 칸당 입자 3. **AND** 연쇄 2 픽스처의
-  웨이브 1에는 흔들림·펄스·배너·컨페티가 각 1개 이상 있다.
-- **AC-P09 (규칙 21·22, 입력·스킵)** — **GIVEN** 연쇄 6 재생 중, **WHEN** 0.10 s에 터치다운, **THEN** 무시(보호 시간). **WHEN** 0.5 s에 터치다운, **THEN** 상태 `FAST`, 남은 재생 시간이
-  1/3. **WHEN** 한 번 더, **THEN** 0.25 s 안에 `playback_finished(true)`, 그 순간 HUD 점수 = `stage_score`, 표시 보드 = `final_board`. 재생 내내 트레이 누름은 집기를 시작하지 않는다.
-- **AC-P10 (규칙 24, 백그라운드)** — **GIVEN** 재생 중, **WHEN** 앱 포커스를 잃으면, **THEN** 같은 프레임에 `FLUSHING` → `playback_finished(true)`, 복귀 시 안정 보드.
-- **AC-P11 (규칙 25, 움직임 줄이기)** — **GIVEN** `reduced_motion = true`와 연쇄 6 픽스처, **WHEN** 타임라인을 만들면, **THEN** 흔들림·펄스·회전 큐 0개, 입자 수 = 기본 × 0.25(내림),
+- **AC-P01 [Logic] (규칙 2·3, 판정 금지)** — **GIVEN** 재생기 소스, **WHEN** 정적 검사, **THEN** board-rules 판정 함수(`full_lines`, `can_place` 등)·해석기·점수 함수 호출이 없다.
+  **AND [Integration]** AC-P02 명명 픽스처 전체를 끝까지 재생하면 재생 전후로 게임 보드·`stage_score`·트레이 스냅샷이 같다.
+- **AC-P02 [Integration] (규칙 4, 표시 보드)** — **GIVEN** chain-preview AC-P02의 명명 경계 픽스처 전부(줄 없음·도미노·동시 얼굴·교차 얼굴·알 재점화·상한 도달·`depth_cap = 0`·64칸),
+  **WHEN** 재생 끝, **THEN** 표시 보드가 `final_board`와 칸 단위로 같다. **AND** 이벤트 하나를 빼고 재생하면 debug assert가 난다.
+- **AC-P03 [Logic] (규칙 5, 결정성)** — **GIVEN** 같은 `events`·`score`·`settings`, **WHEN** `build_timeline`을 두 번 부르면, **THEN** 큐 목록(시각·길이·종류·대상)이 같다.
+- **AC-P04 [Logic] (규칙 7, 순서)** — **GIVEN** 도미노 픽스처의 타임라인, **WHEN** 큐를 이벤트 `seq`로 정렬하면, **THEN** 시작 시각이 단조 비감소이고,
+  웨이브 k+1의 첫 떼어짐 큐는 웨이브 k의 마지막 효과 큐 끝 + `arrive_hold` 이후에 시작한다.
+- **AC-P05 [Logic] (규칙 11, 동시 얼굴 순서)** — **GIVEN** 한 행 얼굴 3개 픽스처, **WHEN** 타임라인을 보면, **THEN** 얼굴 들썩 큐가 `order_index` 1·2·3 순으로 `face_gap`(0.06 s) 간격이고
+  각 효과는 자기 들썩 + `face_lead`(0.12 s)에 시작한다. **AND** 교차 얼굴 픽스처에서 그 얼굴의 들썩 큐는 1개다.
+- **AC-P06 [Logic] (규칙 12, 알)** — **GIVEN** 삐약 알 3개 픽스처(웨이브 0), **WHEN** 타임라인을 보면, **THEN** 알 큐 3개가 `ABILITY_EFFECT.cells` 순서이고 마지막 알이
+  다음 박자 시작보다 `arrive_hold` 이상 먼저 끝난다. **AND** 알 재점화 픽스처에서 알로 완성된 줄은 다음 박자에 0.06 s 반짝 큐를 가진다.
+- **AC-P07 [Logic] (규칙 13·14, 컷인·피즐·상한)** — **GIVEN** 상한 도달 픽스처(`depth_cap = 6`), **WHEN** 타임라인을 보면, **THEN** 웨이브 0에는 배너 없이 능력 라벨 1개,
+  웨이브 1–5에 "연쇄 2!"…"연쇄 6!" 배너 각 1개, 웨이브 6 얼굴은 꾸벅 큐, 마지막에 "최대 연쇄!" 배너 1개와 `cap_hold`. **AND** `depth_cap = 0` 픽스처에는 "최대 연쇄!"가 없다.
+- **AC-P08 [Logic] (규칙 18, 대비)** — **GIVEN** 얼굴 없는 한 줄 픽스처, **WHEN** 타임라인을 보면, **THEN** 흔들림·펄스·배너·컨페티 큐 0개이고 칸당 입자 3. **AND** 도미노(연쇄 2) 픽스처의
+  웨이브 1에는 흔들림·펄스·배너·컨페티가 각 1개 이상.
+- **AC-P09 [Logic] (규칙 21·22, 입력·스킵)** — **GIVEN** 연쇄 6 재생 중(가짜 시계), **WHEN** 0.10 s에 터치다운, **THEN** 무시(보호 시간). **WHEN** 0.5 s에 터치다운, **THEN** 상태 `FAST`, 남은 재생 시간 1/3.
+  **WHEN** 한 번 더, **THEN** 0.25 s 안에 `playback_finished(true)`, 그 순간 HUD 점수 = `stage_score`, 표시 보드 = `final_board`. **AND** 재생 내내 트레이 누름은 집기를 시작하지 않는다.
+- **AC-P10 [Logic] (규칙 24, 백그라운드)** — **GIVEN** 재생 중, **WHEN** `NOTIFICATION_APPLICATION_FOCUS_OUT`, **THEN** 같은 프레임에 `FLUSHING` → `playback_finished(true)`, 표시 보드 = `final_board`.
+- **AC-P11 [Logic] (규칙 25, 움직임 줄이기)** — **GIVEN** `reduced_motion = true`와 연쇄 6 픽스처, **WHEN** 타임라인을 만들면, **THEN** 흔들림·펄스·회전 큐 0개, 입자 수 = ⌊기본 × 0.25⌋,
   총 재생 시간과 배너·팝업 큐 수는 `reduced_motion = false`와 같다.
-- **AC-P12 (규칙 26·F6, 번쩍임)** — **GIVEN** `flash_off = true`, **WHEN** 연쇄 6 재생, **THEN** 펄스 0회, 흔들림은 그대로.
+- **AC-P12 [Logic] (규칙 26·F6, 번쩍임 끔)** — **GIVEN** `flash_off = true`, **WHEN** 연쇄 6 타임라인, **THEN** 펄스 큐 0개, 흔들림 큐 수는 `flash_off = false`와 같다.
 
 **공식 (Section D)**
 
-- **AC-P13 (F1·F2)** — **GIVEN** 시작값, **WHEN** `tempo(0…6)`과 얼굴 1개·다음 있음 박자를 계산하면, **THEN** 1.00, 0.92, 0.84, 0.76, 0.68, 0.60, 0.60과 `beat(0) = 0.54 s`.
-  얼굴 3개 → 0.66 s, 얼굴 5개도 0.66 s(엇갈림 상한). `effect_spread(0) = 0.34 s ≤ 0.35`. **AND** `build_timeline`(연쇄 6 최악) ≤ 0.5 ms (headless 데스크톱, 1,000회 평균).
-- **AC-P14 (F4, 재생 시간 경계)** — **GIVEN** 시작값·속도 1.0, **WHEN** 타임라인 총 길이를 재면, **THEN** 줄 없음 0.12 s, 한 줄 0.51 s, 연쇄 1 1.03 s, 연쇄 3 1.94 s(각 ±1 ms),
-  **연쇄 6(상한 도달) 3.40 s ≤ T ≤ 4.00 s**, 웨이브마다 얼굴 3개인 연쇄 6은 정확히 4.00 s(압축 c ≈ 0.980). **AND** `speed_pref = 1.5`면 연쇄 6 최악 ≤ 2.67 s.
+- **AC-P13 [Logic] (F1·F2)** — **GIVEN** 시작값, **WHEN** `tempo(0…6)`과 얼굴 1개·다음 있음 박자를 계산하면, **THEN** 1.00, 0.92, 0.84, 0.76, 0.68, 0.60, 0.60과 `beat(0) = 0.54 s`.
+  얼굴 3개 → 0.66 s, 얼굴 5개도 0.66 s(엇갈림 상한). `effect_spread(0) = 0.34 s ≤ 0.35`.
+- **AC-P14 [Logic] (F4, 재생 시간 경계)** — **GIVEN** 시작값·속도 1.0, **WHEN** 타임라인 총 길이를 재면, **THEN** 줄 없음 0.12 s, 한 줄 0.51 s, 연쇄 1 1.03 s, 연쇄 3 1.94 s(각 ±1 ms),
+  **연쇄 6(상한 도달) 3.40 s ≤ T ≤ 4.00 s**, 웨이브마다 얼굴 3개인 연쇄 6은 4.00 s(±1 ms, 압축 c ≈ 0.980). **AND** `speed_pref = 1.5`면 연쇄 6 최악 ≤ 2.67 s.
   **AND** 데이터만 `depth_cap = 10`으로 바꾼 최악 픽스처도 ≤ 4.00 s.
-- **AC-P15 (F4, 압축 보존)** — **GIVEN** 압축이 걸린 타임라인(c < 1), **WHEN** 압축 전과 비교하면, **THEN** 모든 큐의 순서가 같고 시각·길이 비율이 c로 일정하다(±1 ms).
-- **AC-P16 (F3)** — **GIVEN** 웨이브 0–5 강도, **WHEN** 계산하면, **THEN** `level` = 0, 1, 2, 3, 4, 4, 흔들림 0/3/5/7/9/9 px, 컨페티 0/15/30/45/60/60.
-  **AND** 동시 입자 수가 재생 중 어느 프레임에도 `particle_budget`(300)을 넘지 않는다.
-- **AC-P17 (F5)** — **GIVEN** 냥이 십자 웨이브(얼굴 (4,5), 대상 15칸), **WHEN** 엇갈림을 계산하면, **THEN** 얼굴에서 거리 d인 칸의 시작 지연 = min(0.02·d, 0.08) × tempo(k), 같은 d는 같은 지연.
-- **AC-P18 (F6, 광과민성 안전 — BLOCKING)** — **GIVEN** 고정 픽스처 200개(연쇄 0–6, 얼굴 밀집 포함) × 속도 {1.0, 1.5} × 빨리 감기 {없음, 0.3 s에 탭}, **WHEN** 실제 시각 기준
+- **AC-P15 [Logic] (F4, 압축 보존)** — **GIVEN** 압축이 걸린 타임라인(c < 1), **WHEN** 압축 전과 비교하면, **THEN** 모든 큐의 순서가 같고 시각·길이가 각각 압축 전 × c(±1 ms).
+- **AC-P16 [Logic] (F3)** — **GIVEN** 웨이브 0–5 강도, **WHEN** 계산하면, **THEN** `level` = 0, 1, 2, 3, 4, 4, 흔들림 0/3/5/7/9/9 px, 컨페티 0/15/30/45/60/60.
+  **AND** 연쇄 6 최악 타임라인을 1/60 s 간격으로 샘플링하면 어느 시점에도 동시 입자 수 ≤ `particle_budget`(300).
+- **AC-P17 [Logic] (F5)** — **GIVEN** 냥이 십자 웨이브(얼굴 (4,5), 대상 15칸), **WHEN** 엇갈림을 계산하면, **THEN** 얼굴에서 거리 d인 칸의 시작 지연 = min(0.02·d, 0.08) × tempo(k), 같은 d는 같은 지연.
+- **AC-P18 [Logic] (F6, 광과민성 안전 — BLOCKING)** — **GIVEN** 커밋된 고정 픽스처 200개(연쇄 0–6, 얼굴 밀집 포함) × 속도 {1.0, 1.5} × 빨리 감기 {없음, 0.3 s에 탭}, **WHEN** 실제 시각 기준
   펄스 큐를 모으면, **THEN** 어떤 1초 창에서도 펄스 ≤ 3회, 연속 펄스 간격 ≥ 0.34 s.
-- **AC-P19 (F7)** — **GIVEN** 남은 시간 T_left인 재생, **WHEN** 첫 탭, **THEN** 남은 시간 = T_left / 3 (±1 ms); 두 번째 탭 뒤 `playback_finished`까지 ≤ 0.25 s.
+- **AC-P19 [Logic] (F7)** — **GIVEN** 남은 시간 T_left인 재생, **WHEN** 첫 탭, **THEN** 남은 시간 = T_left / 3 (±1 ms); 두 번째 탭 뒤 `playback_finished`까지 ≤ 0.25 s.
+- **AC-P13b [Perf]** — **GIVEN** 연쇄 6 최악 픽스처, **WHEN** headless 데스크톱에서 `build_timeline` 1,000회, **THEN** 평균 ≤ 0.5 ms.
 
-**연동 · 관찰 (Visual/Feel · Integration)**
+**연동 · 관찰**
 
-- **AC-P20 (HUD 연동)** — **GIVEN** 연쇄 3 배치, **WHEN** 재생, **THEN** `wave_presented`가 웨이브마다 1회(4회) 그 웨이브 떼어짐 시작에 오고, 값 합 + `placement_points` = `ScoreBreakdown.total`.
-  건너뛰기 시 남은 `wave_presented`가 같은 프레임에 모두 온다. (통합 `tests/integration/chain_presentation/`)
-- **AC-P21 (실행 관찰 — Visual, BLOCKING)** — **GIVEN** T0 그레이박스 빌드, **WHEN** 연쇄 0·1·3·6(상한) 시나리오를 실행·녹화하면, **THEN** 각 시나리오의 핵심 프레임(착지, 웨이브 0 떼어짐,
-  얼굴 들썩, 효과 도착, 배너, 상한 배너)의 스크린샷이 `production/qa/evidence/chain-presentation/`에 보관되고, 리드가 "연쇄가 일반 줄 지우기보다 확실히 시원하다"에 서명.
-  (`.claude/docs/run-and-observe.md`)
-- **AC-P22 (플레이테스트 — 기둥 1·3, ADVISORY)** — **GIVEN** 5명 이상, 각 10판, **WHEN** 연쇄 직후 "방금 누가 누구를 깨웠나?"를 물으면, **THEN** 70% 이상이 연쇄 3 이상의 순서를 맞힌다.
+- **AC-P20 [Integration] (HUD 연동)** — **GIVEN** 연쇄 3 배치, **WHEN** 재생, **THEN** `wave_presented`가 웨이브마다 1회(4회) 그 웨이브 떼어짐 시작에 오고, 값 합 + `placement_points` = `ScoreBreakdown.total`.
+  **AND** 건너뛰기 시 남은 `wave_presented`가 같은 프레임에 모두 온다.
+- **AC-P21 [Visual/Feel] (실행 관찰 — BLOCKING)** — **GIVEN** T0 그레이박스 빌드, **WHEN** 연쇄 0·1·3·6(상한) 시나리오를 실행·녹화하면, **THEN** 각 시나리오의 핵심 프레임(착지, 웨이브 0 떼어짐,
+  얼굴 들썩, 효과 도착, 배너, 상한 배너) 스크린샷이 증거 폴더에 보관되고, 리드가 "연쇄가 일반 줄 지우기보다 확실히 시원하다"에 서명한다 (`.claude/docs/run-and-observe.md`).
+- **AC-P22 [Playtest]** — **GIVEN** 5명 이상, 각 10판, **WHEN** 연쇄 직후 "방금 누가 누구를 깨웠나?"를 물으면, **THEN** 70% 이상이 연쇄 3 이상의 순서를 맞힌다.
   **AND** "연출이 길어 기다렸다" 응답 ≤ 20%. (T0 플레이테스트 리포트)
-- **AC-P23 (저가 Android 성능, T0)** — **GIVEN** 목표 저가 Android 실기기·Compatibility 렌더러, **WHEN** 연쇄 6(최악, 입자 300) 재생, **THEN** 프레임 시간 p95 ≤ 16.7 ms
-  (재생 시간은 프레임 저하와 무관하게 F4 값 ±1 프레임 — 규칙 5).
+- **AC-P23 [Perf] (저가 Android, T0)** — **GIVEN** 목표 저가 Android 실기기·Compatibility 렌더러, **WHEN** 연쇄 6(최악, 입자 300) 재생, **THEN** 프레임 시간 p95 ≤ 16.7 ms이고
+  총 재생 시간이 F4 값 ±1프레임 (규칙 5). 로그 보관.
 
 ## Open Questions
 
@@ -603,3 +613,4 @@ art-bible 4절(잉크/스티커 백 13.2:1). 탭 건너뛰기 안내("탭하면 
 | D11 | 백그라운드 | 즉시 건너뛰기 | 일시정지 후 이어 재생 — 복귀 시 연출 중간 상태로 혼란, 세이브 시점 복잡 |
 | D12 | 점수 팝업 | 웨이브당 1개(지운 칸 무리 중심) + k ≥ 1 금색 배율 | 칸마다 팝업 — 화면 소음, 숫자 판독 불가 |
 | D13 | 배너 위치 | 연쇄 미리보기의 `banner_band` 공유 — 예상 배너 → 실제 배너가 같은 자리 | 화면 상단 30%(프로토타입) — 판 맨 위 행·HUD와 겹침, 미리보기와 자리가 달라 연속성 없음 |
+| D14 | 규칙 11 문구 (systems-designer 리뷰) | "미리보기 번호와 같은 순서" → 미리보기 배지는 `stage`, 웨이브 안 순서는 `order_index` 엇갈림으로만 (chain-resolver D13과 정렬). F1–F7 수치는 재검산 결과 모두 일치 | 원래 문구 — 배지 = `order_index`로 오독 |

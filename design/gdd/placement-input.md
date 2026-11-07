@@ -403,39 +403,64 @@ to produce per-asset visual descriptions, dimensions, and generation prompts fro
 
 ## Acceptance Criteria
 
-> *Specialist note*: `qa-lead` not consulted — lean에서 Section H는 spawn 대상이지만 Agent 도구가 없어 생략. Review manually before production.
-> 상태 머신·스냅 계산은 포인터 이벤트를 주입하는 **Logic** 단위 테스트(`tests/unit/placement_input/`), 시각 항목은 **UI/Visual** 증거
-> (`production/qa/evidence/` 스크린샷)로 검증한다. 픽셀 값은 1080 폭 기준 레이아웃 고정 픽스처(s = 131, board (16, 300))를 쓴다.
+> **qa-lead 검토 (2026-11-07, 사용자 위임 — 질문 없이 진행)**. 각 AC 앞 태그 = 스토리 유형 → 증거 위치·게이트:
+> `[Logic]` 자동 단위 테스트 `tests/unit/<system>/<system>_<feature>_test.gd` (BLOCKING) · `[Integration]` `tests/integration/<system>/` (BLOCKING) ·
+> `[UI]` 화면별 보존 스크린샷 `production/qa/evidence/` (BLOCKING) · `[Visual/Feel]` 보존 스크린샷/녹화 + 리드 서명 (BLOCKING) · `[Config]` 데이터 로드·스모크 (ADVISORY) ·
+> `[Perf]` `tests/performance/<system>/` — 시간 측정은 결정적이지 않아 CI 차단 스위트 밖에서 돌리고 임계값 초과 시 실패로 보고 (ADVISORY; 5개 스토리 유형 밖의 qa-lead 추가 분류) ·
+> `[Playtest]` `/playtest-report` 설계 검증 (ADVISORY — 스토리 완료 조건 아님).
+> **결정성**: 테스트 실행 중 보드를 무작위 생성하지 않는다. 픽스처는 커밋된 파일 `tests/fixtures/boards/*.txt`(보드 문자열)와 `tests/fixtures/parity/`이며,
+> "시드 판"은 오프라인에서 한 번 생성해 커밋한 파일이다. 모든 `stage_seed`·`rng_seed`는 픽스처에 적는다.
+> **불변식 (미리보기 = 런타임 = 점수)**은 하나의 테스트 `tests/integration/preview_parity/preview_parity_test.gd`가 소유하고 정의는 chain-preview AC-P02다 —
+> 다른 GDD의 같은 AC는 그 테스트의 단언 조각을 가리킬 뿐 별도 테스트를 만들지 않는다.
+> debug assert 검증은 gdUnit4 `assert_error(...)`로 포착한다 (포착되지 않으면 구현이 assert 직전 `push_error`를 내고 `is_push_error`로 확인).
+> 이 GDD의 테스트 파일: `tests/unit/placement_input/placement_input_{pick,snap,anchor,drop,cancel}_test.gd` — `InputEventScreenTouch`/`ScreenDrag`/`MouseButton`을
+> 직접 주입하고 시계·프레임 카운터를 주입해 프레임 수를 센다. 픽셀 값은 1080 폭 기준 레이아웃 고정 픽스처(s = 131, board (16, 300)). 증거: `production/qa/evidence/placement-input/`.
 
-- **AC-01 (규칙 5–6, 집기)** — **GIVEN** `READY`, 트레이 칸 1에 조각, **WHEN** 칸 1 사각형 안(조각 픽셀 밖 여백 포함)을 누르면,
-  **THEN** 상태 `PRESSED`, 끌리는 조각이 그 프레임에 표시되고 트레이 칸 1에는 빈 자리 윤곽만 남는다. 빈 칸·판 위 누름은 상태를 바꾸지 않는다.
-- **AC-02 (규칙 8·F4, 탭은 배치 아님)** — **GIVEN** 판 아래 줄 위치에 들어 올린 조각이 겹쳐 그려지는 레이아웃, **WHEN** 누른 뒤 12 px@1080 이내만
-  움직이고 떼면, **THEN** `placement_requested`는 0회, `drag_ended(RETURNED)` 1회, 조각은 트레이로 돌아간다.
-- **AC-03 (F1·F2, 스냅)** — **GIVEN** 픽스처, 2×3 조각, **WHEN** 슬롭을 넘긴 뒤 손가락이 (400, 900)이면, **THEN** 조각 좌상단 (203.5, 559.4), 후보 앵커 (2, 1).
-- **AC-04 (F2, .5 경계)** — **GIVEN** 직전 앵커 없음, **WHEN** c_raw = 2.5, r_raw = −0.5이면, **THEN** 후보 = (0, 3) (`floor(x + 0.5)`).
-- **AC-05 (규칙 10·F3, 히스테리시스)** — **GIVEN** 현재 앵커 열 1, Hy = 0.12, **WHEN** c_raw가 1.55 → 1.63 → 1.40 → 1.37 순으로 바뀌면,
-  **THEN** 앵커 열은 1 → 2 → 2 → 1.
-- **AC-06 (규칙 12, 고스트는 유효할 때만)** — **GIVEN** 판 (3,3)이 차 있음, 1×1 조각, **WHEN** 후보 앵커가 (3,2) → (3,3) → (8,0)이면,
-  **THEN** 고스트는 (3,2)에서만 보이고 (3,3)·(8,0)에서는 없으며 끌리는 조각이 회색 톤이다. (UI 증거: 유효·무효 각 스크린샷 1장)
-- **AC-07 (규칙 13·F7, 미리보기 트리거)** — **GIVEN** 드래그 중, **WHEN** 같은 유효 앵커에서 60프레임 이동(히스테리시스 안)하면, **THEN** `anchor_changed` 0회.
-  **AND WHEN** 유효 (2,1) → (2,2) → 무효 → 무효(다른 칸) → (3,2)로 움직이면, **THEN** `anchor_changed(앵커)` 3회, `anchor_changed(null)` 1회. (chain-resolver AC-16과 공동)
-- **AC-08 (규칙 11, can_place 호출 수)** — **GIVEN** 드래그 중, **WHEN** 후보 앵커가 5번 바뀌고 각 앵커에 여러 프레임 머물면, **THEN** `can_place` 호출은 정확히 5회.
-- **AC-09 (규칙 14, 보인 대로 놓임)** — **GIVEN** 마지막 이동 이벤트 앵커 (4,4) 유효, **WHEN** 떼기 이벤트 좌표가 (4,5)에 해당하면, **THEN** `placement_requested(slot, (4,4))`.
-- **AC-10 (규칙 15, 유효 놓기)** — **GIVEN** 유효 앵커, **WHEN** 떼면, **THEN** `placement_requested` 정확히 1회, `drag_ended(COMMITTED)` 1회, 상태 `LOCKED`,
-  `set_input_enabled(true)` 전까지 트레이 누름 무시.
-- **AC-11 (규칙 16, 무효 놓기 무벌)** — **GIVEN** 무효 앵커(판 위 겹침), 남은 조각 수 N·점수 S, **WHEN** 떼면, **THEN** `placement_requested` 0회,
-  조각은 `return_anim_s` ± 1프레임 안에 원래 칸에 도착, N·S·보드·트레이 불변, 흔들림 1회와 "통" SFX 큐 1회.
-- **AC-12 (규칙 16, 되돌림 중 집기)** — **GIVEN** 칸 0 조각이 되돌아가는 중, **WHEN** 칸 2를 누르면, **THEN** 칸 0 조각은 그 프레임에 칸 0에 놓이고 칸 2가 `PRESSED`.
-- **AC-13 (규칙 18, 멀티터치)** — **GIVEN** 포인터 0으로 드래그 중, **WHEN** 포인터 1이 다른 트레이 칸을 누르고 움직이고 떼면, **THEN** 상태·앵커·신호 변화 없음.
-  **AND WHEN** 포인터 0을 유효 앵커에서 떼면, **THEN** 정상 배치 요청 1회.
-- **AC-14 (규칙 19, 강제 취소)** — **GIVEN** 유효 앵커에서 `DRAGGING`, **WHEN** (a) 앱 포커스 잃음 (b) 터치 취소 (c) 뒤로 가기 (d) `set_input_enabled(false)` 중 하나가 오면,
-  **THEN** 각각 `placement_requested` 0회, `drag_ended(CANCELLED)` 1회, 조각은 트레이로. (c)에서는 화면 흐름이 뒤로 가기를 받지 않는다.
-- **AC-15 (규칙 3, 마우스)** — **GIVEN** 에디터 데스크톱 실행 (`commands.run`), **WHEN** 마우스 왼쪽 버튼으로 같은 드래그를 하면, **THEN** AC-03·AC-10과 같은 결과이고
-  신호가 두 번 나지 않는다. 오른쪽 버튼은 무시.
-- **AC-16 (F6·UI, 히트 영역)** — **GIVEN** 720×1280 캔버스, **WHEN** 트레이 칸 사각형을 측정하면, **THEN** 각 칸 ≥ 64 px@1080 (≥ 42.7 캔버스 단위) 양 변. 폭 4칸 조각은 칸 안에 들어가게 축소된다.
-- **AC-17 (Game Feel, 반응)** — **GIVEN** T0 그레이박스 Android 실기기, **WHEN** 집기·앵커 변경을 고속 카메라 또는 프레임 로그로 측정하면, **THEN** 입력 → 끌리는 조각 표시,
-  앵커 변경 → 고스트 갱신이 각각 ≤ 1프레임 (60fps). 미리보기 포함 앵커 변경 프레임 시간 ≤ 16.7ms (chain-resolver AC 성능 기준과 공동).
-- **AC-18 (V/A, 그림자)** — **GIVEN** 실행 중 화면, **WHEN** 조각을 들어 올리면, **THEN** 스크린샷에서 그림자 오프셋이 6–10 px@1080이고 트레이 정지 조각은 1–2px. (UI/Visual 증거)
+**집기·스냅 (규칙 5–10, F1–F4)**
+
+- **AC-01 [Logic] (규칙 5–6, 집기)** — **GIVEN** `READY`, 트레이 칸 1에 조각, **WHEN** 칸 1 사각형 안(조각 픽셀 밖 여백 포함)을 누르면, **THEN** 같은 프레임에 상태 `PRESSED`,
+  끌리는 조각 노드 `visible = true`, 칸 1의 원래 조각 노드는 숨고 빈 자리 윤곽이 보인다. **AND** 빈 칸·판 위 누름은 상태를 바꾸지 않는다.
+- **AC-02 [Logic] (규칙 8·F4, 탭은 배치 아님)** — **GIVEN** 판 아래 줄 위치에 들어 올린 조각이 겹쳐 그려지는 레이아웃, **WHEN** 누른 뒤 12 px@1080 이내만 움직이고 떼면,
+  **THEN** `placement_requested` 0회, `drag_ended(RETURNED)` 1회, 조각은 트레이로 돌아간다. **AND** 12 px를 1 px 넘기면 `DRAGGING`으로 바뀐다 (슬롭 경계).
+- **AC-03 [Logic] (F1·F2, 스냅)** — **GIVEN** 픽스처, 2×3 조각, **WHEN** 슬롭을 넘긴 뒤 손가락이 (400, 900)이면, **THEN** 조각 좌상단 (203.5, 559.4)(±0.1), 후보 앵커 (2, 1).
+- **AC-04 [Logic] (F2, .5 경계)** — **GIVEN** 직전 앵커 없음, **WHEN** c_raw = 2.5, r_raw = −0.5이면, **THEN** 후보 = (0, 3) (`floor(x + 0.5)`).
+- **AC-05 [Logic] (규칙 10·F3, 히스테리시스)** — **GIVEN** 현재 앵커 열 1, Hy = 0.12, **WHEN** c_raw가 1.55 → 1.63 → 1.40 → 1.37 순으로 바뀌면, **THEN** 앵커 열은 1 → 2 → 2 → 1.
+
+**앵커·고스트 (규칙 11–14)**
+
+- **AC-06 [Logic] (규칙 12, 고스트는 유효할 때만)** — **GIVEN** 판 (3,3)이 차 있음, 1×1 조각, **WHEN** 후보 앵커가 (3,2) → (3,3) → (8,0)이면,
+  **THEN** 고스트 `visible`이 참·거짓·거짓이고 끌리는 조각의 무효 톤 플래그가 거짓·참·참.
+- **AC-06b [UI]** — **GIVEN** AC-06의 유효·무효 상태, **WHEN** 실행 화면을 캡처하면, **THEN** 유효(고스트 보임)·무효(회색 톤) 스크린샷 각 1장이 보관된다.
+- **AC-07 [Logic] (규칙 13·F7, `anchor_changed` 소유)** — **GIVEN** 드래그 중, **WHEN** 같은 유효 앵커에서 60프레임 이동(히스테리시스 안)하면, **THEN** `anchor_changed` 0회.
+  **AND WHEN** 유효 (2,1) → (2,2) → 무효 → 무효(다른 칸) → (3,2)로 움직이면, **THEN** `anchor_changed(앵커)` 3회, `anchor_changed(null)` 1회.
+  (`resolve` 호출 횟수는 chain-preview AC-P13 소유.)
+- **AC-08 [Logic] (규칙 11, can_place 호출 수)** — **GIVEN** 드래그 중, **WHEN** 후보 앵커가 5번 바뀌고 각 앵커에 10프레임씩 머물면, **THEN** `can_place` 호출은 정확히 5회.
+- **AC-09 [Logic] (규칙 14, 보인 대로 놓임)** — **GIVEN** 마지막 이동 이벤트 앵커 (4,4) 유효, **WHEN** 떼기 이벤트 좌표가 (4,5)에 해당하면, **THEN** `placement_requested(slot, (4,4))`.
+
+**놓기 (규칙 15–17) — 무효 놓기 경계**
+
+- **AC-10 [Logic] (규칙 15, 유효 놓기)** — **GIVEN** 유효 앵커, **WHEN** 떼면, **THEN** `placement_requested` 정확히 1회, `drag_ended(COMMITTED)` 1회, 상태 `LOCKED`.
+  **AND** `set_input_enabled(true)` 전까지 트레이 누름이 상태를 바꾸지 않는다.
+- **AC-11 [Logic] (규칙 16, 무효 놓기 무벌)** — **GIVEN** 남은 조각 수 N·점수 S, **WHEN** (a) 판 위 겹침 앵커 (b) 일부가 판 밖인 위치 (c) 판 완전 밖(트레이·HUD 영역)에서 떼면,
+  **THEN** 각 경우 `placement_requested` 0회, `drag_ended(RETURNED)` 1회, 조각은 `return_anim_s` ± 1프레임 안에 원래 칸에 도착, N·S·보드·트레이 스냅샷 불변,
+  흔들림 신호 1회와 "통" SFX 큐 1회((c)도 같음).
+- **AC-12 [Logic] (규칙 16, 되돌림 중 집기)** — **GIVEN** 칸 0 조각이 되돌아가는 중, **WHEN** 칸 2를 누르면, **THEN** 같은 프레임에 칸 0 조각이 칸 0에 놓이고 칸 2가 `PRESSED`.
+- **AC-13 [Logic] (규칙 18, 멀티터치)** — **GIVEN** 포인터 0으로 드래그 중, **WHEN** 포인터 1이 다른 트레이 칸을 누르고 움직이고 떼면, **THEN** 상태·앵커·신호 변화 없음.
+  **AND WHEN** 포인터 0을 유효 앵커에서 떼면, **THEN** 배치 요청 1회.
+- **AC-14 [Logic] (규칙 19, 강제 취소)** — **GIVEN** 유효 앵커에서 `DRAGGING`, **WHEN** (a) `NOTIFICATION_APPLICATION_FOCUS_OUT` (b) 터치 취소 (c) 뒤로 가기 (d) `set_input_enabled(false)` 각각,
+  **THEN** 각각 `placement_requested` 0회, `drag_ended(CANCELLED)` 1회, 조각은 트레이로. **AND** (c)에서 뒤로 가기 이벤트는 처리됨으로 표시되어 화면 흐름에 전달되지 않는다.
+- **AC-15 [Logic] (규칙 3, 마우스)** — **GIVEN** AC-03·AC-10 시나리오, **WHEN** 같은 경로를 `InputEventMouseButton`(왼쪽)·`InputEventMouseMotion`으로 주입하면, **THEN** 같은 앵커·같은 신호가
+  정확히 한 번씩 난다 (에뮬레이트된 터치와 이중 발생 없음). **AND** 오른쪽 버튼은 상태를 바꾸지 않는다.
+
+**레이아웃·화면**
+
+- **AC-16 [Logic] (F6, 히트 영역)** — **GIVEN** 720×1280 캔버스, **WHEN** 레이아웃 함수가 트레이 칸 사각형을 계산하면, **THEN** 각 칸의 두 변 ≥ 42.7 캔버스 단위(64 px@1080).
+  **AND** 폭 4칸 조각의 표시 크기가 칸 안에 들어간다.
+- **AC-16b [UI]** — **GIVEN** `commands.run` 720×1280 실행, **WHEN** 트레이에 1칸·4칸 조각이 있는 화면을 캡처하면, **THEN** 스크린샷 1장 보관 (칸 경계 표시 디버그 오버레이 켬).
+- **AC-18 [Visual/Feel] (V/A, 그림자)** — **GIVEN** 실행 중 화면, **WHEN** 조각을 들어 올린 상태와 정지 상태를 캡처하면, **THEN** 그림자 오프셋이 각각 6–10 px@1080, 1–2 px@1080
+  (스크린샷 2장 + 리드 서명).
+- **AC-17 [Perf] (Game Feel, 반응 — T0 실기기)** — **GIVEN** T0 그레이박스 저가 Android 실기기, **WHEN** 프레임 로그로 측정하면, **THEN** 입력 → 끌리는 조각 표시, 앵커 변경 → 고스트 갱신이
+  각각 ≤ 1프레임(60fps). 로그를 증거 폴더에 보관. 미리보기 포함 프레임 예산은 chain-preview AC-P17 소유.
 
 ## Open Questions
 
