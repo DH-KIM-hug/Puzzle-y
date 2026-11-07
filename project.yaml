@@ -32,3 +32,50 @@ project:
 modes:
   rigor: standard
   automation: guided
+
+engine:
+  name: "Godot"
+  version: "4.7"
+  language: "GDScript"
+  # Compatibility: 2D mobile, broadest device support (TD-FEASIBILITY advice)
+  rendering: "Compatibility"
+  physics: "Godot Physics 2D"
+
+specialists:
+  code: "godot-gdscript-specialist"
+  shader: "godot-shader-specialist"
+  ui: "godot-specialist"
+  additional: ["godot-gdextension-specialist"]
+
+naming:
+  classes: PascalCase
+  variables: snake_case
+  constants: SCREAMING_SNAKE
+  signals: past_tense
+  files: snake_case
+  scenes: snake_case
+
+platform:
+  multiplayer: false
+  online: false              # MVP is local-only; IAP / odds page arrive in T2
+  targets: [Mobile]
+  primary_input: "Touch"
+  gamepad_support: "None"
+  touch_support: "Full"
+  cert_tier: none
+
+performance:
+  target_framerate: 60
+  frame_budget_ms: 16.67
+  draw_call_limit: null
+  memory_ceiling_mb: null
+  enforce: warn
+
+testing:
+  framework: gdunit4
+
+commands:
+  # build: no export preset exists yet — set once export_presets.cfg is created (e.g. an Android preset)
+  test: "godot --headless -s -d --remote-debug tcp://127.0.0.1:0 res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests --ignoreHeadlessMode"
+  run: "godot --path . --windowed --resolution 720x1280"
+  smoke: "godot --headless --quit-after 5"
