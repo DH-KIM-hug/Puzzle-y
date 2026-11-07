@@ -1,0 +1,63 @@
+[gd_resource type="Resource" script_class="CrewDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/data/crew/crew_ability.gd" id="1_tgnf2"]
+[ext_resource type="Script" path="res://src/core/data/crew/ability_step.gd" id="2_l0sqb"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_def.gd" id="3_bxge2"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_shape_entry.gd" id="4_ok86d"]
+[ext_resource type="Resource" path="res://assets/data/shapes/d1.tres" id="5_c7qtx"]
+[ext_resource type="Resource" path="res://assets/data/shapes/d2_h.tres" id="6_53s3r"]
+[ext_resource type="Resource" path="res://assets/data/shapes/d2_v.tres" id="7_2prh4"]
+[ext_resource type="Resource" path="res://assets/data/shapes/l3_b.tres" id="8_ua4qm"]
+[ext_resource type="Resource" path="res://assets/data/shapes/l3_c.tres" id="9_f5788"]
+
+[sub_resource type="Resource" id="Resource_8we45"]
+script = ExtResource("2_l0sqb")
+primitive = &"lay_eggs_in_own_line"
+params = {
+&"count": 3,
+&"order": &"nearest",
+&"prefer": &"fuller"
+}
+
+[sub_resource type="Resource" id="Resource_6egqq"]
+script = ExtResource("1_tgnf2")
+ability_id = &"piyak_lay_eggs"
+steps = Array[ExtResource("2_l0sqb")]([SubResource("Resource_8we45")])
+
+[sub_resource type="Resource" id="Resource_ojk1w"]
+script = ExtResource("4_ok86d")
+shape = ExtResource("5_c7qtx")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_i62gn"]
+script = ExtResource("4_ok86d")
+shape = ExtResource("6_53s3r")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_by5m4"]
+script = ExtResource("4_ok86d")
+shape = ExtResource("7_2prh4")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_nr7by"]
+script = ExtResource("4_ok86d")
+shape = ExtResource("8_ua4qm")
+
+[sub_resource type="Resource" id="Resource_svtgc"]
+script = ExtResource("4_ok86d")
+shape = ExtResource("9_f5788")
+
+[resource]
+script = ExtResource("3_bxge2")
+id = &"piyak"
+name_key = "CREW_PIYAK_NAME"
+species = &"chick"
+colour_slot = 3
+shapes = Array[ExtResource("4_ok86d")]([SubResource("Resource_ojk1w"), SubResource("Resource_i62gn"), SubResource("Resource_by5m4"), SubResource("Resource_nr7by"), SubResource("Resource_svtgc")])
+ability = SubResource("Resource_6egqq")
+ability_name_key = "CREW_PIYAK_ABILITY_NAME"
+ability_desc_key = "CREW_PIYAK_ABILITY_DESC"
+silhouette_feature = &"feather_tuft"
+body_pattern = &"dots"
+fill_visual = &"egg"
+starter = true

@@ -1,0 +1,6 @@
+[gd_resource type="Resource" script_class="ChainRules" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/chain/chain_rules.gd" id="1_p6rrm"]
+
+[resource]
+script = ExtResource("1_p6rrm")

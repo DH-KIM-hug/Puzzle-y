@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="CrewDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/data/crew/crew_ability.gd" id="1_at8dx"]
+[ext_resource type="Script" path="res://src/core/data/crew/ability_step.gd" id="2_qlbfy"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_def.gd" id="3_j7ccd"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_shape_entry.gd" id="4_tdwjd"]
+[ext_resource type="Resource" path="res://assets/data/shapes/o4.tres" id="5_xw4ik"]
+[ext_resource type="Resource" path="res://assets/data/shapes/r6_h.tres" id="6_rfh3a"]
+[ext_resource type="Resource" path="res://assets/data/shapes/t4_d.tres" id="7_4ryoy"]
+[ext_resource type="Resource" path="res://assets/data/shapes/r6_v.tres" id="8_xg1jr"]
+
+[sub_resource type="Resource" id="Resource_moxfw"]
+script = ExtResource("2_qlbfy")
+primitive = &"clear_area"
+params = {
+&"radius": 1
+}
+
+[sub_resource type="Resource" id="Resource_f6y4j"]
+script = ExtResource("1_at8dx")
+ability_id = &"gomgom_bear_hug"
+steps = Array[ExtResource("2_qlbfy")]([SubResource("Resource_moxfw")])
+
+[sub_resource type="Resource" id="Resource_kncop"]
+script = ExtResource("4_tdwjd")
+shape = ExtResource("5_xw4ik")
+weight = 3
+
+[sub_resource type="Resource" id="Resource_n2paf"]
+script = ExtResource("4_tdwjd")
+shape = ExtResource("6_rfh3a")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_p0hx5"]
+script = ExtResource("4_tdwjd")
+shape = ExtResource("7_4ryoy")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_epjm0"]
+script = ExtResource("4_tdwjd")
+shape = ExtResource("8_xg1jr")
+
+[resource]
+script = ExtResource("3_j7ccd")
+id = &"gomgom"
+name_key = "CREW_GOMGOM_NAME"
+species = &"bear"
+colour_slot = 2
+shapes = Array[ExtResource("4_tdwjd")]([SubResource("Resource_kncop"), SubResource("Resource_n2paf"), SubResource("Resource_p0hx5"), SubResource("Resource_epjm0")])
+ability = SubResource("Resource_f6y4j")
+ability_name_key = "CREW_GOMGOM_ABILITY_NAME"
+ability_desc_key = "CREW_GOMGOM_ABILITY_DESC"
+silhouette_feature = &"round_ears"
+body_pattern = &"spot"
+starter = true

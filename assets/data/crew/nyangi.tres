@@ -1,0 +1,65 @@
+[gd_resource type="Resource" script_class="CrewDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/data/crew/crew_ability.gd" id="1_81563"]
+[ext_resource type="Script" path="res://src/core/data/crew/ability_step.gd" id="2_n25fs"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_def.gd" id="3_6onao"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_shape_entry.gd" id="4_ceavy"]
+[ext_resource type="Resource" path="res://assets/data/shapes/i3_h.tres" id="5_qli3r"]
+[ext_resource type="Resource" path="res://assets/data/shapes/i3_v.tres" id="6_2bt72"]
+[ext_resource type="Resource" path="res://assets/data/shapes/i4_h.tres" id="7_6l6u6"]
+[ext_resource type="Resource" path="res://assets/data/shapes/l3_a.tres" id="8_l172o"]
+[ext_resource type="Resource" path="res://assets/data/shapes/l4_a.tres" id="9_422o0"]
+[ext_resource type="Resource" path="res://assets/data/shapes/j4_a.tres" id="10_xr76g"]
+
+[sub_resource type="Resource" id="Resource_ekksg"]
+script = ExtResource("2_n25fs")
+primitive = &"clear_cross"
+params = {
+&"reach": -1
+}
+
+[sub_resource type="Resource" id="Resource_argd2"]
+script = ExtResource("1_81563")
+ability_id = &"nyangi_cross_scratch"
+steps = Array[ExtResource("2_n25fs")]([SubResource("Resource_ekksg")])
+
+[sub_resource type="Resource" id="Resource_4jtyn"]
+script = ExtResource("4_ceavy")
+shape = ExtResource("5_qli3r")
+weight = 3
+
+[sub_resource type="Resource" id="Resource_vqxq7"]
+script = ExtResource("4_ceavy")
+shape = ExtResource("6_2bt72")
+weight = 3
+
+[sub_resource type="Resource" id="Resource_kr6th"]
+script = ExtResource("4_ceavy")
+shape = ExtResource("7_6l6u6")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_i1qmk"]
+script = ExtResource("4_ceavy")
+shape = ExtResource("8_l172o")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_whgnj"]
+script = ExtResource("4_ceavy")
+shape = ExtResource("9_422o0")
+
+[sub_resource type="Resource" id="Resource_qe45x"]
+script = ExtResource("4_ceavy")
+shape = ExtResource("10_xr76g")
+
+[resource]
+script = ExtResource("3_6onao")
+id = &"nyangi"
+name_key = "CREW_NYANGI_NAME"
+species = &"cat"
+shapes = Array[ExtResource("4_ceavy")]([SubResource("Resource_4jtyn"), SubResource("Resource_vqxq7"), SubResource("Resource_kr6th"), SubResource("Resource_i1qmk"), SubResource("Resource_whgnj"), SubResource("Resource_qe45x")])
+ability = SubResource("Resource_argd2")
+ability_name_key = "CREW_NYANGI_ABILITY_NAME"
+ability_desc_key = "CREW_NYANGI_ABILITY_DESC"
+silhouette_feature = &"tri_ears"
+body_pattern = &"stripes"
+starter = true

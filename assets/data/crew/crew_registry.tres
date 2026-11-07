@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="CrewRegistry" format=3]
+
+[ext_resource type="Resource" path="res://assets/data/rules/board_rules.tres" id="1_yan4m"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_def.gd" id="2_ym8o2"]
+[ext_resource type="Resource" path="res://assets/data/crew/nyangi.tres" id="3_q2me7"]
+[ext_resource type="Resource" path="res://assets/data/crew/gomgom.tres" id="4_36sau"]
+[ext_resource type="Resource" path="res://assets/data/crew/piyak.tres" id="5_q0cpc"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_registry.gd" id="6_rdua2"]
+
+[resource]
+script = ExtResource("6_rdua2")
+crews = Array[ExtResource("2_ym8o2")]([ExtResource("3_q2me7"), ExtResource("4_36sau"), ExtResource("5_q0cpc")])
+board_config = ExtResource("1_yan4m")
