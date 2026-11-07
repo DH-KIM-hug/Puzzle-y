@@ -2,7 +2,7 @@
 
 > **Status**: Draft
 > **Created**: 2026-11-07
-> **Last Updated**: 2026-11-07
+> **Last Updated**: 2026-11-07 (board-rules Designed)
 > **Source Concept**: design/gdd/game-concept.md (Status: In Review, revised 2026-11-07)
 > **Created by**: `/map-systems` (automation guided, review_mode lean, docs.density balanced). 사용자 위임("진행부탁 알아서 다")으로 모든 질문은 권장안으로 결정했다. 결정 내역은 아래 [Decision Log](#decision-log).
 
@@ -54,7 +54,7 @@
 
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|-------------|----------|----------|--------|------------|------------|
-| 1 | 보드 & 조각 규칙 (Board & Piece Rules) | Gameplay | MVP | Not Started | design/gdd/board-rules.md | — |
+| 1 | 보드 & 조각 규칙 (Board & Piece Rules) | Gameplay | MVP | Designed | [design/gdd/board-rules.md](board-rules.md) | — |
 | 2 | 연쇄 해석기 & 능력 프리미티브 (Chain Resolver) | Gameplay | MVP | Not Started | design/gdd/chain-resolver.md | 보드 & 조각 규칙, 시드 RNG |
 | 3 | 시드 RNG (Seeded RNG) (inferred) | Core | MVP | Not Started | — (ADR only) | — |
 | 4 | 점수 & 연쇄 배율 (Scoring) | Gameplay | MVP | Not Started | design/gdd/scoring.md | 연쇄 해석기 |
@@ -248,10 +248,10 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 31 |
-| Design docs started | 0 |
+| Design docs started | 1 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 0/22 (시드 RNG 포함; GDD 대상은 21) |
+| MVP systems designed | 1/22 (시드 RNG 포함; GDD 대상은 21) |
 | Vertical Slice systems designed | 0/2 |
 
 ---
@@ -278,7 +278,8 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 ## Next Steps
 
 - [ ] Review and approve this systems enumeration (위임 결정 검토 — 특히 Decision Log)
-- [ ] `/design-system board-rules` → `/design-system chain-resolver` (MVP Foundation 먼저)
+- [x] `/design-system board-rules` (2026-11-07, Designed — `/design-review` 대기; UX Flag: 게임플레이 화면 `/ux-design` 필요; 판 진행 흐름 Depends On에 보드 & 조각 규칙 추가 제안 — board-rules Q6)
+- [ ] `/design-system chain-resolver` (MVP Foundation 다음)
 - [ ] `/architecture-decision` — 결정적 연쇄 해석기 (첫 critical ADR, 해석기 GDD와 병행)
 - [ ] Run `/design-review` on each completed GDD
 - [ ] Run `/gate-check technical-setup` when MVP systems are designed

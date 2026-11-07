@@ -54,7 +54,7 @@
 #   in any other shape is reported as unsupported layout, with its number.
 
 version: 1
-last_updated: ""
+last_updated: "2026-11-07"
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -123,7 +123,22 @@ items: []
 #   output_range[min, max], added
 # Optional: expression (the actual formula), notes
 
-formulas: []
+formulas:
+  - name: line_cell_count
+    status: active
+    source: design/gdd/board-rules.md
+    referenced_by:
+      - design/gdd/board-rules.md
+    variables:
+      - board_width
+      - board_height
+      - completed_rows
+      - completed_cols
+    output_range: [0, 64]
+    expression: "W * R + H * C - R * C"
+    notes: "Cells covered by completed lines (intersections once). Input to scoring via chain-resolver events."
+    added: 2026-11-07
+    revised: ""
 
 # Example:
 #
@@ -156,7 +171,34 @@ formulas: []
 #
 # Required fields: name, status, source, referenced_by, value, unit, added
 
-constants: []
+constants:
+  - name: board_width
+    status: active
+    source: design/gdd/board-rules.md
+    referenced_by:
+      - design/gdd/board-rules.md
+    value: 8
+    unit: cells
+    added: 2026-11-07
+    revised: ""
+  - name: board_height
+    status: active
+    source: design/gdd/board-rules.md
+    referenced_by:
+      - design/gdd/board-rules.md
+    value: 8
+    unit: cells
+    added: 2026-11-07
+    revised: ""
+  - name: max_piece_cells
+    status: active
+    source: design/gdd/board-rules.md
+    referenced_by:
+      - design/gdd/board-rules.md
+    value: 6
+    unit: cells
+    added: 2026-11-07
+    revised: ""
 
 # Example:
 #
