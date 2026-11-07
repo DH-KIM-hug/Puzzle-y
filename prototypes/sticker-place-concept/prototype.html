@@ -1,0 +1,484 @@
+<!-- PROTOTYPE - NOT FOR PRODUCTION -->
+<!-- Question: 크루 모양 조각을 붙여 줄을 지울 때 얼굴 칸의 능력이 연쇄를 일으키면, 플레이어가 "얼굴 위치"를 고민하고 다른 블록 퍼즐과 다르다고 느끼는가? -->
+<!-- Date: 2026-11-07 -->
+<title>말랑 크루 스티커</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: one-screen sticker book — HUD strip, square paper board, piece tray, crew legend */
+:root {
+  --paper: #e8d9bd;
+  --paper-dark: #d6c29f;
+  --ink: #3b2f25;
+  --ink-soft: #7a6553;
+  --sticker: #fffdf8;
+  --accent: #e8574a;
+  --display: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255,255,255,.25), transparent 40%),
+    repeating-linear-gradient(45deg, rgba(0,0,0,.018) 0 2px, transparent 2px 5px),
+    var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none; user-select: none;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+#app { height: 100%; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; padding-block: 10px; }
+.hud { display: flex; align-items: baseline; gap: 12px; }
+.hud .title { font-family: var(--display); font-size: 20px; }
+.hud .best { font-size: 12px; color: var(--ink-soft); }
+.hud .score { margin-left: auto; font-family: var(--display); font-size: 28px; font-variant-numeric: tabular-nums; }
+.stage { flex: 1; min-height: 0; position: relative; display: flex; justify-content: center; }
+canvas#cv { display: block; touch-action: none; }
+.legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.legend div { background: var(--sticker); border-radius: 14px 16px 12px 15px; padding: 6px 8px; font-size: 11px; color: var(--ink-soft); box-shadow: 0 2px 0 rgba(59,47,37,.18); min-width: 0; }
+.legend b { display: block; font-family: var(--display); font-weight: 400; font-size: 14px; color: var(--ink); }
+.overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(232,217,189,.82); }
+.card { background: var(--sticker); border-radius: 22px 26px 20px 24px; padding: 22px 24px; text-align: center; box-shadow: 0 6px 0 rgba(59,47,37,.2); transform: rotate(-1.5deg); min-width: 240px; max-width: 100%; }
+.card h2 { font-family: var(--display); font-weight: 400; font-size: 30px; margin: 0 0 6px; text-wrap: balance; }
+.card .big { font-family: var(--display); font-size: 44px; font-variant-numeric: tabular-nums; }
+.card dl { display: grid; grid-template-columns: auto auto; gap: 4px 16px; margin: 12px 0 16px; text-align: left; font-size: 14px; }
+.card dt { color: var(--ink-soft); }
+.card dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.card button { font-family: var(--display); font-size: 22px; border: 0; border-radius: 16px; padding: 12px 28px; background: var(--accent); color: var(--sticker); box-shadow: 0 4px 0 #a8382e; cursor: pointer; }
+.card button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.cutin { position: absolute; left: 50%; top: 30%; transform: translate(-50%,-50%) rotate(-4deg); background: var(--sticker); border-radius: 18px; padding: 10px 20px; font-family: var(--display); font-size: 26px; box-shadow: 0 6px 0 rgba(59,47,37,.25); pointer-events: none; white-space: nowrap; animation: peel .9s ease-out forwards; }
+.cutin small { display: block; font-family: var(--body); font-size: 13px; color: var(--ink-soft); }
+@keyframes peel {
+  0% { transform: translate(-50%,-50%) rotate(-25deg) scale(.4); opacity: 0; }
+  18% { transform: translate(-50%,-50%) rotate(4deg) scale(1.12); opacity: 1; }
+  30% { transform: translate(-50%,-50%) rotate(-4deg) scale(1); }
+  80% { opacity: 1; }
+  100% { transform: translate(-50%,-70%) rotate(-4deg) scale(.95); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .cutin { animation-duration: 1.2s; } }
+</style>
+
+<div id="app">
+  <div class="hud">
+    <div class="title">말랑 크루 스티커</div>
+    <div class="best" id="best"></div>
+    <div class="score" id="score">0</div>
+  </div>
+  <div class="stage" id="stage"><canvas id="cv" aria-label="스티커 퍼즐 보드"></canvas></div>
+  <div class="legend">
+    <div><b>냥이 얼굴</b>지워지면 십자 할퀴기</div>
+    <div><b>곰곰 얼굴</b>지워지면 3×3 쿵</div>
+    <div><b>삐약 얼굴</b>지워지면 알 3개로 줄 채우기</div>
+  </div>
+</div>
+
+<script>
+// PROTOTYPE - NOT FOR PRODUCTION — hardcoded everything on purpose.
+(() => {
+"use strict";
+const N = 8, CHAIN_CAP = 6;
+const KINDS = [
+  { name: "냥이", color: "#e8574a", dark: "#b83a30" },
+  { name: "곰곰", color: "#3f7fd9", dark: "#2b5aa0" },
+  { name: "삐약", color: "#f2c230", dark: "#c99a10" },
+];
+const SHAPES = [
+  [ [[0,0],[0,1],[0,2]], [[0,0],[1,0],[2,0]], [[0,0],[0,1],[0,2],[0,3]], [[0,0],[1,0],[1,1]], [[0,0],[1,0],[2,0],[2,1]], [[0,1],[1,1],[2,1],[2,0]] ],
+  [ [[0,0],[0,1],[1,0],[1,1]], [[0,0],[0,1],[0,2],[1,0],[1,1],[1,2]], [[0,0],[0,1],[0,2],[1,1]], [[0,0],[1,0],[2,0],[0,1],[1,1],[2,1]] ],
+  [ [[0,0]], [[0,0],[0,1]], [[0,0],[1,0]], [[0,0],[0,1],[1,0]], [[0,0],[0,1],[1,1]] ],
+];
+
+// ---------- state ----------
+let board, tray, score, over, timers, now = 0, idSeq = 0;
+let bestChain, abilities, placed, chainNow, retries = 0, busy = false;
+let particles = [], floats = [], shake = 0;
+let best = 0;
+try { best = +localStorage.getItem("sp_best") || 0; } catch (e) {}
+
+function rnd(n) { return Math.floor(Math.random() * n); }
+function newPiece() {
+  const kind = rnd(3);
+  const cells = SHAPES[kind][rnd(SHAPES[kind].length)];
+  return { id: idSeq++, kind, cells, face: rnd(cells.length),
+           h: Math.max(...cells.map(c => c[0])) + 1, w: Math.max(...cells.map(c => c[1])) + 1 };
+}
+function reset() {
+  board = Array.from({ length: N }, () => Array(N).fill(null));
+  tray = [newPiece(), newPiece(), newPiece()];
+  score = 0; over = false; timers = []; bestChain = 0; abilities = 0; placed = 0; chainNow = 0; busy = false;
+  particles = []; floats = [];
+  document.querySelector(".overlay")?.remove();
+  hud();
+}
+
+// ---------- sprites ----------
+let cell = 40, dpr = 1, faces = [];
+function drawAnimal(kind, s) {
+  const cv = document.createElement("canvas"); cv.width = cv.height = s;
+  const g = cv.getContext("2d");
+  const cx = s / 2, cy = s * 0.56, R = s * 0.3, k = KINDS[kind];
+  const parts = [];
+  const circle = (x, y, r) => g2 => { g2.beginPath(); g2.arc(x, y, r, 0, Math.PI * 2); };
+  const tri = p => g2 => { g2.beginPath(); g2.moveTo(p[0], p[1]); g2.lineTo(p[2], p[3]); g2.lineTo(p[4], p[5]); g2.closePath(); };
+  const ellipse = (x, y, rx, ry, rot) => g2 => { g2.beginPath(); g2.ellipse(x, y, rx, ry, rot || 0, 0, Math.PI * 2); };
+  if (kind === 0) {
+    parts.push(tri([cx - R*0.95, cy - R*0.35, cx - R*0.75, cy - R*1.35, cx - R*0.15, cy - R*0.85]));
+    parts.push(tri([cx + R*0.95, cy - R*0.35, cx + R*0.75, cy - R*1.35, cx + R*0.15, cy - R*0.85]));
+  } else if (kind === 1) {
+    parts.push(circle(cx - R*0.72, cy - R*0.78, R*0.38)); parts.push(circle(cx + R*0.72, cy - R*0.78, R*0.38));
+  } else {
+    parts.push(ellipse(cx - R*0.12, cy - R*1.08, R*0.14, R*0.3, -0.4)); parts.push(ellipse(cx + R*0.14, cy - R*1.1, R*0.14, R*0.3, 0.4));
+  }
+  parts.push(circle(cx, cy, R));
+  g.fillStyle = "#fffdf8"; g.strokeStyle = "#fffdf8"; g.lineWidth = s * 0.09; g.lineJoin = "round";
+  for (const p of parts) { p(g); g.stroke(); g.fill(); }
+  g.fillStyle = k.color; for (const p of parts) { p(g); g.fill(); }
+  g.fillStyle = "#2b211a";
+  circle(cx - R*0.36, cy - R*0.08, R*0.12)(g); g.fill(); circle(cx + R*0.36, cy - R*0.08, R*0.12)(g); g.fill();
+  if (kind === 2) { g.fillStyle = "#e8873a"; tri([cx - R*0.2, cy + R*0.18, cx + R*0.2, cy + R*0.18, cx, cy + R*0.45])(g); g.fill(); }
+  else {
+    g.strokeStyle = "#2b211a"; g.lineWidth = s * 0.03; g.lineCap = "round";
+    g.beginPath(); g.arc(cx - R*0.1, cy + R*0.22, R*0.12, 0.2, Math.PI - 0.2); g.stroke();
+    g.beginPath(); g.arc(cx + R*0.1, cy + R*0.22, R*0.12, 0.2, Math.PI - 0.2); g.stroke();
+  }
+  g.fillStyle = "rgba(255,120,120,.35)";
+  circle(cx - R*0.62, cy + R*0.22, R*0.14)(g); g.fill(); circle(cx + R*0.62, cy + R*0.22, R*0.14)(g); g.fill();
+  return cv;
+}
+
+// ---------- layout ----------
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d"), stage = document.getElementById("stage");
+let W, H, trayY, trayH;
+function layout() {
+  const sw = stage.clientWidth, sh = stage.clientHeight;
+  cell = Math.floor(Math.min(sw / N, sh / (N + 3.6)));
+  W = cell * N; trayH = Math.floor(cell * 3.4); trayY = W + Math.floor(cell * 0.2); H = trayY + trayH;
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.style.width = W + "px"; cv.style.height = H + "px";
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  faces = KINDS.map((k, i) => drawAnimal(i, Math.round(cell * dpr * 1.1)));
+}
+window.addEventListener("resize", layout);
+
+// ---------- rules ----------
+const inb = (r, c) => r >= 0 && r < N && c >= 0 && c < N;
+function fits(p, r0, c0) {
+  return p.cells.every(([dr, dc]) => inb(r0 + dr, c0 + dc) && !board[r0 + dr][c0 + dc]);
+}
+function anyFit(p) {
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (fits(p, r, c)) return true;
+  return false;
+}
+function fullLines(b) {
+  const out = [];
+  for (let r = 0; r < N; r++) if (b[r].every(x => x && !x.clearing)) out.push({ row: r });
+  for (let c = 0; c < N; c++) if (b.every(row => row[c] && !row[c].clearing)) out.push({ col: c });
+  return out;
+}
+function lineCells(lines) {
+  const s = new Map();
+  for (const L of lines) for (let i = 0; i < N; i++) {
+    const [r, c] = L.row !== undefined ? [L.row, i] : [i, L.col];
+    s.set(r * N + c, [r, c]);
+  }
+  return [...s.values()];
+}
+
+function place(slot, r0, c0) {
+  const p = tray[slot];
+  if (!p || busy || over || !fits(p, r0, c0)) return false;
+  p.cells.forEach(([dr, dc], i) => {
+    board[r0 + dr][c0 + dc] = { kind: p.kind, face: i === p.face, egg: false, pop: 1 };
+  });
+  tray[slot] = null; placed++;
+  score += p.cells.length;
+  chainNow = 0;
+  if (tray.every(x => !x)) tray = [newPiece(), newPiece(), newPiece()];
+  busy = true;
+  resolve(0);
+  hud();
+  return true;
+}
+
+function later(t, fn) { timers.push({ at: now + t, fn }); }
+
+function resolve(depth) {
+  const lines = fullLines(board);
+  if (!lines.length) { busy = false; checkOver(); return; }
+  const cells = lineCells(lines);
+  if (lines.length > 1) addFloat(lines.length + "줄 동시!", W / 2, W * 0.15, true);
+  clearCells(cells, depth, lines.length);
+}
+
+function clearCells(cells, depth, lineCount) {
+  const live = cells.filter(([r, c]) => board[r][c] && !board[r][c].clearing);
+  if (!live.length) { later(0.05, () => resolve(depth)); return; }
+  const mult = 1 + depth * 0.5;
+  const pts = Math.round(live.length * 10 * mult * (lineCount > 1 ? lineCount : 1));
+  score += pts;
+  let sr = 0, sc = 0;
+  const faceHits = [];
+  for (const [r, c] of live) {
+    const t = board[r][c]; t.clearing = 0.0001; sr += r; sc += c;
+    if (t.face) faceHits.push({ r, c, kind: t.kind });
+    burst(r, c, t.kind);
+  }
+  addFloat("+" + pts, (sc / live.length + 0.5) * cell, (sr / live.length + 0.5) * cell, depth > 0);
+  later(0.24, () => {
+    for (const [r, c] of live) board[r][c] = null;
+    if (!faceHits.length || depth >= CHAIN_CAP) { later(0.08, () => resolve(depth)); return; }
+    // faces fire: their effects can hit other faces -> domino
+    const extra = new Map();
+    const names = [];
+    for (const f of faceHits) {
+      abilities++;
+      names.push(KINDS[f.kind].name);
+      if (f.kind === 0) {
+        for (let i = 0; i < N; i++) { extra.set(f.r * N + i, [f.r, i]); extra.set(i * N + f.c, [i, f.c]); }
+        shake = Math.max(shake, 0.3);
+      } else if (f.kind === 1) {
+        for (let r = f.r - 1; r <= f.r + 1; r++) for (let c = f.c - 1; c <= f.c + 1; c++) if (inb(r, c)) extra.set(r * N + c, [r, c]);
+        shake = Math.max(shake, 0.45);
+      } else {
+        layEggs(3);
+      }
+    }
+    chainNow = depth + 1; bestChain = Math.max(bestChain, chainNow);
+    cutin(names.map(n => n + "!").join(" "), chainNow > 1 ? "연쇄 " + chainNow : faceHits.length > 1 ? "얼굴 " + faceHits.length + "개 동시" : "");
+    const extraCells = [...extra.values()].filter(([r, c]) => board[r][c]);
+    later(0.3, () => {
+      if (extraCells.length) clearCells(extraCells, depth + 1, 1);
+      else resolve(depth + 1);
+    });
+  });
+}
+
+function layEggs(n) {
+  // fill the emptiest-but-nearly-full line so the egg can complete it
+  let bestLine = null, bestEmpty = 99;
+  for (let r = 0; r < N; r++) { const e = board[r].filter(x => !x).length; if (e > 0 && e < bestEmpty) { bestEmpty = e; bestLine = { row: r }; } }
+  for (let c = 0; c < N; c++) { const e = board.filter(row => !row[c]).length; if (e > 0 && e < bestEmpty) { bestEmpty = e; bestLine = { col: c }; } }
+  if (!bestLine) return;
+  let laid = 0;
+  for (let i = 0; i < N && laid < n; i++) {
+    const [r, c] = bestLine.row !== undefined ? [bestLine.row, i] : [i, bestLine.col];
+    if (!board[r][c]) { board[r][c] = { kind: 2, face: false, egg: true, pop: 1 }; laid++; }
+  }
+}
+
+function checkOver() {
+  if (tray.filter(Boolean).some(anyFit)) return;
+  over = true;
+  later(0.9, showResults);
+}
+
+// ---------- fx ----------
+function burst(r, c, kind) {
+  const x = (c + 0.5) * cell, y = (r + 0.5) * cell;
+  for (let i = 0; i < 5; i++) {
+    const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 140;
+    particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 80, life: 0.6 + Math.random() * 0.3, t: 0,
+      rot: Math.random() * 6, vr: (Math.random() - .5) * 12, col: i % 2 ? "#fffdf8" : KINDS[kind].color,
+      w: cell * (0.12 + Math.random() * 0.1), h: cell * (0.07 + Math.random() * 0.06) });
+  }
+}
+function addFloat(text, x, y, big) { floats.push({ text, x, y, t: 0, big }); }
+function cutin(text, sub) {
+  const el = document.createElement("div"); el.className = "cutin"; el.textContent = text;
+  if (sub) { const s = document.createElement("small"); s.textContent = sub; el.append(s); }
+  stage.append(el); setTimeout(() => el.remove(), 950);
+}
+
+// ---------- draw ----------
+function rr(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+function drawCell(x, y, s, t, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha == null ? 1 : alpha;
+  let sc = 1;
+  if (t.pop > 0) sc = 1 + Math.sin(t.pop * Math.PI) * 0.18;
+  if (t.clearing) sc = 1 + t.clearing * 1.5;
+  ctx.translate(x + s / 2, y + s / 2); ctx.scale(sc, sc);
+  const k = KINDS[t.kind], m = s * 0.06, w = s - m * 2;
+  ctx.shadowColor = "rgba(59,47,37,.25)"; ctx.shadowOffsetY = s * 0.04; ctx.shadowBlur = s * 0.05;
+  ctx.fillStyle = "#fffdf8"; rr(-w / 2, -w / 2, w, w, s * 0.22); ctx.fill();
+  ctx.shadowColor = "transparent";
+  const iw = w - s * 0.14;
+  if (t.egg) {
+    ctx.fillStyle = "#fbf1d6"; ctx.beginPath(); ctx.ellipse(0, s * 0.03, iw * 0.36, iw * 0.44, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = k.color; ctx.globalAlpha *= 0.7;
+    for (const [a, b] of [[-0.12, -0.15], [0.14, 0.02], [-0.05, 0.2]]) { ctx.beginPath(); ctx.arc(a * s, b * s, s * 0.05, 0, Math.PI * 2); ctx.fill(); }
+  } else {
+    ctx.fillStyle = k.color; rr(-iw / 2, -iw / 2, iw, iw, s * 0.17); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.28)"; rr(-iw / 2 + s * 0.06, -iw / 2 + s * 0.05, iw * 0.5, iw * 0.18, s * 0.08); ctx.fill();
+    if (t.face) ctx.drawImage(faces[t.kind], -s * 0.55, -s * 0.55, s * 1.1, s * 1.1);
+  }
+  ctx.restore();
+}
+function drawPiece(p, x, y, s, alpha) {
+  p.cells.forEach(([dr, dc], i) => drawCell(x + dc * s, y + dr * s, s, { kind: p.kind, face: i === p.face, egg: false, pop: 0 }, alpha));
+}
+function slotRect(i) { const sw = W / 3; return { x: sw * i, y: trayY, w: sw, h: trayH }; }
+const TRAY_S = () => cell * 0.72;
+
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  if (shake > 0) ctx.translate((Math.random() - .5) * cell * 0.3 * shake, (Math.random() - .5) * cell * 0.3 * shake);
+  ctx.fillStyle = "#f3e8d3"; rr(0, 0, W, W, cell * 0.3); ctx.fill();
+  ctx.fillStyle = "rgba(59,47,37,.06)";
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) { rr(c * cell + cell * 0.1, r * cell + cell * 0.1, cell * 0.8, cell * 0.8, cell * 0.15); ctx.fill(); }
+  // ghost + line preview
+  let preview = null;
+  if (drag && drag.snap) {
+    const { r0, c0 } = drag.snap, p = tray[drag.slot];
+    const tmp = board.map(row => row.slice());
+    p.cells.forEach(([dr, dc]) => tmp[r0 + dr][c0 + dc] = { kind: p.kind });
+    preview = lineCells(fullLines(tmp));
+    ctx.fillStyle = KINDS[p.kind].color + "33";
+    for (const [r, c] of preview) { rr(c * cell + 2, r * cell + 2, cell - 4, cell - 4, cell * 0.2); ctx.fill(); }
+    drawPiece(p, c0 * cell, r0 * cell, cell, 0.35);
+  }
+  for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
+    const t = board[r][c]; if (!t) continue;
+    const a = t.clearing ? Math.max(0, 1 - t.clearing * 4) : 1;
+    drawCell(c * cell, r * cell, cell, t, a);
+    if (preview && preview.some(([pr, pc]) => pr === r && pc === c) && t.face) {
+      ctx.strokeStyle = "#3b2f25"; ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+      rr(c * cell + 1, r * cell + 1, cell - 2, cell - 2, cell * 0.22); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+  ctx.restore();
+  // tray
+  for (let i = 0; i < 3; i++) {
+    const p = tray[i], R = slotRect(i);
+    if (!p || (drag && drag.slot === i)) continue;
+    const s = TRAY_S(), fitsAny = anyFit(p);
+    drawPiece(p, R.x + (R.w - p.w * s) / 2, R.y + (R.h - p.h * s) / 2, s, fitsAny ? 1 : 0.35);
+  }
+  if (drag) {
+    const p = tray[drag.slot];
+    drawPiece(p, drag.x - p.w * cell / 2, drag.y - p.h * cell - cell * 0.6, cell, 0.95);
+  }
+  for (const q of particles) {
+    ctx.save(); ctx.globalAlpha = 1 - q.t / q.life; ctx.translate(q.x, q.y); ctx.rotate(q.rot);
+    ctx.fillStyle = q.col; ctx.fillRect(-q.w / 2, -q.h / 2, q.w, q.h); ctx.restore();
+  }
+  for (const f of floats) {
+    const k = f.t / 0.9;
+    ctx.save(); ctx.globalAlpha = 1 - k * k;
+    ctx.font = (f.big ? cell * 0.75 : cell * 0.45) + "px Jua, system-ui, sans-serif";
+    ctx.textAlign = "center"; ctx.lineJoin = "round"; ctx.lineWidth = cell * 0.13; ctx.strokeStyle = "#fffdf8"; ctx.fillStyle = "#3b2f25";
+    const y = f.y - k * cell;
+    ctx.strokeText(f.text, f.x, y); ctx.fillText(f.text, f.x, y); ctx.restore();
+  }
+}
+
+// ---------- update ----------
+function update(dt) {
+  now += dt;
+  const due = timers.filter(t => t.at <= now); timers = timers.filter(t => t.at > now);
+  due.forEach(t => t.fn());
+  for (const row of board) for (const t of row) if (t) {
+    if (t.pop > 0) t.pop = Math.max(0, t.pop - dt * 4);
+    if (t.clearing) t.clearing += dt;
+  }
+  for (const q of particles) { q.t += dt; q.vy += 500 * dt; q.x += q.vx * dt; q.y += q.vy * dt; q.rot += q.vr * dt; }
+  particles = particles.filter(q => q.t < q.life);
+  for (const f of floats) f.t += dt;
+  floats = floats.filter(f => f.t < 0.9);
+  shake = Math.max(0, shake - dt);
+  hud();
+}
+
+// ---------- HUD / results ----------
+const scoreEl = document.getElementById("score"), bestEl = document.getElementById("best");
+function hud() { scoreEl.textContent = score; bestEl.textContent = "최고 " + Math.max(best, score); }
+function showResults() {
+  if (score > best) { best = score; try { localStorage.setItem("sp_best", String(best)); } catch (e) {} }
+  const ov = document.createElement("div"); ov.className = "overlay";
+  const card = document.createElement("div"); card.className = "card";
+  card.innerHTML = '<h2>스티커북이 꽉 찼어요!</h2><div class="big">' + score + '</div><dl>' +
+    '<dt>최대 연쇄</dt><dd>' + bestChain + '</dd>' +
+    '<dt>크루 능력 발동</dt><dd>' + abilities + '회</dd>' +
+    '<dt>붙인 스티커</dt><dd>' + placed + '개</dd>' +
+    '<dt>내 최고 점수</dt><dd>' + best + '</dd>' +
+    '<dt>이번 세션 재도전</dt><dd>' + retries + '회</dd></dl>';
+  const btn = document.createElement("button"); btn.id = "retry"; btn.type = "button"; btn.textContent = "한 판 더";
+  btn.addEventListener("click", () => { retries++; reset(); });
+  card.append(btn); ov.append(card); stage.append(ov); btn.focus();
+}
+
+// ---------- input ----------
+let drag = null;
+function pos(e) { const b = cv.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; }
+function snapFor(d) {
+  const p = tray[d.slot];
+  const left = d.x - p.w * cell / 2, top = d.y - p.h * cell - cell * 0.6;
+  const c0 = Math.round(left / cell), r0 = Math.round(top / cell);
+  return fits(p, r0, c0) ? { r0, c0 } : null;
+}
+cv.addEventListener("pointerdown", e => {
+  if (busy || over) return;
+  const q = pos(e);
+  if (q.y < trayY) return;
+  const slot = Math.min(2, Math.floor(q.x / (W / 3)));
+  if (!tray[slot]) return;
+  drag = { slot, x: q.x, y: q.y, snap: null };
+  cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener("pointermove", e => {
+  if (!drag) return;
+  const q = pos(e); drag.x = q.x; drag.y = q.y; drag.snap = snapFor(drag);
+});
+cv.addEventListener("pointerup", () => {
+  if (!drag) return;
+  if (drag.snap) place(drag.slot, drag.snap.r0, drag.snap.c0);
+  drag = null;
+});
+document.addEventListener("visibilitychange", () => { paused = document.hidden; });
+
+// ---------- loop ----------
+let last = performance.now(), paused = false, frames = 0;
+function loop(t) {
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  if (!paused) { update(dt); draw(); frames++; }
+  requestAnimationFrame(loop);
+}
+
+// test hook for headless verification (prototype only)
+window.__sp = {
+  get state() { return { score, over, busy, bestChain, abilities, placed, retries, frames, tray: tray.map(p => p && p.kind) }; },
+  autoPlace() {
+    if (busy || over) return false;
+    let bestMove = null;
+    tray.forEach((p, slot) => { if (!p) return;
+      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (fits(p, r, c)) {
+        const tmp = board.map(row => row.slice()); p.cells.forEach(([dr, dc]) => tmp[r + dr][c + dc] = { kind: 0 });
+        const v = fullLines(tmp).length * 10 + Math.random();
+        if (!bestMove || v > bestMove.v) bestMove = { v, slot, r, c };
+      } });
+    return bestMove ? place(bestMove.slot, bestMove.r, bestMove.c) : false;
+  },
+  setup(rows) { // rows: array of 8 strings; '.' empty, 'c','b','y' body, 'C','B','Y' face
+    const map = { c: 0, b: 1, y: 2 };
+    board = rows.map(s => [...s].map(ch => ch === "." ? null : { kind: map[ch.toLowerCase()], face: ch !== ch.toLowerCase(), egg: false, pop: 0 }));
+  },
+  setTray(specs) { tray = specs.map(([kind, shape, face]) => { const cells = SHAPES[kind][shape];
+    return { id: idSeq++, kind, cells, face, h: Math.max(...cells.map(x => x[0])) + 1, w: Math.max(...cells.map(x => x[1])) + 1 }; }); },
+  place: (s, r, c) => place(s, r, c),
+};
+
+layout(); reset();
+requestAnimationFrame(t => { last = t; loop(t); });
+})();
+</script>
