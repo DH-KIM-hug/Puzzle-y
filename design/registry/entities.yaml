@@ -130,6 +130,7 @@ formulas:
     referenced_by:
       - design/gdd/board-rules.md
       - design/gdd/chain-resolver.md
+      - design/gdd/scoring.md
     variables:
       - board_width
       - board_height
@@ -155,6 +156,36 @@ formulas:
     added: 2026-11-07
     revised: ""
 
+  - name: depth_mult_pct
+    status: active
+    source: design/gdd/scoring.md
+    referenced_by:
+      - design/gdd/scoring.md
+      - design/gdd/chain-resolver.md
+    variables:
+      - wave_depth
+      - depth_step_pct
+      - depth_mult_max_pct
+    output_range: [100, 400]
+    expression: "min(100 + depth_step_pct * k, depth_mult_max_pct)"
+    notes: "Integer percent. Owns chain-resolver F6 (reference copy there named depth_step_bonus=0.5)."
+    added: 2026-11-07
+    revised: ""
+  - name: placement_total
+    status: active
+    source: design/gdd/scoring.md
+    referenced_by:
+      - design/gdd/scoring.md
+    variables:
+      - placement_points
+      - clear_points_per_wave
+      - activation_points_per_wave
+      - fizzle_points
+    output_range: [1, 87046]
+    expression: "n_placed*place_points_per_cell + sum_k(floor((N_line*line_mult_pct(L)+N_ab*100)*cell_points*depth_mult_pct(k)/10000) + activations_k*floor(activation_points_base*depth_mult_pct(k)/100)) + fizzle_points*n_fizzled"
+    notes: "Per-placement score, added to stage_score at commit. Read by stage goals (score goal, star thresholds), HUD, preview. Upper bound is a conservative overflow/HUD-digit bound, not a play value."
+    added: 2026-11-07
+    revised: ""
 # Example:
 #
 # formulas:
@@ -193,6 +224,7 @@ constants:
     referenced_by:
       - design/gdd/board-rules.md
       - design/gdd/chain-resolver.md
+      - design/gdd/placement-input.md
     value: 8
     unit: cells
     added: 2026-11-07
@@ -203,6 +235,7 @@ constants:
     referenced_by:
       - design/gdd/board-rules.md
       - design/gdd/chain-resolver.md
+      - design/gdd/placement-input.md
     value: 8
     unit: cells
     added: 2026-11-07
@@ -212,6 +245,8 @@ constants:
     source: design/gdd/board-rules.md
     referenced_by:
       - design/gdd/board-rules.md
+      - design/gdd/scoring.md
+      - design/gdd/placement-input.md
     value: 6
     unit: cells
     added: 2026-11-07
@@ -222,11 +257,42 @@ constants:
     referenced_by:
       - design/gdd/chain-resolver.md
       - design/gdd/game-concept.md
+      - design/gdd/scoring.md
     value: 6
     unit: waves
     added: 2026-11-07
     revised: ""
+  - name: lift_offset_cells
+    status: active
+    source: design/gdd/placement-input.md
+    referenced_by:
+      - design/gdd/placement-input.md
+      - design/gdd/board-rules.md
+    value: 0.6
+    unit: cells
+    added: 2026-11-07
+    revised: ""
 
+  - name: depth_step_pct
+    status: active
+    source: design/gdd/scoring.md
+    referenced_by:
+      - design/gdd/scoring.md
+      - design/gdd/chain-resolver.md
+      - design/gdd/game-concept.md
+    value: 50
+    unit: percent per wave
+    added: 2026-11-07
+    revised: ""
+  - name: cell_points
+    status: active
+    source: design/gdd/scoring.md
+    referenced_by:
+      - design/gdd/scoring.md
+    value: 10
+    unit: points per cleared cell
+    added: 2026-11-07
+    revised: ""
 # Example:
 #
 # constants:

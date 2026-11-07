@@ -57,7 +57,7 @@
 | 1 | 보드 & 조각 규칙 (Board & Piece Rules) | Gameplay | MVP | Designed | [design/gdd/board-rules.md](board-rules.md) | — |
 | 2 | 연쇄 해석기 & 능력 프리미티브 (Chain Resolver) | Gameplay | MVP | Designed | [design/gdd/chain-resolver.md](chain-resolver.md) | 보드 & 조각 규칙, 시드 RNG |
 | 3 | 시드 RNG (Seeded RNG) (inferred) | Core | MVP | Not Started | — (ADR only) | — |
-| 4 | 점수 & 연쇄 배율 (Scoring) | Gameplay | MVP | Not Started | design/gdd/scoring.md | 연쇄 해석기 |
+| 4 | 점수 & 연쇄 배율 (Scoring) | Gameplay | MVP | Designed | [design/gdd/scoring.md](scoring.md) | 연쇄 해석기 |
 | 5 | 크루 정의 & 능력 (Crew Definition) | Gameplay | MVP | Not Started | design/gdd/crew-definition.md | 연쇄 해석기, 보드 & 조각 규칙 |
 | 6 | 트레이 공급 (Tray Supply) | Gameplay | MVP | Not Started | design/gdd/tray-supply.md | 보드 & 조각 규칙, 크루 정의, 시드 RNG |
 | 7 | 드래그 & 배치 입력 (Drag & Placement Input) (inferred) | Core | MVP | Not Started | design/gdd/placement-input.md | 보드 & 조각 규칙 |
@@ -251,7 +251,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 | Design docs started | 2 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 2/22 (시드 RNG 포함; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
+| MVP systems designed | 3/22 (시드 RNG 포함; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
 | Vertical Slice systems designed | 0/2 |
 
 ---
@@ -281,7 +281,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 - [x] `/design-system board-rules` (2026-11-07, Designed — `/design-review` 대기; UX Flag: 게임플레이 화면 `/ux-design` 필요; 판 진행 흐름 Depends On에 보드 & 조각 규칙 추가 제안 — board-rules Q6)
 - [x] Q6 반영: 판 진행 흐름 Depends On에 보드 & 조각 규칙 추가 (2026-11-07)
 - [x] `/design-system chain-resolver` (2026-11-07, Designed — `/design-review` 대기; 시드 RNG 계약은 규칙 G; 스테이지 & 목표 → 연쇄 해석기 의존 추가 제안 — chain-resolver Q6)
-- [ ] `/design-system scoring` (다음 — F6 깊이 배율 소유)
+- [x] `/design-system scoring` (2026-11-07, Designed — `/design-review` 대기; F6 깊이 배율 소유 확정(정수 %, 상한 400); 판 진행 흐름·연쇄 미리보기 → 점수 의존 추가 제안 — scoring Q5)
 - [ ] `/architecture-decision` — 결정적 연쇄 해석기 (첫 critical ADR, 해석기 GDD와 병행)
 - [ ] Run `/design-review` on each completed GDD
 - [ ] Run `/gate-check technical-setup` when MVP systems are designed
