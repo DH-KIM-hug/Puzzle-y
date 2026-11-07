@@ -324,7 +324,7 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 
 점수 시스템 자체는 화면 요소를 만들지 않는다. 요구 사항: (1) HUD의 점수 영역은 **6자리**(F6 상한)를 잘림 없이 표시한다; (2) 숫자는 `tabular-nums`처럼 폭이 고정된 숫자 글꼴로 증가 중 흔들리지 않는다;
 (3) 예상 점수를 미리보기에 띄울지, 띄운다면 총점만인지 웨이브별인지는 연쇄 미리보기 GDD가 정한다 — "가장 큰 숫자 찾기" 퇴화 위험(chain-resolver 규칙 26)이 있으므로 MVP 권장은
-**총점 한 줄**("+401 예상") (D8). 현지화: 숫자는 로캘 천 단위 구분 기호를 따른다 — 문자열은 HUD GDD 소유.
+**총점 한 줄**("+356 예상") (D8). 현지화: 숫자는 로캘 천 단위 구분 기호를 따른다 — 문자열은 HUD GDD 소유.
 
 📌 **UX Flag** — 플레이 HUD 점수 영역과 미리보기 예상 점수 표기는 `/ux-design`(gameplay HUD)에서 다룬다.
 
@@ -369,7 +369,7 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 - **AC-S05 [Logic] (규칙 9, 발동·피즐)** — **GIVEN** 웨이브 0에 `FACE_ACTIVATED` 2개, 웨이브 6에 `FACE_FIZZLED(DEPTH_CAP)` 1개, **WHEN** 채점, **THEN** 웨이브 0 `activation_points = 40`,
   웨이브 6 `activation_points = 0`, 피즐 점수 0 (`fizzle_points = 0`). **AND** `fizzle_points`만 5로 바꾸면 total이 정확히 5 늘어난다.
 - **AC-S05b [Logic] (규칙 9, 동시 얼굴)** — **GIVEN** 웨이브 1에 `FACE_ACTIVATED` 3개(같은 웨이브 동시 발동), **WHEN** 채점, **THEN** 웨이브 1 `activation_points = 3 × ⌊20 × 150 / 100⌋ = 90`.
-- **AC-S06 [Logic] (규칙 11·12, 누계)** — **GIVEN** `ACTIVE` 상태에서 total 4·85·401인 배치 3번, **WHEN** 각 커밋 후 읽으면, **THEN** `stage_score`는 4·89·490, `best_placement = 401`.
+- **AC-S06 [Logic] (규칙 11·12, 누계)** — **GIVEN** `ACTIVE` 상태에서 total 4·85·356인 배치 3번, **WHEN** 각 커밋 후 읽으면, **THEN** `stage_score`는 4·89·445, `best_placement = 356`.
   **AND** 재시도 시 둘 다 0.
 - **AC-S07 [Logic] (규칙 14, 크루 무관)** — **GIVEN** 같은 이벤트 목록에서 `crew_id`만 다른 크루로 바꾼 두 벌, **WHEN** 채점, **THEN** total이 같다.
 
@@ -377,8 +377,8 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 
 - **AC-S08 [Logic] (F1·F2·F3 표)** — **GIVEN** 시작값, **WHEN** 함수를 직접 부르면, **THEN** `placement_points(6) = 6`; `depth_mult_pct(0..6) = 100,150,200,250,300,350,400`;
   `line_mult_pct(0,1,2,3,7) = 100,100,200,300,700`. **AND** `depth_step_pct = 50`, `depth_mult_max_pct = 400`, `k = 8`이면 400 (상한).
-- **AC-S09 [Logic] (F4·F5, 도미노 골든 값)** — **GIVEN** F5 Example의 이벤트 목록(1칸 배치; 웨이브 0 행 8칸 LINE + 냥이 발동; 웨이브 1 ABILITY 10칸 + 곰곰 발동; 웨이브 2 ABILITY 6칸),
-  **WHEN** 채점, **THEN** 웨이브별 `clear_points = 80, 150, 120`, `activation_points = 20, 30, 0`, **total = 401**.
+- **AC-S09 [Logic] (F4·F5, 도미노 골든 값)** — **GIVEN** F5 Example의 이벤트 목록(1칸 배치; 웨이브 0 행 8칸 LINE + 냥이 발동; 웨이브 1 ABILITY 7칸(냥이 십자의 5번 열 — 해석기로 도달 가능, D11) + 곰곰 발동; 웨이브 2 ABILITY 6칸),
+  **WHEN** 채점, **THEN** 웨이브별 `clear_points = 80, 105, 120`, `activation_points = 20, 30, 0`, **total = 356** (Q8 해결: 도달 불가 값 401은 AC에서 쓰지 않는다).
 - **AC-S10 [Logic] (F4, 프로토타입 일치)** — **GIVEN** 웨이브 0 행 1 + 열 1 (15칸, L=2) 한 웨이브, **WHEN** 채점, **THEN** `clear_points = 300`. **AND** 웨이브 2 ABILITY 9칸이면 180.
 - **AC-S11 [Logic] (F4 내림)** — **GIVEN** `cell_points = 7`, `depth_step_pct = 33`, 웨이브 1 LINE 5칸, **WHEN** 채점, **THEN** `clear_points = ⌊5 × 100 × 7 × 133 / 10000⌋ = 46`
   (칸마다가 아니라 웨이브에서 한 번 내림).
@@ -387,7 +387,7 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 - **AC-S13 [Logic] (F6, 상한·데이터 검증)** — **GIVEN** 64칸 전부 LINE·L=16·k=6인 합성 웨이브, **WHEN** 채점, **THEN** 오버플로 없이 F6 `total_max` 이하의 양의 정수.
   **AND** `cell_points = 0` 또는 `depth_mult_max_pct = 50`인 `ScoringRules`는 로드가 거부되고 오류에 노브 이름·값이 적힌다.
 - **AC-S15 [Config] (노브 데이터화)** — **GIVEN** `ScoringRules` 파일에서 `depth_step_pct`만 100으로 바꾸면, **WHEN** AC-S09 픽스처를 채점, **THEN** 코드 변경 없이 웨이브 1·2 배율이 200·300
-  (`clear_points = 80, 200, 180`, `activation_points = 20, 40, 0`, total = 521).
+  (`clear_points = 80, 140, 180`, `activation_points = 20, 40, 0`, total = 461).
 
 **미리보기 = 결과 (불변식)**
 
@@ -409,7 +409,7 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 | Q4 | 방해물 겹 벗기기(`CELL_MODIFIED`)·특정 칸 지우기에 별도 점수가 필요한가 | 칸 종류 & 방해물 GDD | `/design-system obstacles` |
 | Q5 | systems-index: 판 진행 흐름 → 점수, (예상 점수 표시 시) 연쇄 미리보기 → 점수 의존 추가 | producer · `/map-systems` | 해당 GDD 작성 전 |
 | Q6 | ~~chain-resolver F6 변수명 정렬~~ — **해소**: chain-resolver F6을 이 문서 F2 식·변수명·상한으로 교체 (chain-resolver D14) | — | 해소 |
-| Q8 | AC-S09/AC-S06 골든 값 401이 해석기로 도달 불가능한 픽스처(웨이브 1 능력 칸 10 > 최대 7)에 기댄다 — 도달 가능한 356으로 바꿀지, "산술 전용 픽스처"로 명시할지 | qa-lead | 다음 AC 개정 |
+| Q8 (Resolved 2026-11-07: AC는 356 사용, qa-lead) | AC-S09/AC-S06 골든 값 401이 해석기로 도달 불가능한 픽스처(웨이브 1 능력 칸 10 > 최대 7)에 기댄다 — 도달 가능한 356으로 바꿀지, "산술 전용 픽스처"로 명시할지 | qa-lead | 다음 AC 개정 |
 | Q7 | 스테이지 클리어 시 남은 조각 보너스를 둘 것인가 — 둔다면 스테이지 & 목표 소유, 이 문서의 누계에 더하는 항으로 | 스테이지 & 목표 GDD | `/design-system stage-goals` |
 
 ### Decision Log (사용자 위임 "진행부탁 알아서 다" — 질문 없이 권장안 채택)
