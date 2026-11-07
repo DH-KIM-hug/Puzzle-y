@@ -2,7 +2,7 @@
 
 > **Status**: Draft
 > **Created**: 2026-11-07
-> **Last Updated**: 2026-11-07 (board-rules Designed)
+> **Last Updated**: 2026-11-07 (chain-resolver Designed; 판 진행 흐름 의존성에 보드 & 조각 규칙 추가)
 > **Source Concept**: design/gdd/game-concept.md (Status: In Review, revised 2026-11-07)
 > **Created by**: `/map-systems` (automation guided, review_mode lean, docs.density balanced). 사용자 위임("진행부탁 알아서 다")으로 모든 질문은 권장안으로 결정했다. 결정 내역은 아래 [Decision Log](#decision-log).
 
@@ -55,7 +55,7 @@
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|-------------|----------|----------|--------|------------|------------|
 | 1 | 보드 & 조각 규칙 (Board & Piece Rules) | Gameplay | MVP | Designed | [design/gdd/board-rules.md](board-rules.md) | — |
-| 2 | 연쇄 해석기 & 능력 프리미티브 (Chain Resolver) | Gameplay | MVP | Not Started | design/gdd/chain-resolver.md | 보드 & 조각 규칙, 시드 RNG |
+| 2 | 연쇄 해석기 & 능력 프리미티브 (Chain Resolver) | Gameplay | MVP | Designed | [design/gdd/chain-resolver.md](chain-resolver.md) | 보드 & 조각 규칙, 시드 RNG |
 | 3 | 시드 RNG (Seeded RNG) (inferred) | Core | MVP | Not Started | — (ADR only) | — |
 | 4 | 점수 & 연쇄 배율 (Scoring) | Gameplay | MVP | Not Started | design/gdd/scoring.md | 연쇄 해석기 |
 | 5 | 크루 정의 & 능력 (Crew Definition) | Gameplay | MVP | Not Started | design/gdd/crew-definition.md | 연쇄 해석기, 보드 & 조각 규칙 |
@@ -64,7 +64,7 @@
 | 8 | 연쇄 미리보기 (Chain Preview) | Gameplay | MVP | Not Started | design/gdd/chain-preview.md | 연쇄 해석기, 드래그 & 배치 입력 |
 | 9 | 칸 종류 & 방해물 (Cell Types & Obstacles) | Gameplay | MVP | Not Started | design/gdd/obstacles.md | 보드 & 조각 규칙, 연쇄 해석기 |
 | 10 | 스테이지 & 목표 (Stage & Goals) | Gameplay | MVP | Not Started | design/gdd/stage-goals.md | 보드 & 조각 규칙, 점수, 트레이 공급, 칸 종류 & 방해물 |
-| 11 | 판 진행 흐름 (Round Flow) | Core | MVP | Not Started | design/gdd/round-flow.md | 스테이지 & 목표, 트레이 공급, 연쇄 해석기, 팀 편성 |
+| 11 | 판 진행 흐름 (Round Flow) | Core | MVP | Not Started | design/gdd/round-flow.md | 보드 & 조각 규칙, 스테이지 & 목표, 트레이 공급, 연쇄 해석기, 팀 편성 |
 | 12 | 화면 흐름 & 내비게이션 (Scene Flow) (inferred) | Core | MVP | Not Started | design/gdd/scene-flow.md | 판 진행 흐름 |
 | 13 | 보유 크루 (Crew Ownership) (inferred) | Progression | MVP | Not Started | design/gdd/crew-ownership.md | 크루 정의 |
 | 14 | 팀 편성 (Team Composition) | Gameplay | MVP | Not Started | design/gdd/team-composition.md | 크루 정의, 보유 크루 |
@@ -151,7 +151,7 @@
 2. **칸 종류 & 방해물** — depends on: 보드 & 조각 규칙, 연쇄 해석기
 3. **팀 편성** — depends on: 크루 정의, 보유 크루
 4. **스테이지 & 목표** — depends on: 보드 & 조각 규칙, 점수, 트레이 공급, 칸 종류 & 방해물
-5. **판 진행 흐름** — depends on: 스테이지 & 목표, 트레이 공급, 연쇄 해석기, 팀 편성
+5. **판 진행 흐름** — depends on: 보드 & 조각 규칙 (`place`·`no_moves` 직접 호출), 스테이지 & 목표, 트레이 공급, 연쇄 해석기, 팀 편성
 6. **스테이지 진행 & 해금** — depends on: 스테이지 & 목표
 7. **재화 & 보상** — depends on: 스테이지 & 목표, 스테이지 진행
 8. **가챠** — depends on: 재화 & 보상, 크루 정의, 보유 크루, 시드 RNG
@@ -248,10 +248,10 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 31 |
-| Design docs started | 1 |
+| Design docs started | 2 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 1/22 (시드 RNG 포함; GDD 대상은 21) |
+| MVP systems designed | 2/22 (시드 RNG 포함; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
 | Vertical Slice systems designed | 0/2 |
 
 ---
@@ -279,7 +279,9 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 
 - [ ] Review and approve this systems enumeration (위임 결정 검토 — 특히 Decision Log)
 - [x] `/design-system board-rules` (2026-11-07, Designed — `/design-review` 대기; UX Flag: 게임플레이 화면 `/ux-design` 필요; 판 진행 흐름 Depends On에 보드 & 조각 규칙 추가 제안 — board-rules Q6)
-- [ ] `/design-system chain-resolver` (MVP Foundation 다음)
+- [x] Q6 반영: 판 진행 흐름 Depends On에 보드 & 조각 규칙 추가 (2026-11-07)
+- [x] `/design-system chain-resolver` (2026-11-07, Designed — `/design-review` 대기; 시드 RNG 계약은 규칙 G; 스테이지 & 목표 → 연쇄 해석기 의존 추가 제안 — chain-resolver Q6)
+- [ ] `/design-system scoring` (다음 — F6 깊이 배율 소유)
 - [ ] `/architecture-decision` — 결정적 연쇄 해석기 (첫 critical ADR, 해석기 GDD와 병행)
 - [ ] Run `/design-review` on each completed GDD
 - [ ] Run `/gate-check technical-setup` when MVP systems are designed
