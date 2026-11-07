@@ -65,7 +65,85 @@ last_updated: "2026-11-07"
 # Attribute fields: any key stats that could appear in another GDD
 #   (health, damage, drops, faction, etc.)
 
-entities: []
+entities:
+  - name: nyangi
+    status: active
+    source: design/gdd/crew-definition.md
+    referenced_by:
+      - design/gdd/crew-definition.md
+    display_name: "냥이"
+    colour_slot: 1
+    rarity: COMMON
+    starter: true
+    ability: "clear_cross{reach:-1}"
+    shapes: "I3_H 3, I3_V 3, I4_H 2, L3_A 2, L4_A 1, J4_A 1"
+    added: 2026-11-07
+    revised: ""
+  - name: gomgom
+    status: active
+    source: design/gdd/crew-definition.md
+    referenced_by:
+      - design/gdd/crew-definition.md
+    display_name: "곰곰"
+    colour_slot: 2
+    rarity: COMMON
+    starter: true
+    ability: "clear_area{radius:1}"
+    shapes: "O4 3, R6_H 2, T4_D 2, R6_V 1"
+    added: 2026-11-07
+    revised: ""
+  - name: piyak
+    status: active
+    source: design/gdd/crew-definition.md
+    referenced_by:
+      - design/gdd/crew-definition.md
+    display_name: "삐약"
+    colour_slot: 3
+    rarity: COMMON
+    starter: true
+    ability: "lay_eggs_in_own_line{count:3,prefer:fuller,order:nearest}"
+    shapes: "D1 2, D2_H 2, D2_V 2, L3_B 1, L3_C 1"
+    added: 2026-11-07
+    revised: ""
+  - name: gaegul
+    status: active
+    source: design/gdd/crew-definition.md
+    referenced_by:
+      - design/gdd/crew-definition.md
+    display_name: "개굴"
+    colour_slot: 4
+    rarity: RARE
+    starter: false
+    ability: "clear_diagonals{reach:-1}"
+    shapes: "S4_H 2, Z4_H 2, L3_D 2, S4_V 1, Z4_V 1"
+    added: 2026-11-07
+    revised: ""
+  - name: kkangchong
+    status: active
+    source: design/gdd/crew-definition.md
+    referenced_by:
+      - design/gdd/crew-definition.md
+    display_name: "깡총"
+    colour_slot: 5
+    rarity: SPECIAL
+    starter: false
+    ability: "clear_pattern{offsets:8 cells at Chebyshev distance 2 (orth+diag)}"
+    shapes: "I4_V 2, T4_U 2, U5 1, I3_V 1"
+    added: 2026-11-07
+    revised: ""
+  - name: mongsil
+    status: active
+    source: design/gdd/crew-definition.md
+    referenced_by:
+      - design/gdd/crew-definition.md
+    display_name: "몽실"
+    colour_slot: 6
+    rarity: RARE
+    starter: false
+    ability: "lay_eggs_pattern{offsets:plus 5 incl face}"
+    shapes: "X5 1, P5_A 1, L3_B 2, I3_H 2, D2_H 2"
+    added: 2026-11-07
+    revised: ""
 
 # Example (remove when first real entry is added):
 #
@@ -186,6 +264,19 @@ formulas:
     notes: "Per-placement score, added to stage_score at commit. Read by stage goals (score goal, star thresholds), HUD, preview. Upper bound is a conservative overflow/HUD-digit bound, not a play value."
     added: 2026-11-07
     revised: ""
+  - name: expected_piece_cells
+    status: active
+    source: design/gdd/crew-definition.md
+    referenced_by:
+      - design/gdd/crew-definition.md
+    variables:
+      - shape_weight
+      - shape_cells
+    output_range: [1, 6]
+    expression: "E_c = sum(w_s*|s|)/sum(w_s); team E_T = sum(share_c*E_c)"
+    notes: "Per-crew balance metric; lint range 2.0-5.0. MVP values 2.00 (piyak) to 4.75 (gomgom). Tray supply provides share_c."
+    added: 2026-11-07
+    revised: ""
 # Example:
 #
 # formulas:
@@ -247,6 +338,7 @@ constants:
       - design/gdd/board-rules.md
       - design/gdd/scoring.md
       - design/gdd/placement-input.md
+      - design/gdd/crew-definition.md
     value: 6
     unit: cells
     added: 2026-11-07

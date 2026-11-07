@@ -58,7 +58,7 @@
 | 2 | 연쇄 해석기 & 능력 프리미티브 (Chain Resolver) | Gameplay | MVP | Designed | [design/gdd/chain-resolver.md](chain-resolver.md) | 보드 & 조각 규칙, 시드 RNG |
 | 3 | 시드 RNG (Seeded RNG) (inferred) | Core | MVP | Not Started | — (ADR only) | — |
 | 4 | 점수 & 연쇄 배율 (Scoring) | Gameplay | MVP | Designed | [design/gdd/scoring.md](scoring.md) | 연쇄 해석기 |
-| 5 | 크루 정의 & 능력 (Crew Definition) | Gameplay | MVP | Not Started | design/gdd/crew-definition.md | 연쇄 해석기, 보드 & 조각 규칙 |
+| 5 | 크루 정의 & 능력 (Crew Definition) | Gameplay | MVP | Designed | [design/gdd/crew-definition.md](crew-definition.md) | 연쇄 해석기, 보드 & 조각 규칙 |
 | 6 | 트레이 공급 (Tray Supply) | Gameplay | MVP | Not Started | design/gdd/tray-supply.md | 보드 & 조각 규칙, 크루 정의, 시드 RNG |
 | 7 | 드래그 & 배치 입력 (Drag & Placement Input) (inferred) | Core | MVP | Designed | [design/gdd/placement-input.md](placement-input.md) | 보드 & 조각 규칙 |
 | 8 | 연쇄 미리보기 (Chain Preview) | Gameplay | MVP | Not Started | design/gdd/chain-preview.md | 연쇄 해석기, 드래그 & 배치 입력 |
@@ -251,7 +251,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 | Design docs started | 2 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 4/22 (시드 RNG 포함; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
+| MVP systems designed | 5/22 (시드 RNG 포함; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
 | Vertical Slice systems designed | 0/2 |
 
 ---
@@ -283,6 +283,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 - [x] `/design-system chain-resolver` (2026-11-07, Designed — `/design-review` 대기; 시드 RNG 계약은 규칙 G; 스테이지 & 목표 → 연쇄 해석기 의존 추가 제안 — chain-resolver Q6)
 - [x] `/design-system scoring` (2026-11-07, Designed — `/design-review` 대기; F6 깊이 배율 소유 확정(정수 %, 상한 400); 판 진행 흐름·연쇄 미리보기 → 점수 의존 추가 제안 — scoring Q5)
 - [x] `/design-system placement-input` (2026-11-07, Designed — `/design-review` 대기; UX Flag: 드래그 상호작용 패턴 `/ux-design`; 판 진행 흐름 Depends On에 드래그 & 배치 입력 추가 제안 — placement-input Q1)
+- [x] `/design-system crew-definition` (2026-11-07, Designed — `/design-review` 대기; MVP 6명 냥이·곰곰·삐약·개굴·깡총·몽실, 새 프리미티브 불필요(chain-resolver Q3 해소), 얼굴 위치 board-rules Q2 해소; UX Flag: 팀 편성 크루 카드 `/ux-design`)
 - [ ] `/architecture-decision` — 결정적 연쇄 해석기 (첫 critical ADR, 해석기 GDD와 병행)
 - [ ] Run `/design-review` on each completed GDD
 - [ ] Run `/gate-check technical-setup` when MVP systems are designed
