@@ -40,7 +40,7 @@
 #   unsupported layout, with its number.
 
 version: 1
-last_updated: ""
+last_updated: "2026-11-07"
 
 # ─── STATE OWNERSHIP ─────────────────────────────────────────────────────────
 # Who is the authoritative owner of each piece of shared game state.
@@ -81,7 +81,23 @@ state_ownership: []
 #
 # pattern options: signal | direct_call | event_bus | shared_resource | rpc | none
 
-interfaces: []
+interfaces:
+  - contract: chain_result_events
+    status: active
+    pattern: direct_call
+    producer: chain-resolver
+    consumers:
+      - round-flow
+      - chain-preview
+      - scoring
+      - chain-presentation
+      - stage-goals
+    adr: docs/architecture/adr-0001-pure-deterministic-rules-core.md
+    signal_signature: "ChainResolver.resolve(board: BoardState, piece: PieceInstance, anchor: Vector2i, ctx: ResolveContext) -> ChainResult (read-only events: Array[ChainEvent])"
+    referenced_by:
+      - docs/architecture/adr-0001-pure-deterministic-rules-core.md
+    added: 2026-11-07
+    revised: ""
 
 # Example:
 #
@@ -141,7 +157,17 @@ performance_budgets: []
 # Register an API decision when the choice is non-obvious and other ADRs might
 # make a different choice for the same purpose without knowing this was decided.
 
-api_decisions: []
+api_decisions:
+  - purpose: deterministic_rng
+    status: active
+    api: "SeedHash.hash32 + DetRng (own 32-bit hash, per-draw seeds from stage_seed, stream tag, index)"
+    not: "RandomNumberGenerator, global randi/randf/randomize, String.hash()"
+    adr: docs/architecture/adr-0001-pure-deterministic-rules-core.md
+    reason: "Sequence must be stable across Godot versions and platforms for FIXED stages, preview equality and replay"
+    referenced_by:
+      - docs/architecture/adr-0001-pure-deterministic-rules-core.md
+    added: 2026-11-07
+    revised: ""
 
 # Example:
 #
@@ -167,7 +193,27 @@ api_decisions: []
 # Register a pattern when an ADR explicitly bans it AND other ADRs might
 # unknowingly use it (i.e., it's a tempting but wrong approach for this project).
 
-forbidden_patterns: []
+forbidden_patterns:
+  - pattern: rules_core_node_dependency
+    status: active
+    description: "Scripts under src/core/ must not extend or reference Node, SceneTree, signals or autoloads."
+    why: "Rules must run in unit tests without a scene tree and be shared by preview and commit."
+    adr: docs/architecture/adr-0001-pure-deterministic-rules-core.md
+    added: 2026-11-07
+
+  - pattern: preview_specific_rules_path
+    status: active
+    description: "Preview, presentation or HUD must not re-implement or approximate board or chain rules; call ChainResolver.resolve with the RoundFlow context."
+    why: "Preview different from result is a bug (pillar 3)."
+    adr: docs/architecture/adr-0001-pure-deterministic-rules-core.md
+    added: 2026-11-07
+
+  - pattern: float_or_global_state_in_rules
+    status: active
+    description: "Rules Core must not use float arithmetic, Time, OS or global random state."
+    why: "Breaks cross-platform determinism of events, scores and trays."
+    adr: docs/architecture/adr-0001-pure-deterministic-rules-core.md
+    added: 2026-11-07
 
 # Example:
 #
