@@ -72,7 +72,7 @@
 | 16 | 재화 & 보상 (Currency & Rewards) | Economy | MVP | Not Started | design/gdd/currency-rewards.md | 스테이지 & 목표, 스테이지 진행 |
 | 17 | 가챠 (Gacha: 천장·샤드·확률) | Economy | MVP | Not Started | design/gdd/gacha.md | 재화 & 보상, 크루 정의, 보유 크루, 시드 RNG |
 | 18 | 로컬 세이브 (Local Save) | Persistence | MVP | Not Started | design/gdd/save-system.md | — (스키마는 보유 크루·재화·진행·가챠 상태를 담음) |
-| 19 | 연쇄 연출 재생기 (Chain Presentation) | Gameplay | MVP | Not Started | design/gdd/chain-presentation.md | 연쇄 해석기 (이벤트 목록) |
+| 19 | 연쇄 연출 재생기 (Chain Presentation) | Gameplay | MVP | Designed | [design/gdd/chain-presentation.md](chain-presentation.md) | 연쇄 해석기 (이벤트 목록) |
 | 20 | 플레이 HUD (Gameplay HUD) | UI | MVP | Not Started | design/gdd/gameplay-hud.md | 스테이지 & 목표, 점수, 판 진행 흐름 |
 | 21 | 메타 화면 UI (스테이지 선택·팀 편성·결과) | UI | MVP | Not Started | design/gdd/meta-screens-ui.md | 스테이지 진행, 팀 편성, 판 진행 흐름, 화면 흐름 |
 | 22 | 가챠 UI & 확률 표시 (Gacha UI) | UI | MVP | Not Started | design/gdd/gacha-ui.md | 가챠 |
@@ -251,7 +251,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 | Design docs started | 2 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 6/22 (시드 RNG 포함; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
+| MVP systems designed | 7/22 (시드 RNG 포함; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
 | Vertical Slice systems designed | 0/2 |
 
 ---
@@ -287,6 +287,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 - [x] `/design-system chain-preview` (2026-11-07, Designed — `/design-review` 대기; "구조는 보이고 값은 숨긴다" — 예상 점수 기본 숨김; 배지 숫자 = `stage` (chain-resolver 규칙 9 문구 정리 필요 — chain-preview Q1); UX Flag: 게임플레이 화면 `banner_band`; 판 진행 흐름 #11 → 연쇄 미리보기, 연쇄 미리보기 → 점수(Soft) 의존 추가 제안 — chain-preview Q4)
 - [ ] `/architecture-decision` — 결정적 연쇄 해석기 (첫 critical ADR, 해석기 GDD와 병행)
 - [ ] Run `/design-review` on each completed GDD
+- [x] `/design-system chain-presentation` (2026-11-07, Designed — `/design-review` 대기; 이벤트 → 타임라인 선계산, 웨이브 박자 0.54 s × 템포 1.0→0.6, 연쇄 6단 ≤ 4.0 s 압축 상한, 탭 빨리 감기 ×3 / 2회 건너뛰기, 움직임 줄이기, 펄스 ≥ 0.34 s 간격; UX Flag: 배너·팝업 레이어 + 일시정지 메뉴 토글; Depends On에 판 진행 흐름(호출자)·점수·크루 정의 Soft 의존 표기 제안 — chain-presentation Q6)
 - [ ] Run `/gate-check technical-setup` when MVP systems are designed
 - [ ] (선택) review_mode full에서 TD-SYSTEM-BOUNDARY / PR-SCOPE / CD-SYSTEMS 재실행
 - [ ] Validate the highest-risk systems with `/vertical-slice` before committing to Production

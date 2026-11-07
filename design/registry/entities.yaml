@@ -241,6 +241,7 @@ formulas:
     referenced_by:
       - design/gdd/scoring.md
       - design/gdd/chain-resolver.md
+      - design/gdd/chain-presentation.md
     variables:
       - wave_depth
       - depth_step_pct
@@ -277,6 +278,23 @@ formulas:
     output_range: [1, 6]
     expression: "E_c = sum(w_s*|s|)/sum(w_s); team E_T = sum(share_c*E_c)"
     notes: "Per-crew balance metric; lint range 2.0-5.0. MVP values 2.00 (piyak) to 4.75 (gomgom). Tray supply provides share_c."
+    added: 2026-11-07
+    revised: ""
+  - name: chain_playback_time
+    status: active
+    source: design/gdd/chain-presentation.md
+    referenced_by:
+      - design/gdd/chain-presentation.md
+    variables:
+      - waves
+      - tempo
+      - n_activated_faces
+      - cap_reached
+      - chain_playback_budget_s
+      - speed_pref
+    output_range: [0.12, 4.0]
+    expression: "T_raw = place_dur + sum_k beat(k) + cap_hold? + settle_dur; T = T_raw * max(c_min, min(1, T_budget/T_raw)) / speed_pref"
+    notes: "Seconds at speed 1.0. beat(k)=(0.24+0.30)*tempo(k)+stagger; tempo 1.0 -> 0.6 floor. Depth-6 capped 3.51 s, worst 4.00 s. Read by round-flow (input wait), audio, HUD."
     added: 2026-11-07
     revised: ""
 # Example:
@@ -355,6 +373,7 @@ constants:
       - design/gdd/game-concept.md
       - design/gdd/scoring.md
       - design/gdd/chain-preview.md
+      - design/gdd/chain-presentation.md
     value: 6
     unit: waves
     added: 2026-11-07
@@ -388,6 +407,16 @@ constants:
       - design/gdd/scoring.md
     value: 10
     unit: points per cleared cell
+    added: 2026-11-07
+    revised: ""
+  - name: chain_playback_budget_s
+    status: active
+    source: design/gdd/chain-presentation.md
+    referenced_by:
+      - design/gdd/chain-presentation.md
+      - design/gdd/chain-resolver.md
+    value: 4.0
+    unit: seconds (max chain playback at speed 1.0)
     added: 2026-11-07
     revised: ""
 # Example:

@@ -1,6 +1,7 @@
 # 연쇄 연출 재생기 (Chain Presentation)
 
-> **Status**: In Design
+> **Status**: Designed (pending `/design-review` in a fresh session)
+> **Creative Director Review (CD-GDD-ALIGN)**: NOT ASSESSED 2026-11-07 — skipped (review_mode lean; not a PHASE-GATE)
 > **Author**: user (위임) + Claude (`/design-system`)
 > **Last Updated**: 2026-11-07
 > **Last Verified**: 2026-11-07
@@ -8,9 +9,12 @@
 
 ## Summary
 
-[To be designed]
+배치 하나의 확정된 결과(연쇄 해석기의 이벤트 목록 + 점수 내역)를 스티커가 "들썩 떼어짐 → 효과 → 다시 착 붙음" 문법으로 웨이브마다 한 박자씩 재생하는
+재생기다. 게임 상태를 바꾸거나 판정하지 않고 보여 주기만 하며, 일반 줄 지우기는 조용히(≈ 0.5 s), 얼굴 연쇄는 깊어질수록 흔들림·컷인·컨페티가 커지고
+박자는 빨라져 연쇄 6단도 4초 안에 끝난다. 탭으로 빨리 감기·건너뛰기, 움직임 줄이기, 초당 3회 이하 밝기 펄스를 보장해 기둥 1(도미노의 손맛)을
+"한 판 더" 템포와 접근성 안에서 실현한다.
 
-> **Quick reference** — Layer: `Presentation` · Priority: `MVP` · Key deps: [To be designed]
+> **Quick reference** — Layer: `Presentation` · Priority: `MVP` · Key deps: `연쇄 해석기` (Hard), `판 진행 흐름` (Hard, 호출자), `점수 & 연쇄 배율` · `크루 정의` (Soft) — downstream: 오디오 SFX, 플레이 HUD
 
 ## Overview
 
@@ -77,7 +81,7 @@
 10. **`CELLS_CLEARED`** — 떼어짐 문법 (art-bible 원칙 2·3): 칸마다 ① 모서리 들썩(회전 ±6°, 스케일 1.0 → 1.08, 그림자 1–2px → 8px)
     ② 날아감(위쪽으로 흩어지며 페이드) — 칸 하나의 애니메이션 길이 `cell_lift_dur`. 칸마다 시작 시각을 엇갈린다(F5):
     `by = ABILITY`·`BOTH` 칸은 `source_order` 얼굴에서 거리 순으로, `by = LINE` 칸은 놓은 칸에서 거리 순으로 — 도미노가 "뻗어 나가는"
-    방향이 보인다. 엇갈림은 떼어짐 구간 안에 들어가도록 상한이 있다. 날아가는 칸마다 종이 조각 입자(F7)를 뿌린다.
+    방향이 보인다. 엇갈림에는 상한이 있다(F5 — 바닥 템포에서는 칸 애니메이션이 떼어짐 구간을 최대 0.064 s 넘쳐 다음 구간과 겹친다). 날아가는 칸마다 종이 조각 입자(F3)를 뿌린다.
     웨이브 점수 팝업 "+(`clear_points(k)` + `activation_points(k)`)"이 그 웨이브 지워진 칸 무리의 중심에서 떼어짐 시작과 함께 떠오른다
     (`popup_dur`). k ≥ 1이면 강조 스타일, 옆에 금색 배율 "×`depth_mult_pct(k)`/100"을 붙인다 (scoring Visual/Audio).
 11. **`FACE_ACTIVATED`** — 얼굴은 떼어짐 구간 시작에 다른 칸보다 **더 높이** 들린다(그림자 10px, 스케일 1.15, 발동 표정으로 교체).
@@ -85,21 +89,21 @@
     **화면 가장자리 컷인 자리로 날아가 "착" 다시 붙는다** — art-bible의 "떼어짐 → 효과 → 다시 붙음" 문법을 얼굴이 완성한다.
     같은 웨이브의 얼굴은 `order_index` 순서로 `face_gap`씩 엇갈려 들리고 효과도 같은 간격으로 시작한다 (기둥 3: 미리보기 번호와 같은 순서).
     컷인 규칙은 규칙 14.
-12. **`ABILITY_EFFECT`** — 효과 구간에서 재생한다.
-    - `CLEAR`: 크루별 효과 그림(냥이 할퀴기 선, 곰곰 포옹 원 등 — 크루 정의 Visual/Audio)이 얼굴 칸에서 대상 칸까지 `effect_spread_dur` 동안
+12. **`ABILITY_EFFECT`** — 그 얼굴의 들썩 + `face_lead`에 시작해 `effect_spread(k)`(F2) 창 안에서 재생한다 (떼어짐 구간 후반 ~ 효과 구간).
+    - `CLEAR`: 크루별 효과 그림(냥이 할퀴기 선, 곰곰 포옹 원 등 — 크루 정의 Visual/Audio)이 얼굴 칸에서 대상 칸까지 `effect_spread(k)` 동안
       뻗어 나간다. 효과가 닿은 대상 칸은 효과 구간 끝까지 "도착 떨림"(±1.5px, 4Hz 미만)을 하며 다음 박자에 떼어진다. `cells = []`이면 헛손질(규칙 13).
     - `FILL`: `cells` 순서대로 `face_lead` 시점부터 `effect_spread(k)` 창 안에(간격은 Formulas 기타 상수 `egg_gap`) 알(`fill_visual`)이 위에서 "톡" 떨어져 붙는다 (스케일 0 → 1.18 → 1.0, `egg_pop_dur`, 그림자 1–2px).
       알로 완성된 줄은 다음 박자 `WAVE_BEGIN` 반짝(규칙 9)으로 이어진다.
 13. **헛손질 · 피즐 · 상한**
     - **헛손질** (`ABILITY_EFFECT.cells = []`이고 FILL 없음): 머쓱 표정 + 짧은 효과(`whiff_dur`)로 끝낸다 (크루 정의 "≤ 0.2s"). 다음 웨이브가
       없으면 이 연출이 효과 구간을 대신한다.
-    - **`FACE_FIZZLED(DEPTH_CAP)`**: 얼굴이 살짝 들렸다가 "꾸벅" 졸며(눈 감은 표정, Z 스티커) 페이드 — `fizzle_dur`, 떼어짐 구간과 병행.
+    - **`FACE_FIZZLED(DEPTH_CAP)`**: 얼굴이 살짝 들렸다가 "꾸벅" 졸며(머쓱 표정 + "Z" 스티커 오버레이 — D9) 페이드 — `fizzle_dur`, 떼어짐 구간과 병행.
     - **`FACE_FIZZLED(SUPPRESSED)`**: 얼음에 갇힌 얼굴이 한 번 "바르르"(±2px, 0.15s) 떨고 얼음째 떼어진다. 실패가 아니라 귀여운 마무리 (기둥 5).
     - **`DEPTH_CAP_REACHED`**: 마지막 박자 뒤 "최대 연쇄!" 금색 배너(`banner_dur`) + 최대 강도 컨페티. 타임라인은 `cap_hold`만큼 더 머문다.
     - **`CELL_MODIFIED`**: 얼음 겹이 "찰칵" 깨지는 금 1단계 (0.12s, 떼어짐 구간 안) — 구체 그림은 방해물 GDD.
 14. **컷인 (단계 배너)** — 얼굴 발동이 있는 웨이브 k마다 하나:
     - stage 1 (k = 0): 작은 능력 이름 스티커("냥이 할퀴기!")가 발동 얼굴 근처에 붙었다 사라짐 (`label_dur`). 화면 배너 없음 — 첫 발동은 아직 "연쇄"가 아니다.
-    - stage ≥ 2 (k ≥ 1): 화면 상단 30% 위치에 "연쇄 N!" 배너 — 프로토타입 `peel` 키프레임(회전 −25° → 4° → −4°, 스케일 0.4 → 1.12 → 1.0, 끝에 위로
+    - stage ≥ 2 (k ≥ 1): `banner_band`(연쇄 미리보기 규칙 23 — HUD와 판 사이 고정 띠, 드래그 중 "연쇄 N 예상"이 있던 자리; 판 칸을 덮지 않음)에 "연쇄 N!" 배너 — 프로토타입 `peel` 키프레임(회전 −25° → 4° → −4°, 스케일 0.4 → 1.12 → 1.0, 끝에 위로
       빠지며 페이드) `banner_dur`. 테두리는 그 웨이브 첫 발동 얼굴의 크루 색 (art-bible 4절 예외), 숫자는 금색. 아래 작은 줄에 발동 크루 이름.
       배너 크기는 단계 강도(F3)로 커진다.
     - 컷인은 **겹쳐 쌓이지 않는다** — 새 배너가 나오면 이전 배너는 0.1s 안에 빠진다. 배너는 큐의 임계 경로(재생 시간)에 들어가지 않는 겹침
@@ -391,28 +395,211 @@ The skip_latency formula is defined as:
 
 ## Dependencies
 
-[To be designed]
+**Upstream (이 시스템이 의존)**
+
+| 시스템 | 강도 | 쓰는 것 | 상태 |
+|---|---|---|---|
+| 연쇄 해석기 (`chain-resolver.md`) | Hard | 이벤트 9종 전체·`final_board`·`summary` (규칙 19 스키마), `source_order`·`order_index`·`stage` | Designed — 계약 일치. 재생만 하고 판정하지 않음 (해석기 규칙 3) |
+| 판 진행 흐름 (`round-flow.md`) | Hard | `play(request)` 호출, `pre_board` 사본 제공, `playback_finished` 뒤 입력 재개, 일시정지·백그라운드 신호 | 미작성 — 규칙 1·21·24가 provisional 계약 |
+| 점수 & 연쇄 배율 (`scoring.md`) | Soft (없으면 팝업 없음) | `ScoreBreakdown.placement_points`, `waves[].clear_points`·`activation_points`·`depth_mult_pct` | Designed — 계약 일치 (scoring 규칙 3 "보여 주기만") |
+| 크루 정의 & 능력 (`crew-definition.md`) | Soft (자리표시로 동작) | `crew_id` → 색 슬롯·실루엣·무늬·`fill_visual`·`ability_name_key`, 효과 그림 | Designed — 크루 정의 Game Feel의 provisional 타이밍(≤ 0.15 s, ≤ 0.35 s, ≤ 0.2 s)을 F2가 확정 |
+| 보드 & 조각 규칙 (`board-rules.md`) | Hard (표시) | 칸 상태 필드, 착지 0.1–0.15 s 목표 | Designed — `place_dur` 0.12 s가 충족 |
+| 드래그 & 배치 입력 (`placement-input.md`) | Soft | 고스트 자리(착지 시작 위치), 재생 중 `LOCKED`, 판 위 탭 비소비 | Designed — 일치 |
+| 연쇄 미리보기 (`chain-preview.md`) | Soft | `banner_band` 자리, 단계 번호 = `stage`, 커밋 시 미리보기 페이드아웃과 착지 연출 겹침 | Designed — 일치 (같은 칸·같은 단계 번호를 재생) |
+| 칸 종류 & 방해물 (`obstacles.md`) | Soft | `CELL_MODIFIED`·`SUPPRESSED` 겹 그림 | 미작성 |
+| 설정 & 접근성 (`settings-accessibility.md`, VS) | Soft (기본값으로 동작) | `speed_pref`, `reduced_motion`, `flash_off` | 미작성 — MVP는 일시정지 메뉴 토글 (provisional) |
+| 플랫폼 & 화면 (`platform-display.md`) | Soft | 칸 px 크기, 안전 영역 | 미작성 |
+
+**Downstream (이 시스템에 의존)**
+
+| 시스템 | 강도 | 쓰는 것 | 이 문서가 기대하는 것 |
+|---|---|---|---|
+| 오디오 SFX (`audio.md`) | Hard | `cue_fired(cue)` — `kind`, `crew_id`, `level`, 속도 배율 | 큐 시각에 맞춰 재생, 피치 단계는 `level`, 빨리 감기 때는 소리를 줄이거나 생략 (오디오 GDD 결정) |
+| 플레이 HUD (`gameplay-hud.md`) | Hard | `wave_presented`, `playback_finished` | 점수 숫자를 웨이브 박자로 올리고 재생 끝에 정확히 `stage_score` |
+| 판 진행 흐름 (`round-flow.md`) | Hard | `playback_finished(was_skipped)` | 이 신호 전에 다음 배치를 받지 않음 |
+| 튜토리얼 & 힌트 (`tutorial.md`, VS) | Soft | 첫 `FACE_ACTIVATED` 큐 | — |
+
+**양방향성**: chain-resolver Dependencies는 이 시스템을 Hard downstream("재생만 — 보드 판정·상태 변경 금지")으로 적는다 → 규칙 3·4가 충족. scoring은 Soft downstream("+N 떠오르는 숫자") → 규칙 10. crew-definition·placement-input도 이 문서를 표시 소비자로 적는다. systems-index의 Depends On은 "연쇄 해석기"만 적혀 있다 → **판 진행 흐름(호출자)·점수(팝업)·크루 정의(시각 정보)**는 이 문서가 읽지만 index에 없다. 판 진행 흐름이 이 시스템을 호출하므로 index상 판 흐름 → 연출 방향이 맞고, 점수·크루 정의는 Soft 데이터 의존이라 index 수정은 Open Question Q6으로 남긴다. 오디오의 index Depends On "연쇄 연출 재생기"는 일치.
 
 ## Visual/Audio Requirements
 
-[To be designed]
+> *Specialist note*: `art-director` (VFX visual direction) · `technical-artist` (performance budget) not consulted — 이 시스템은 시각 피드백이 핵심인
+> Gameplay 시스템이라 lean에서도 spawn 대상이지만 이 실행에는 Agent 도구가 없어 생략. art-bible 1–4절(원칙 2·3, 2절 무드 표, 4절 색)을 직접 적용했다.
+> Review manually before production.
+
+**적용하는 art bible 원칙**
+
+| 원칙 (art-bible) | 이 시스템에서의 적용 |
+|---|---|
+| 1절 원칙 2 — 발동 문법 "모서리부터 들썩 떼어짐 → 효과 → 다시 착 붙음(또는 날아가 사라짐)" | 몸통 칸 = 들썩 → 날아감. 얼굴 = 더 높이 들썩 → 효과 → 컷인 자리로 날아가 "착" 다시 붙음 (규칙 11) |
+| 1절 원칙 3 — 상태 = 그림자 높이 (붙음 1–2px, 떼어짐 6–10px), 좌상단 광원 고정 | 떼어지는 칸 8px, 얼굴 10px, 착지·알 1–2px. 새 색·글로우로 상태를 표현하지 않는다. 흔들림 중에도 광원 방향은 그대로(그림자 오프셋은 화면과 함께 흔들림) |
+| 2절 "연쇄 발동" 행 — 밝기 펄스 +10%, 초당 3회 이하, 끌 수 있음; 크루 색 입자; 종이 조각 컨페티; 단계 컷인 | F6 게이트, `flash_off`·`reduced_motion`, 입자 = 크루 색 + 스티커 백 종이 조각, 배너 |
+| 2절 — 얼굴 칸 대비는 어떤 상태에서도 낮추지 않는다 | 화면 모듈레이트(펄스)는 판 외곽·배경 레이어에만 걸고 얼굴 레이어는 제외 |
+| 4절 — 크루 색은 크루의 것 (예외: 연쇄 입자·컷인 테두리), 금색 = 보상·연쇄 단계 숫자 | 배너 테두리 = 첫 발동 크루 색, "N"·배율 숫자 = 금색 `#ffe278`, 점수 팝업 = 잉크 + 강조 시 금색 테두리 |
+| 4절 — 그라데이션 금지, 홀로 셰이더는 UI 전용 | 판 위 연출에 그라데이션·홀로 없음. 배너 광채는 스프라이트 |
+| 1절 회피 목록 — 네온 글로우 줄 지우기 금지 | 줄 지우기는 "떼어짐"이지 빛나는 레이저가 아니다. 웨이브 0 반짝은 스티커 백 테두리 0.06 s뿐 |
+
+**이벤트별 에셋 목록 (MVP)**
+
+| 이벤트 | 에셋 | 비고 |
+|---|---|---|
+| 떼어짐 | 칸 뒷면 그늘색 스프라이트(크루별, 텍스처에 굽기), 들썩용 미리 블러한 그림자 스프라이트 | art-bible "그림자 = 미리 블러한 실루엣" |
+| 종이 조각 입자 | 사각·삼각 종이 조각 4종 × 크루 색 + 스티커 백 | 프로토타입 `burst` 5개/칸 → F3 |
+| 능력 효과 | 크루별 효과 그림 1종(냥이 할퀴기 선, 곰곰 포옹 원, 삐약 알 낙하 …) — 크루 정의 Visual/Audio | 대상 칸 위로 그려 범위 모양이 읽혀야 함 |
+| 컷인 | 배너 스티커 1종(스티커 백 + 마스킹테이프), 능력 이름 라벨 스티커, 크루 얼굴 썸네일(64px) | 텍스트는 현지화 키 |
+| 상한 | "최대 연쇄!" 금색 배너, 금색 별 컨페티 | 금색 = 보상 |
+| 피즐 | 졸음 = 머쓱 표정 + "Z" 스티커 오버레이 (새 표정을 만들지 않아 art-bible "얼굴 1명당 표정 3장" 유지), 얼음 바르르는 방해물 그림 재사용 | D9 |
+| 점수 팝업 | 숫자 폰트(디스플레이), 금색 배율 라벨 | HUD와 같은 폰트 |
+
+**오디오 (요구만 — 소리 설계는 오디오 GDD)**: 큐마다 `cue_fired`로 착지 "꾹", 떼어짐 "샥"(웨이브당 1회, 칸마다 아님), 발동 크루 톤(크루 정의),
+알 "퐁", 꾸벅 "쿨", 배너 "착", 상한 팡파르. 웨이브 깊이마다 피치 한 단계 상승은 `cue.level`로 전달 (chain-resolver Visual/Audio). 빨리 감기 중
+소리 정책·Android 출력 지연 보정은 오디오 GDD.
+
+📌 **Asset Spec** — Visual/Audio requirements are defined. After the art bible is approved, run `/asset-spec system:chain-presentation`
+to produce per-asset visual descriptions, dimensions, and generation prompts from this section.
 
 ## Game Feel
 
-[To be designed]
+**일반 줄 지우기 vs 연쇄 (기둥 1의 측정 가능한 대비)**
+
+| 요소 | 줄 지우기 (웨이브 0, 얼굴 없음) | 첫 발동 (stage 1) | 연쇄 (웨이브 k ≥ 1) |
+|---|---|---|---|
+| 떼어짐 | 칸당 입자 3 | 3 + 얼굴 높이 들썩 | 칸당 5–8 (F3) |
+| 화면 흔들림 | 없음 | 없음 | 3 → 9 px (F3) |
+| 밝기 펄스 | 없음 | 없음 | 있음 (F6 게이트) |
+| 컷인 | 없음 | 능력 이름 라벨 | "연쇄 N!" 배너, 단계마다 커짐 |
+| 컨페티 | 없음 | 없음 | 15 → 60 |
+| 점수 팝업 | 기본 | 기본 | 강조 + 금색 배율 |
+| 소리 | 착지·떼어짐 | + 크루 톤 | + 피치 상승·배너 |
+
+| 목표 | 기준 | 소유 |
+|---|---|---|
+| 즉시 반응 | 손을 뗀 프레임 다음 프레임에 착지 연출 시작 (`build_timeline` ≤ 0.5 ms) | 이 문서 (AC-P13) |
+| 도미노 박자 | 웨이브 = 박자, 박자는 점점 빨라짐 (1.0 → 0.6) — "넘어갈수록 빨라지는 도미노" | F1·F2 |
+| 원인 → 결과 | 얼굴 들썩 → 0.12 s 뒤 효과 → 효과 도착 떨림 → 다음 박자 떼어짐. 대상 칸이 효과에 "맞은 뒤" 떼어져야 한다 | 규칙 11·12, F2 |
+| 템포 상한 | 연쇄 6단 ≤ 4.0 s, 일반 한 줄 ≈ 0.5 s, 줄 없음 0.12 s | F4 |
+| 기다리지 않게 | 탭 → 즉시 ×3, 두 번 → 0.25 s 안 끝. 결과는 같다 | 규칙 22, F7 |
+| 다정함 | 피즐 = 꾸벅, 상한 = 축하, 헛손질 = 머쓱. 실패 느낌의 소리·색 없음 | 기둥 5 |
+
+턴 기반이라 시간 압박 피드백은 없다 (안티 기둥). 재생 중 플레이어의 "할 일"은 보는 것뿐이고, 원하면 넘긴다.
 
 ## UI Requirements
 
-[To be designed]
+재생기가 화면에 만드는 UI 요소는 **연출 오버레이**뿐이다: 점수 팝업("+N", 배율), "N줄 동시!" 플로팅, 능력 이름 라벨, "연쇄 N!"·"최대 연쇄!" 배너,
+건너뛰기 "+합계"·"연쇄 N" 배지. 모두 입력을 받지 않는다(`mouse_filter = IGNORE` 상당 — 구현은 ADR). 문자열은 현지화 키
+(`CHAIN_BANNER_N` = "연쇄 {n}!", `CHAIN_MAX` = "최대 연쇄!", `LINES_SIMUL_N` = "{n}줄 동시!", 능력 이름은 크루 정의 `ability_name_key`).
+배너는 `banner_band`(chain-preview 규칙 23)에 둔다 — 미리보기 배너가 페이드아웃한 그 자리에서 실제 "연쇄 N!"이 붙어 시각 연속성이 생기고, 판 칸·HUD 점수 영역을 덮지 않는다. 텍스트 최소 크기·대비는
+art-bible 4절(잉크/스티커 백 13.2:1). 탭 건너뛰기 안내("탭하면 빨리 감기")는 첫 연쇄 2회 동안만 배너 아래 작게 보인다 — 튜토리얼 GDD가 대체 가능.
+움직임 줄이기·번쩍임 끄기·재생 속도 토글은 MVP에서 일시정지 메뉴에 둔다(provisional, VS 설정 GDD로 이관).
+
+> **📌 UX Flag — 연쇄 연출 재생기**: This system has UI requirements. In Phase 4 (Pre-Production), run `/ux-design` to create a UX spec for
+> each screen or HUD element this system contributes to **before** writing epics. Stories that reference UI should cite `design/ux/[screen].md`,
+> not the GDD directly. (게임플레이 화면 HUD 스펙 `design/ux/hud.md`에 배너·팝업 레이어와 일시정지 메뉴 토글을 포함.)
 
 ## Cross-References
 
-[To be designed]
+| 이 문서가 참조하는 것 | 대상 문서 | 종류 | 상태 |
+|---|---|---|---|
+| 이벤트 9종 스키마·순서(규칙 19), 웨이브 = 깊이(규칙 5), 단일 구현·재생만(규칙 3), 상한 동작(규칙 10), `source_order`, 웨이브 ≈ 0.5 s·6단 ≤ 약 4 s·스킵 가능(Game Feel), 이벤트별 "읽혀야 하는 것"(Visual/Audio) | `design/gdd/chain-resolver.md` | 상위 계약 | 일치 — F2 0.54 s, F4 ≤ 4.0 s |
+| `ScoreBreakdown.waves[]`, 점수 확정 시점(규칙 12), "보여 주기만"(규칙 3), "+N"·배율 표시(Visual/Audio), 숫자 박자(Game Feel) | `design/gdd/scoring.md` | 상위 계약 | 일치 |
+| 효과 시작 ≤ 0.15 s·퍼짐 ≤ 0.35 s·헛손질 ≤ 0.2 s (provisional), 효과 모양·방향, `fill_visual`, `ability_name_key` | `design/gdd/crew-definition.md` § Game Feel, Visual/Audio, Core Rules 1 | 상위 계약 | 확정 — `face_lead` 0.12, `effect_spread` ≤ 0.34, `whiff_dur` 0.20 |
+| 착지 0.1–0.15 s, 칸 상태 필드 | `design/gdd/board-rules.md` § Game Feel, Core Rules | 상위 계약 | 일치 (`place_dur` 0.12) |
+| `LOCKED` 상태, 판 위 탭 비소비, 고스트 자리 | `design/gdd/placement-input.md` § 상태표·규칙 15·Edge Cases | 인접 계약 | 일치 |
+| `banner_band`, 단계 번호 = `stage`, 미리보기 → 연출 시각 연속성 | `design/gdd/chain-preview.md` § 규칙 23, Interactions | 인접 계약 | 일치 |
+| 발동 문법, 그림자 높이, 밝기 펄스 ≤ 3/s·끄기, 연쇄 발동 무드, 색 의미 | `design/art/art-bible.md` §1 원칙 2·3, §2, §4, 결정 표 | 시각 규칙 | 일치 |
+| 기둥 1 "압도적으로 시원", 기둥 4 "한 판 더", 기둥 5 "실패조차 귀엽다" | `design/gdd/game-concept.md` § Game Pillars | 설계 목표 | 일치 |
+| 떼어짐 0.24 s, 대기 0.3 s, 컷인 0.9 s(`peel` 키프레임), 팝업 0.9 s, 흔들림, 입자 5/칸, `busy` 입력 잠금 | `prototypes/sticker-place-concept/prototype.html` | 검증된 시작값 | 출발점 — 템포 가속·압축·스킵은 신규. 프로토타입 코드 재사용 금지 |
+| 호출·입력 재개·일시정지·백그라운드 | `design/gdd/round-flow.md` (미작성) | 하위 계약 | provisional |
+| 소리·피치·빨리 감기 소리 정책 | `design/gdd/audio.md` (미작성) | 하위 계약 | provisional |
+| 점수 숫자 박자, 배너 안전 영역 | `design/gdd/gameplay-hud.md` (미작성) | 하위 계약 | provisional |
+| `speed_pref`·`reduced_motion`·`flash_off` 화면·저장 | `design/gdd/settings-accessibility.md` (미작성, VS) | 하위 계약 | provisional |
+| 겹 깨짐·얼음 그림 | `design/gdd/obstacles.md` (미작성) | 하위 계약 | provisional |
 
 ## Acceptance Criteria
 
-[To be designed]
+> *Specialist note*: `qa-lead` not consulted — Section H는 lean에서도 spawn 대상이지만 이 실행에는 Agent 도구가 없어 생략. Review manually before production.
+> Story types: 타임라인(`build_timeline`)·상태 머신·펄스 게이트 = **Logic** → `tests/unit/chain_presentation/` (BLOCKING). 화면 연출 = **Visual/Feel**
+> → `production/qa/evidence/` 스크린샷/녹화 + lead sign-off (BLOCKING). 픽스처는 chain-resolver AC와 같은 보드 문자열 팩토리로 만든 `ChainResult`
+> 골든 파일을 재사용하고, 시간 비교는 허용 오차 ±1 ms(부동소수 합산)로 한다. 타이밍 값은 테스트 전용 `PresentationTuning` 픽스처(시작값 사본)에서 읽는다.
+
+**규칙 (Section C)**
+
+- **AC-P01 (규칙 2·3, 판정 금지)** — **GIVEN** 임의의 `ChainResult`, **WHEN** 재생을 끝까지 하면, **THEN** 재생 전후로 게임 보드·`stage_score`·트레이 상태가 바이트 단위로 같고,
+  재생기 코드에 board-rules 판정 함수(`full_lines`, `can_place` 등)·해석기·점수 함수 호출이 없다 (정적 검사).
+- **AC-P02 (규칙 4, 표시 보드)** — **GIVEN** chain-resolver AC-03·AC-07·AC-08 픽스처, **WHEN** 재생 끝, **THEN** 표시 보드가 `final_board`와 칸 단위로 같다.
+  **AND** 이벤트 하나를 일부러 빼고 재생하면 디버그 assert가 난다.
+- **AC-P03 (규칙 5, 결정성)** — **GIVEN** 같은 `events`·`score`·`settings`, **WHEN** `build_timeline`을 두 번 부르면, **THEN** 큐 목록(시각·길이·종류·대상)이 같다.
+- **AC-P04 (규칙 7, 순서)** — **GIVEN** AC-03 픽스처의 타임라인, **WHEN** 큐를 이벤트 `seq`로 정렬해 보면, **THEN** 시작 시각이 단조 증가(같거나 늦음)이고,
+  웨이브 k+1의 첫 떼어짐 큐는 웨이브 k의 마지막 효과 큐가 끝난 뒤 `arrive_hold` 이후에 시작한다.
+- **AC-P05 (규칙 11, 얼굴 순서)** — **GIVEN** chain-resolver AC-04 픽스처(한 행 얼굴 3개), **WHEN** 타임라인을 보면, **THEN** 얼굴 들썩 큐가 `order_index` 1·2·3 순으로
+  `face_gap`(0.06 s) 간격이고 각 효과는 자기 들썩 + `face_lead`(0.12 s)에 시작한다.
+- **AC-P06 (규칙 12, 알)** — **GIVEN** 삐약 알 3개 픽스처(웨이브 0), **WHEN** 타임라인을 보면, **THEN** 알 큐 3개가 `ABILITY_EFFECT.cells` 순서이고 마지막 알이
+  다음 박자 시작보다 `arrive_hold` 이상 먼저 끝난다. **AND** 알로 완성된 줄은 다음 박자에 0.06 s 반짝 큐를 가진다.
+- **AC-P07 (규칙 13·14, 컷인·피즐·상한)** — **GIVEN** chain-resolver AC-08(연쇄 7단 가능, `depth_cap = 6`), **WHEN** 타임라인을 보면, **THEN** 웨이브 0에는 배너 없이 능력 라벨 1개,
+  웨이브 1–5에 "연쇄 2!"…"연쇄 6!" 배너 각 1개, 웨이브 6 얼굴은 꾸벅 큐, 마지막에 "최대 연쇄!" 배너 1개와 `cap_hold`. **AND** `depth_cap = 0` 픽스처는 "최대 연쇄!"가 없다.
+- **AC-P08 (규칙 18, 대비)** — **GIVEN** 얼굴 없는 한 줄 픽스처, **WHEN** 타임라인을 보면, **THEN** 흔들림·펄스·배너·컨페티 큐가 0개이고 칸당 입자 3. **AND** 연쇄 2 픽스처의
+  웨이브 1에는 흔들림·펄스·배너·컨페티가 각 1개 이상 있다.
+- **AC-P09 (규칙 21·22, 입력·스킵)** — **GIVEN** 연쇄 6 재생 중, **WHEN** 0.10 s에 터치다운, **THEN** 무시(보호 시간). **WHEN** 0.5 s에 터치다운, **THEN** 상태 `FAST`, 남은 재생 시간이
+  1/3. **WHEN** 한 번 더, **THEN** 0.25 s 안에 `playback_finished(true)`, 그 순간 HUD 점수 = `stage_score`, 표시 보드 = `final_board`. 재생 내내 트레이 누름은 집기를 시작하지 않는다.
+- **AC-P10 (규칙 24, 백그라운드)** — **GIVEN** 재생 중, **WHEN** 앱 포커스를 잃으면, **THEN** 같은 프레임에 `FLUSHING` → `playback_finished(true)`, 복귀 시 안정 보드.
+- **AC-P11 (규칙 25, 움직임 줄이기)** — **GIVEN** `reduced_motion = true`와 연쇄 6 픽스처, **WHEN** 타임라인을 만들면, **THEN** 흔들림·펄스·회전 큐 0개, 입자 수 = 기본 × 0.25(내림),
+  총 재생 시간과 배너·팝업 큐 수는 `reduced_motion = false`와 같다.
+- **AC-P12 (규칙 26·F6, 번쩍임)** — **GIVEN** `flash_off = true`, **WHEN** 연쇄 6 재생, **THEN** 펄스 0회, 흔들림은 그대로.
+
+**공식 (Section D)**
+
+- **AC-P13 (F1·F2)** — **GIVEN** 시작값, **WHEN** `tempo(0…6)`과 얼굴 1개·다음 있음 박자를 계산하면, **THEN** 1.00, 0.92, 0.84, 0.76, 0.68, 0.60, 0.60과 `beat(0) = 0.54 s`.
+  얼굴 3개 → 0.66 s, 얼굴 5개도 0.66 s(엇갈림 상한). `effect_spread(0) = 0.34 s ≤ 0.35`. **AND** `build_timeline`(연쇄 6 최악) ≤ 0.5 ms (headless 데스크톱, 1,000회 평균).
+- **AC-P14 (F4, 재생 시간 경계)** — **GIVEN** 시작값·속도 1.0, **WHEN** 타임라인 총 길이를 재면, **THEN** 줄 없음 0.12 s, 한 줄 0.51 s, 연쇄 1 1.03 s, 연쇄 3 1.94 s(각 ±1 ms),
+  **연쇄 6(상한 도달) 3.40 s ≤ T ≤ 4.00 s**, 웨이브마다 얼굴 3개인 연쇄 6은 정확히 4.00 s(압축 c ≈ 0.980). **AND** `speed_pref = 1.5`면 연쇄 6 최악 ≤ 2.67 s.
+  **AND** 데이터만 `depth_cap = 10`으로 바꾼 최악 픽스처도 ≤ 4.00 s.
+- **AC-P15 (F4, 압축 보존)** — **GIVEN** 압축이 걸린 타임라인(c < 1), **WHEN** 압축 전과 비교하면, **THEN** 모든 큐의 순서가 같고 시각·길이 비율이 c로 일정하다(±1 ms).
+- **AC-P16 (F3)** — **GIVEN** 웨이브 0–5 강도, **WHEN** 계산하면, **THEN** `level` = 0, 1, 2, 3, 4, 4, 흔들림 0/3/5/7/9/9 px, 컨페티 0/15/30/45/60/60.
+  **AND** 동시 입자 수가 재생 중 어느 프레임에도 `particle_budget`(300)을 넘지 않는다.
+- **AC-P17 (F5)** — **GIVEN** 냥이 십자 웨이브(얼굴 (4,5), 대상 15칸), **WHEN** 엇갈림을 계산하면, **THEN** 얼굴에서 거리 d인 칸의 시작 지연 = min(0.02·d, 0.08) × tempo(k), 같은 d는 같은 지연.
+- **AC-P18 (F6, 광과민성 안전 — BLOCKING)** — **GIVEN** 고정 픽스처 200개(연쇄 0–6, 얼굴 밀집 포함) × 속도 {1.0, 1.5} × 빨리 감기 {없음, 0.3 s에 탭}, **WHEN** 실제 시각 기준
+  펄스 큐를 모으면, **THEN** 어떤 1초 창에서도 펄스 ≤ 3회, 연속 펄스 간격 ≥ 0.34 s.
+- **AC-P19 (F7)** — **GIVEN** 남은 시간 T_left인 재생, **WHEN** 첫 탭, **THEN** 남은 시간 = T_left / 3 (±1 ms); 두 번째 탭 뒤 `playback_finished`까지 ≤ 0.25 s.
+
+**연동 · 관찰 (Visual/Feel · Integration)**
+
+- **AC-P20 (HUD 연동)** — **GIVEN** 연쇄 3 배치, **WHEN** 재생, **THEN** `wave_presented`가 웨이브마다 1회(4회) 그 웨이브 떼어짐 시작에 오고, 값 합 + `placement_points` = `ScoreBreakdown.total`.
+  건너뛰기 시 남은 `wave_presented`가 같은 프레임에 모두 온다. (통합 `tests/integration/chain_presentation/`)
+- **AC-P21 (실행 관찰 — Visual, BLOCKING)** — **GIVEN** T0 그레이박스 빌드, **WHEN** 연쇄 0·1·3·6(상한) 시나리오를 실행·녹화하면, **THEN** 각 시나리오의 핵심 프레임(착지, 웨이브 0 떼어짐,
+  얼굴 들썩, 효과 도착, 배너, 상한 배너)의 스크린샷이 `production/qa/evidence/chain-presentation/`에 보관되고, 리드가 "연쇄가 일반 줄 지우기보다 확실히 시원하다"에 서명.
+  (`.claude/docs/run-and-observe.md`)
+- **AC-P22 (플레이테스트 — 기둥 1·3, ADVISORY)** — **GIVEN** 5명 이상, 각 10판, **WHEN** 연쇄 직후 "방금 누가 누구를 깨웠나?"를 물으면, **THEN** 70% 이상이 연쇄 3 이상의 순서를 맞힌다.
+  **AND** "연출이 길어 기다렸다" 응답 ≤ 20%. (T0 플레이테스트 리포트)
+- **AC-P23 (저가 Android 성능, T0)** — **GIVEN** 목표 저가 Android 실기기·Compatibility 렌더러, **WHEN** 연쇄 6(최악, 입자 300) 재생, **THEN** 프레임 시간 p95 ≤ 16.7 ms
+  (재생 시간은 프레임 저하와 무관하게 F4 값 ±1 프레임 — 규칙 5).
 
 ## Open Questions
 
-[To be designed]
+| # | 질문 | 담당 | 해결 시점 |
+|---|---|---|---|
+| Q1 | 템포 가속(1.0 → 0.6)이 "도미노가 빨라지는" 쾌감인가, 깊은 웨이브를 읽기 어렵게 만드는가 — `tempo_floor`·`tempo_step` 실측 | game-designer · art-director | T0 플레이테스트 (AC-P22) |
+| Q2 | chain-resolver Q2(동시 얼굴 순서 row-major vs 트리거 근접순): 연출에서 row-major 엇갈림이 부자연스러운가. 부자연스러워도 순서는 해석기 소유 — 연출은 바꾸지 않는다 | game-designer · chain-resolver GDD | T0 플레이테스트 |
+| Q3 | 재생 중 다음 조각을 집는 "입력 관통"(집는 순간 자동 건너뛰기)을 Alpha에 허용할까 — "한 판 더" 템포 vs 표시 보드 불일치 | game-designer · ux-designer · 판 진행 흐름 GDD | `/design-system round-flow` |
+| Q4 | Godot 4.7에서 Android OS "애니메이션 줄이기" 설정을 읽을 수 있는가 (지식 공백 — 엔진 레퍼런스에 없음). 없으면 게임 내 토글만 | godot-specialist | ADR (연출 구현) |
+| Q5 | 빨리 감기·건너뛰기 중 소리 정책 (생략 / 묶음 / 피치 유지 가속) | audio-director · 오디오 GDD | `/design-system audio` |
+| Q6 | systems-index 연출 재생기 Depends On에 점수(팝업)·크루 정의(시각 정보) Soft 의존을 적을지, 판 진행 흐름 → 연출 호출 방향을 명시할지 | producer · `/map-systems` | 다음 index 갱신 |
+| Q7 | 연출 구현 ADR: 타임라인 스케줄러(Tween 체인 vs 자체 큐), `CPUParticles2D` vs `GPUParticles2D`(Compatibility 렌더러·저가 Android), 노드 풀링, 4.7 `Tween.tween_await()` 사용 여부 | technical-director · technical-artist | `/architecture-decision` |
+| Q8 | 피즐 얼굴 "Z" 오버레이·배너 스티커·효과 그림의 확정 디자인 | art-director | `/art-bible` 섹션 5–8 · `/asset-spec system:chain-presentation` |
+
+### Decision Log (사용자 위임 "진행부탁 알아서 다" — 질문 없이 권장안 채택)
+
+| # | 결정 | 채택 | 기각한 대안 |
+|---|---|---|---|
+| D1 | 섹션 구성 (standard tier) | Summary·Overview·Detailed Design·Formulas(타이밍 수치 규칙 있음)·Edge Cases·Dependencies·AC + Gameplay 필수 Visual/Audio·Game Feel + Cross-References(의존 있음) + UI Requirements·Open Questions ("All of them" 권장안). Player Fantasy·Tuning Knobs 생략 — 값의 안전 범위는 Formulas 변수표 | Tuning Knobs 추가 — tier 규칙 위반 |
+| D2 | 재생 방식 | 이벤트 → 타임라인 **선계산**(순수 함수) 후 시각 기준 재생 — 재생 시간·펄스·순서를 렌더 없이 단위 테스트 | 이벤트를 하나씩 꺼내며 `await`로 즉흥 재생(프로토타입 `later`) — 총 시간 상한을 미리 보장할 수 없음 |
+| D3 | 깊이 상승 방식 | **강도는 오르고 박자는 빨라짐** (템포 1.0 → 0.6) + 4.0 s 압축 상한 | 깊이마다 박자 일정(프로토타입) — 6단 ≈ 3.5–4.5 s로 상한 초과 가능; 깊이마다 더 길게(드라마) — "한 판 더" 템포 저해 |
+| D4 | 일반 줄 vs 연쇄 대비 | 웨이브 0에는 흔들림·펄스·배너·컨페티 없음, 얼굴 발동부터 추가 (기둥 1의 측정 가능한 대비) | 모든 지우기에 같은 연출 — 연쇄의 특별함이 묻힘(프로토타입은 줄에도 입자 5개) |
+| D5 | 재생 중 입력 | 트레이 **잠금** + 탭 1회 빨리 감기(×3) / 2회 건너뛰기 + 0.15 s 보호 시간 | 완전 잠금(프로토타입 `busy`) — 반복 연쇄가 지루; 입력 관통 — 표시 보드 ≠ 실제 보드 (Q3); 탭 1회 즉시 건너뛰기 — 실수 탭에 연쇄 쾌감 손실 |
+| D6 | 얼굴의 "다시 붙음" | 얼굴이 효과 뒤 화면 가장자리 컷인 자리로 날아가 "착" 붙음 — art-bible 문법과 컷인 무드("크루 얼굴 스티커가 화면 가장자리에 착 붙음")를 한 동작으로 | 얼굴이 판의 원래 자리에 다시 붙음 — 지워진 칸에 붙으면 보드 상태와 모순 |
+| D7 | 움직임 줄이기 | 움직임만 끄고 시간·정보는 그대로 | 프로토타입처럼 컷인을 1.2 s로 늘림 — 접근성 사용자에게 더 긴 대기를 강요 |
+| D8 | 밝기 펄스 안전 | 실제 화면 시각 기준 최소 간격 0.34 s 게이트 (속도·압축·빨리 감기 후 적용) + 번쩍임 끄기 별도 토글 | 박자마다 펄스 — 바닥 템포·빨리 감기에서 3/s 초과 |
+| D9 | 피즐 표현 | 머쓱 표정 + "Z" 오버레이 (표정 3장 유지) | 졸음 표정 4번째 추가 — 크루당 에셋 증가 |
+| D10 | 상한 연출 | "최대 연쇄!" 축하 + `cap_hold` 0.5 s; `chain_depth = 0`이면 생략 | 상한을 조용히 끝냄 — 정점이 손해처럼 느껴짐 (chain-resolver Q1) |
+| D11 | 백그라운드 | 즉시 건너뛰기 | 일시정지 후 이어 재생 — 복귀 시 연출 중간 상태로 혼란, 세이브 시점 복잡 |
+| D12 | 점수 팝업 | 웨이브당 1개(지운 칸 무리 중심) + k ≥ 1 금색 배율 | 칸마다 팝업 — 화면 소음, 숫자 판독 불가 |
+| D13 | 배너 위치 | 연쇄 미리보기의 `banner_band` 공유 — 예상 배너 → 실제 배너가 같은 자리 | 화면 상단 30%(프로토타입) — 판 맨 위 행·HUD와 겹침, 미리보기와 자리가 달라 연속성 없음 |
