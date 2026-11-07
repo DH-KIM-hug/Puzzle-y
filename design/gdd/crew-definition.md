@@ -210,7 +210,118 @@ Custom Resource로 둘지 Dictionary로 둘지, 레지스트리 로딩 방식)�
 
 ## Formulas
 
-[To be designed]
+> *Specialist note*: `systems-designer` not consulted — Section D는 lean에서도 spawn 대상이지만 이 실행에는 Agent 도구가 없어 생략.
+> Review manually before production. 이 시스템의 식은 균형 *지표*(조각 크기·능력 범위·궁합)이며, 점수·확률 곡선은 점수 / 트레이 / 가챠 GDD
+> 소유다. F3·F5의 값은 8×8 빈 판 기준으로 전수 계산했다 (64개 얼굴 위치).
+
+**F1. 크루 안 모양 확률**
+
+The shape_probability formula is defined as:
+
+`p(s | c) = w_s / Σ_{s' ∈ S_c} w_s'`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| c | crew id | 레지스트리 | data file | 크루 |
+| S_c | 모양 목록 | 1–8개 | data file (`shapes`) | 크루 c의 모양 풀 |
+| w_s | int | 1–10 | data file (`weight`) | 모양 s의 가중치 |
+
+**Output Range:** (0, 1], 크루 안 합 = 1. 모양 1개뿐이면 1.0. 크루 사이 비율과 실제 뽑기(가방/독립 추첨)는 트레이 공급 GDD 소관 —
+팀 3인이 같은 비율이라면(트레이 GDD 가정, provisional) 팀 단위 확률은 `p(c, s) = (1/3) · p(s | c)`.
+**Example:** 냥이 Σw = 12 → I3_H = 3/12 = **0.25**, L4_A = 1/12 ≈ 0.083. 팀 단위(1/3 가정) I3_H ≈ 0.083.
+
+**F2. 기대 조각 크기 (balance 지표)**
+
+The expected_piece_cells formula is defined as:
+
+`E_c = Σ_{s ∈ S_c} w_s · |s| / Σ_{s ∈ S_c} w_s`, 팀 `E_T = Σ_{c ∈ T} share_c · E_c`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| \|s\| | int | 1–6 | calculated (board-rules `max_piece_cells`) | 모양 s의 칸 수 |
+| w_s | int | 1–10 | data file | F1 |
+| share_c | float | 0–1, 팀 합 1 | 트레이 공급 GDD (가정 1/3) | 팀 안 크루 c의 조각 비율 |
+| E_c 안전 범위 | float | 2.0–5.0 | data file (`expected_cells_lint_range`) | 벗어나면 린트 경고 (규칙 12) |
+
+**Output Range:** 1.0 ~ 6.0 가능, MVP 크루 2.00(삐약) ~ 4.75(곰곰). 큰 E = 줄은 빨리 차지만 막힘(`no_moves`) 위험이 크다; 작은 E = 구멍 메우기 쉽지만
+줄 완성이 느리다. 팀 E_T 권장 2.5–4.5 (팀 편성 GDD가 경고 여부 결정).
+**Example:** 기본 팀 냥이+곰곰+삐약 → (3.33 + 4.75 + 2.00) / 3 = **3.36** (프로토타입 체감과 같음). 파고 메우기 팀 곰곰+깡총+몽실 → (4.75 + 4.00 + 3.25)/3 = 4.00.
+
+**F3. 능력 범위 (footprint)**
+
+The ability_footprint formula is defined as:
+
+`R_c = (1 / (W·H)) · Σ_{(fr,fc)} |T_c(fr, fc) \ {(fr, fc)}|` — 빈 판에서 얼굴 자리를 뺀 대상 칸 수의 평균 (CLEAR); FILL은 채울 수 있는 칸 수의 상한
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| T_c(fr, fc) | 칸 집합 | chain-resolver F4 | calculated | 얼굴 (fr, fc)에서 크루 c 능력의 대상 칸 (보드 밖 잘림) |
+| W, H | int | 8 | data file (board-rules) | 보드 크기 |
+
+**Output Range (8×8, 최소 / 최대 / 평균):**
+
+| 크루 | 프리미티브 | 최소 | 최대 | 평균 R_c |
+|---|---|---|---|---|
+| 냥이 | `clear_cross(−1)` | 14 | 14 | **14.0** |
+| 개굴 | `clear_diagonals(−1)` | 7 | 13 | **8.75** |
+| 곰곰 | `clear_area(1)` | 3 | 8 | **6.56** |
+| 깡총 | `clear_pattern`(두 칸 8방향) | 3 | 8 | **5.25** |
+| 몽실 | `lay_eggs_pattern`(십자 5) | 3 (얼굴 포함) | 5 | 4.5 (빈칸일 때만 채움) |
+| 삐약 | `lay_eggs_in_own_line(3)` | 1 | 3 | ≤ 3 |
+
+**Example:** 개굴 얼굴 (3,3) → 주대각선 8칸 + 반대각선(r+c = 6) 7칸 − 교차 1 − 얼굴 1 = **13**. 모서리 (0,0) → 주대각선 7칸.
+
+**F4. 연결률 (link rate) — 추정치와 측정치**
+
+The link_rate formula is defined as:
+
+`L̂_A = R_A / (W·H − 1)` (추정 — B의 얼굴이 무작위 위치일 때 A의 대상 안에 있을 확률), 측정 `λ(A→B) = N(A가 B를 깨움) / N(A 발동)`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| R_A | float | F3 | calculated | A의 평균 범위 |
+| N(A가 B를 깨움) | int | ≥ 0 | calculated (자동 플레이 로그: `FACE_ACTIVATED`의 웨이브 k+1 얼굴 중 `CELLS_CLEARED.source_order`가 A인 것) | 실제 연쇄 횟수 |
+| N(A 발동) | int | ≥ 1 | calculated (자동 플레이 로그) | A 발동 횟수 |
+
+**Output Range:** L̂ — 냥이 0.222, 개굴 0.139, 곰곰 0.104, 깡총 0.083 (얼굴 1개당; 보드 위 얼굴이 n개면 대략 `1 − (1 − L̂)^n`). 채우기 크루는 줄 완성을
+거쳐야 하므로 L̂ 식을 쓰지 않고 λ만 측정한다. **목표**: 모든 MVP 크루의 평균 λ(A→·)가 가장 높은 크루의 **40% 이상** (`min_link_ratio` 0.4) — 그보다
+낮은 크루는 "연쇄에 안 끼는 크루"로 보고 모양·파라미터를 조정한다 (Open Question Q1: 깡총).
+**Example:** 보드에 다른 얼굴 4개 → 냥이가 하나 이상 깨울 추정 확률 1 − 0.778⁴ ≈ **0.63**, 깡총 1 − 0.917⁴ ≈ 0.29.
+
+**F5. 범위 겹침 (궁합 S1)**
+
+The coverage_overlap formula is defined as:
+
+`O(A, B) = |(T_A(3,3) ∩ T_B(3,3)) \ {(3,3)}|` — 같은 얼굴 자리(판 가운데)에서 두 능력의 대상 겹침
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| T_A, T_B | 칸 집합 | F3 | calculated | 두 크루의 대상 |
+
+**Output Range:** 0 ~ min(R_A, R_B). MVP CLEAR 크루 쌍: 냥이·개굴 **0**, 곰곰·깡총 **0**, 냥이·곰곰 4, 냥이·깡총 4, 곰곰·개굴 4, 개굴·깡총 4.
+0인 쌍이 "상보 쌍"이다 — 한 팀에 넣으면 8방향(냥이+개굴) / 5×5(곰곰+깡총)를 빈틈없이 덮는다. 새 크루 추가 시 기존 크루와 O = R인(완전 포함) 쌍은
+"더 센/약한 같은 능력"이므로 규칙 7 린트로 걸러진다.
+**Example:** 곰곰 3×3(8칸)과 깡총 두 칸 고리(8칸)는 거리 1과 거리 2로 나뉘어 겹침 0 → 합쳐 5×5 − 1 = 24칸.
+
+**F6. 레벨업 보너스 상한 — 참조 (소유: 크루 레벨업 GDD, T2, provisional)**
+
+The level_bonus formula is defined as:
+
+`level_bonus(c) ≤ level_bonus_cap`, `level_bonus_cap = 0.20`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| level_bonus(c) | float | 0 – 0.20 | 크루 레벨업 GDD | 크루 c의 능력이 지운 칸의 점수 가산 비율 (점수 GDD가 적용) |
+| level_bonus_cap | float | 0.20 고정 | constant (컨셉 기둥 2) | 상한 |
+
+**Output Range:** 0 ~ +20%. 모양·가중치·능력 파라미터에는 적용하지 않는다 (규칙 9). **이 문서는 이 식을 계산하지 않는다** — `CrewDef`에 레벨 필드가 없음을 보장할 뿐이다.
+**Example:** 최대 레벨 곰곰이 9칸 지움 → 점수 GDD 공식 결과 × 1.20. 연쇄 깊이·대상 칸은 레벨 1과 같다.
 
 ## Edge Cases
 
