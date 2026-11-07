@@ -488,7 +488,7 @@ art-bible 원칙: 스티커북 질감, 색약 백업(무늬·모양) — 트레�
 | Q3 | 구제 보장을 "1개"에서 더 넓힐지(예: 2개), 또는 도전 스테이지에서 끌지 — ρ 측정(F6) 결과에 따름. 숨김이 정직성 문제로 지적되면 결과 화면 등에 공개할지 | systems-designer · creative-director | AC-22 집계 후 |
 | Q4 | `FIXED` 시드의 해법 외우기·공유·식상함 — 별 3 획득 후 `PER_ATTEMPT`로 바꾸는 "연습 모드"를 둘지 | game-designer | 스테이지 & 목표 / 메타 화면 설계 시 |
 | Q5 | 모양 가방 사이클이 긴 크루(냥이 C 12)에서 희귀 모양 가뭄(F2, 최대 22트레이)이 체감상 너무 긴가 — 사이클 대신 "같은 모양 연속 금지 + 가중 추첨"이 나은가 | systems-designer | T0 자동 플레이 |
-| Q6 | `hash32`·스트림 태그 값, `crew_key`, 시드 RNG를 Godot `RandomNumberGenerator`로 할지 자체 PRNG(버전 간 수열 고정)로 할지 | technical-director | 시드 RNG ADR (`/architecture-decision`, chain-resolver Q7과 같은 ADR 권장) |
+| Q6 | ~~`hash32`·스트림 태그 값, `crew_key`, 시드 RNG를 Godot `RandomNumberGenerator`로 할지 자체 PRNG(버전 간 수열 고정)로 할지~~ **해소 (ADR-0001, Accepted 2026-11-07)**: 자체 PRNG — `hash32` = MurmurHash3_x86_32(seed 0), 지역 RNG = `DetRng`, `crew_key` = `SeedHash.str32`(UTF-8 FNV-1a 32), 태그 = `SeedStreams.TRAY_*` | technical-director | 해소 — ADR-0001 |
 | Q7 | 스테이지의 "팀 고정"(튜토리얼) 필드와 스크립트의 `crew_id` 직접 지정 허용 범위 | level-designer · 스테이지 & 목표 GDD | `/design-system stage-goals` |
 
 ### Decision Log (사용자 위임 "진행부탁 알아서 다" — 질문 없이 권장안 채택)

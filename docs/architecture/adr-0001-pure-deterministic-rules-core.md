@@ -1,7 +1,9 @@
 # ADR-0001: 순수·결정적 규칙 코어 — 미리보기와 실제 배치가 공유하는 연쇄 해석기, 시드 RNG
 
 ## Status
-Proposed
+Accepted (2026-11-07)
+
+Reviewed by godot-specialist — 2026-11-07, Godot 4.7.2 headless probe. 변경 내역은 아래 "Engine Specialist Review" 절.
 
 ## Date
 2026-11-07
@@ -11,7 +13,7 @@ Proposed
 
 ## Decision Makers
 사용자(전권 위임 "알아서 진행" — 질문 없이 권장안 채택), `/architecture-decision` 작성 세션.
-`godot-specialist` 검증·`technical-director` TD-ADR 검토는 받지 않음 (아래 Validation Criteria의 "건너뛴 게이트").
+`godot-specialist` 검증 완료(2026-11-07, 아래 Engine Specialist Review). `technical-director` TD-ADR 검토는 review_mode `lean`이라 생략.
 
 ## Summary
 말랑 크루의 보드 규칙·연쇄 해석·점수·트레이 생성을 미리보기와 실제 배치가 **한 벌의 구현**으로 공유해야 하고(기둥 3 "미리보기 ≠ 결과면 버그"),
@@ -29,7 +31,7 @@ Proposed
 | **Knowledge Risk** | HIGH (4.5–4.7 모두 LLM 컷오프 이후) — 단, 이 결정이 쓰는 API는 4.0–4.4 기능이라 실질 위험은 LOW |
 | **References Consulted** | `docs/engine-reference/godot/VERSION.md`, `breaking-changes.md`, `deprecated-apis.md`, `current-best-practices.md` (GDScript 4.5+/4.7, Resources 4.5+, Command Line). `modules/`에 scripting/core 문서는 없음 (NOT SOURCEABLE) |
 | **Post-Cutoff APIs Used** | `Resource.duplicate_deep()` (4.5) — 테스트에서 데이터 불변성 검증용으로만. 4.7 typed-return override 규칙은 영향을 받는 코드 형태(가상 메서드 오버라이드)를 이 설계가 쓰지 않음으로써 회피 |
-| **Verification Required** | (1) `SeedHash`/`DetRng` 골든 값이 Android(arm64) 실기기와 데스크톱에서 같음; (2) `ChainResolver.resolve` 최악 근사 입력 ≤ 1 ms(데스크톱 headless), 저가 Android에서 미리보기 몫 ≤ 4 ms (chain-preview F3); (3) `.tres`의 `@export var params: Dictionary` 값이 에디터 저장·로드 왕복 후 int 타입을 유지 (float로 바뀌지 않음) |
+| **Verification Required** | (1) `SeedHash`/`DetRng` 골든 값이 Android(arm64) 실기기와 데스크톱에서 같음 — 남음, 위험 LOW(아래 Review); (2) `ChainResolver.resolve` 최악 근사 입력 ≤ 1 ms(데스크톱 headless), 저가 Android에서 미리보기 몫 ≤ 4 ms (chain-preview F3) — 남음, T0 실측; (3) ~~`.tres` Dictionary int 왕복~~ — **해소(2026-11-07)**: `ResourceSaver` 저장·로드 후 int는 `TYPE_INT` 유지, 단 `.tres`에 `2.0`으로 적힌 값은 float로 로드됨 → 검증기의 `TYPE_INT` 강제는 계속 필수. 에디터 인스펙터 GUI 입력 경로는 headless라 미확인 |
 
 **4.7.2 headless probe로 확인한 것 (2026-11-07)**: `RefCounted` 내부 클래스의 `static func`, `Callable(Class, &"static_fn")` 호출,
 타입 딕셔너리 `Dictionary[StringName, Array]`, `Dictionary.make_read_only()` / `Array.make_read_only()`, `Vector2i` 딕셔너리 키,
@@ -79,7 +81,8 @@ Node 세계(판 진행 흐름, 미리보기 표시, 연출 재생기)는 Rules C
    인스턴스를 만들지 않는 `static func` 모음(`class_name X extends RefCounted`, 인스턴스 필드 없음)이다. 상태는 인자로 들어오고 반환값으로 나간다.
 2. **보드 = 구조-of-배열 값 객체, 복사 후 쓰기.** `BoardState`는 `width`, `height`와 칸별 `PackedByteArray kind`, `PackedByteArray flags`
    (`is_face`, `origin`), `Array[StringName] crew`(빈 `&""` = null), `PackedInt32Array placement_id`, `Dictionary modifiers`(희소: 칸 인덱스 →
-   `PackedInt32Array`)를 갖는다. 변경 연산은 `BoardState.copy()`(packed 배열 `duplicate()` = 64칸 memcpy)로 사본을 만들고 사본에만 쓴다.
+   `PackedInt32Array`)를 갖는다. 변경 연산은 `BoardState.copy()`(packed 배열 `duplicate()` = 64칸 memcpy, `crew.duplicate()`, **`modifiers.duplicate(true)`**)로 사본을 만들고 사본에만 쓴다.
+   `modifiers`의 얕은 `duplicate()`는 값인 `PackedInt32Array`를 원본과 **공유**한다(4.7.2 probe: 사본 쪽 `append`가 원본을 바꿈) — 반드시 깊은 복사.
    해석기는 `resolve` 시작 시 한 번 복사한 작업 보드를 웨이브 내내 제자리 수정하고(**내부 최적화, 외부 관찰 불가**), CLEAR 스냅샷(규칙 15)이
    필요한 곳에서만 추가 복사한다. 입력 보드는 절대 바뀌지 않는다.
 3. **해석기 = 이벤트 목록을 내는 동기 함수.** `ChainResolver.resolve(board, piece, anchor, ctx) -> ChainResult`는 chain-resolver 규칙 6의 루프를
@@ -87,6 +90,9 @@ Node 세계(판 진행 흐름, 미리보기 표시, 연출 재생기)는 Rules C
 4. **이벤트 = 공통 필드가 타입 지정된 `ChainEvent` + 스키마 키 상수가 있는 payload.** 이벤트 9종(GDD 규칙 19)마다 클래스를 만들지 않고,
    `ChainEvent`(`seq: int`, `type: ChainEvent.Type`, `wave: int`(−1 = null), `data: Dictionary`)와 `ChainEvent.K_*` 키 상수로 표현한다.
    `ChainResult` 반환 전에 이벤트 `data`와 목록 전체를 `make_read_only()` 한다 — 소비자가 결과를 바꿔 미리보기·커밋이 어긋나는 것을 막는다.
+   **`make_read_only()`는 얕다**(4.7.2 probe): 읽기 전용 딕셔너리 안의 `Array`·`PackedInt32Array`는 꺼내서 수정할 수 있다. 따라서 payload 안의 `Array`도
+   각각 `make_read_only()` 하고, `PackedInt32Array` payload는 작업 보드 배열이 아닌 **이벤트 전용 새 사본**으로 넣는다(packed 배열은 읽기 전용으로 만들 수 없음).
+   `final_board`도 소비자 쪽에서 읽기 전용으로 취급하며, 수정이 필요하면 `copy()`. 골든 테스트가 소비자 호출 전후 `board_hash`·이벤트 동일을 확인한다.
 5. **점수 = 이벤트를 읽는 별도 순수 함수.** `ScoreCalculator.score_placement(events, rules: ScoringRules) -> ScoreBreakdown`. 해석기는 점수를 모른다(규칙 20).
 6. **트레이 = 상태 객체 + 순수 전이 함수.** 트레이는 가방 상태가 필요하므로 상태를 `TrayState`(가방 내용·인덱스·슬롯) 값 객체로 두고
    `TraySupplyRules.init_state(team, cfg, stage_seed) -> TrayState`, `refill(state, board, budget) -> TrayRefill{state, pieces, rescued}`,
@@ -95,6 +101,11 @@ Node 세계(판 진행 흐름, 미리보기 표시, 연출 재생기)는 Rules C
    Rules Core에서 쓰지 않는다. `SeedHash.hash32(parts: Array[int]) -> int`(murmur3 방식 혼합 + `fmix32` 마무리, 모든 곱셈은 16비트 분할
    `mul32`로 2⁴⁸ 미만 유지, 결과 `& 0xFFFFFFFF`)가 GDD의 `hash32(stage_seed, STREAM_*, index…)`이다. 뽑기 한 번 = `DetRng.new(hash32([...]))`;
    `DetRng.next_u32()` = `hash32([seed, counter])`, `DetRng.below(n)` = `(next_u32() * n) >> 32` (n < 2³¹이면 곱이 2⁶³ 미만 — probe 확인).
+   **정확한 정의(Review에서 고정)**: `hash32(parts)` = MurmurHash3_x86_32(seed 0), 입력 = 각 part를 `p & 0xFFFFFFFF`로 마스킹한 32비트 워드 열
+   (리틀엔디언 4바이트 블록과 동치, 꼬리 없음, 길이 = `4 * parts.size()`). 음수 part는 마스킹으로 2의 보수 하위 32비트가 된다 —
+   `>>` 앞에서 값이 항상 0..2³²−1이므로 산술 시프트 문제가 생기지 않는다. `mul32(a, b)` = `(a * (b & 0xFFFF) + (((a * (b >> 16)) & 0xFFFF) << 16)) & 0xFFFFFFFF`
+   (`<<` 전에 마스킹해야 2⁴⁹ 미만), `rotl32(x, r)` = `((x << r) | (x >> (32 - r))) & 0xFFFFFFFF` (x < 2³², r ≤ 31 → < 2⁶³).
+   모든 중간값이 2⁶³ 미만이라 부호 있는 64비트 오버플로(C++ UB)에 의존하지 않는다. 기준 벡터: `hash32([0]) == 593689054` (0x2362F9DE, 공개 murmur3 값과 일치 — probe 확인).
    `crew_key(id)` = `SeedHash.str32(String(id))` (UTF-8 바이트 FNV-1a 32). Godot `String.hash()`는 버전 간 고정 보장이 없어 쓰지 않는다.
    스트림 태그는 `SeedStreams` 상수(아래)로 고정하며, 값을 바꾸면 모든 FIXED 스테이지 재검증이 필요하다(tray-supply Edge Cases).
 8. **크루 = 데이터 전용 Custom Resource, 능력 단계 = `StringName` + `Dictionary`.** `CrewDef`/`CrewShapeEntry`/`CrewAbility`/`AbilityStep`/`PieceShape`는
@@ -210,7 +221,7 @@ static func str32(text: String) -> int           # FNV-1a 32 over to_utf8_buffer
 static func mul32(a: int, b: int) -> int         # (a * b) mod 2^32 without exceeding 2^48
 
 class_name DetRng extends RefCounted
-func _init(seed: int) -> void
+func _init(p_seed: int) -> void   # `seed`는 @GlobalScope 함수 이름 — 매개변수로 쓰면 SHADOWED_GLOBAL_IDENTIFIER 경고
 func next_u32() -> int                            # hash32([seed, counter++])
 func below(n: int) -> int                         # 0 .. n-1, (next_u32() * n) >> 32, requires 1 <= n < 2^31
 static func shuffle(items: Array, seed: int) -> Array   # Fisher–Yates on a copy; input untouched
@@ -245,7 +256,11 @@ class_name CrewRegistry extends Resource     # @export crews: Array[CrewDef]; lo
 - 새 프리미티브는 `PrimitiveLibrary`에 실행기 + 검증기 + chain-resolver GDD 규칙 14 표 갱신 + 골든 테스트를 함께 추가해야 한다. `uses_rng` 프리미티브는 chain-resolver Q4가 결정될 때까지 금지.
 - 런타임에 `CrewDef`/규칙 `Resource`를 수정해서는 안 된다. 해석기는 `AbilityTable`만 읽는다.
 - `Resource` 하위 클래스에서 가상 메서드를 오버라이드하지 않는다(4.7 typed-return 상속 규칙 회피). 부득이하면 모든 경로에 명시적 `return`.
-- `CHAIN_END.board_hash` = `SeedHash.hash32`를 칸 배열 순서대로 접은 값 — 골든 테스트와 `PREVIEW_MISMATCH` 비교의 키.
+- `CHAIN_END.board_hash` = `SeedHash.hash32`를 칸 배열 순서대로 접은 값 — 골든 테스트와 `PREVIEW_MISMATCH` 비교의 키. **`hash32` 한 번 호출**에 칸당 2 part
+  (`kind | flags << 8 | (placement_id & 0xFFFF) << 16`, `crew_key` — `AbilityTable`에 crew_id별로 캐시, 런타임 `str32` 호출 없음) + 희소 `modifiers`를 칸 인덱스 오름차순으로 붙인다.
+  비용 참고: 64 part 1회 ≈ 38 µs (데스크톱 headless, 4.7.2) — 칸마다 따로 `hash32`를 부르지 말 것.
+- 음수가 나올 수 있는 정수 나눗셈·나머지는 0 쪽 절삭(`-7 / 2 == -3`, `-7 % 2 == -1`)이다. 음수 피제수의 나머지는 `posmod()`를 쓴다.
+- 4.7부터 packed 배열 원소 쓰기(`arr[i] = v`)는 속성 setter를 부르지 않는다 — Rules Core 값 객체에 packed 배열 setter를 두지 않는다.
 - 각 공개 API에 `##` 문서 주석 (coding-standards).
 
 ## Alternatives Considered
@@ -294,11 +309,10 @@ class_name CrewRegistry extends Resource     # @export crews: Array[CrewDef]; lo
 - 인스펙터에서 `params` 편집이 불편하다(Dictionary 수동 입력, 정수/실수 혼동 위험 — Verification Required 3).
 
 ## Risks
-- **`.tres` Dictionary의 int가 float로 저장/로드됨** → 검증기가 int 타입을 강제하고(`typeof == TYPE_INT`) 실패를 로드 오류로. T0 첫 크루 `.tres` 작성 시 왕복 테스트.
+- **`.tres` Dictionary의 int가 float로 저장/로드됨** → 저장기 왕복은 int를 유지함을 확인(2026-11-07). 남은 경로는 수동 편집·인스펙터에서 float(`2.0`)로 입력한 경우 — 검증기가 int 타입을 강제하고(`typeof == TYPE_INT`) 실패를 로드 오류로. `params` 키는 `&"k"`와 `"k"`가 같은 키로 조회됨(probe 확인)이나 `.tres`에는 `StringName`으로 저장한다.
 - **해시 구현 실수로 플랫폼 간 값이 다름** → `tests/unit/rules/rng/`에 고정 입력→고정 출력 골든 값; Android 실기기에서 같은 테스트(자체 결과 화면 또는 로그) 1회 실행.
 - **누군가 미리보기 전용 단축 경로를 추가** → Implementation Guidelines의 금지 + `tests/unit/rules/purity/`의 정적 검사(금지 토큰 grep 결과를 관찰로 보고) + `PREVIEW_MISMATCH` assert.
 - **`resolve`가 저가 Android에서 예산 초과** → 캐시(chain-preview 규칙 8), 앵커 변경 시에만 호출; 그래도 초과하면 스냅샷 복사를 칸 목록 기반 차분으로 바꾸는 내부 최적화(인터페이스 불변). T0에서 실측.
-- **Engine specialist 미검증(이번 실행)** → Accept 전에 `godot-specialist` 검증을 받을 것.
 - **`Callable` 훅이 순수성을 깨는 구현을 받음** → 방해물 GDD/ADR이 훅 구현을 `src/core/rules/chain/hooks/`의 정적 함수로 제한, 같은 금지 토큰 검사 적용.
 
 ## GDD Requirements Addressed
@@ -337,11 +351,36 @@ class_name CrewRegistry extends Resource     # @export crews: Array[CrewDef]; lo
 - 같은 `stage_seed`·팀으로 `TraySupplyRules` 트레이 순서가 재시작마다 동일.
 - `tests/unit/rules/purity/`가 `src/core/`에서 금지 토큰(`extends Node`, `randi`, `RandomNumberGenerator`, `Time.`, `float` 타입 표기 등)을 관찰 0건으로 보고.
 - 성능: headless 1,000회 평균 `resolve` ≤ 1 ms; T0 저가 Android 실측 `t_preview` ≤ 4 ms.
-- **건너뛴 게이트 (이번 실행)**: Engine specialist 검증(5.5) — 이 세션에 Agent 도구가 없어 `godot-specialist`를 spawn하지 못함 (NOT ASSESSED). TD-ADR(5.6) — review_mode `lean`이라 생략. Accept 전 최소 `godot-specialist` 검증 권장.
+- **게이트**: Engine specialist 검증(5.5) — 2026-11-07 완료(아래 Review). TD-ADR(5.6) — review_mode `lean`이라 생략.
+
+## Engine Specialist Review (godot-specialist, 2026-11-07)
+
+**판정: 건전 — Accepted.** `RefCounted` 정적 함수 레이아웃, packed-array SoA `BoardState`, 데이터 전용 Custom Resource(타입 배열),
+자체 `SeedHash`/`DetRng`는 4.7 엔진 참조(`breaking-changes.md`·`deprecated-apis.md`·`current-best-practices.md`)와 충돌하지 않는다.
+Deprecated API 사용 없음. 4.7 typed-return override 규칙은 가상 메서드 오버라이드 금지로 회피됨(`_init`은 `-> void`).
+
+**변경한 것**
+1. Decision 2: `modifiers`는 `duplicate(true)` 필수 (얕은 복사는 `PackedInt32Array` 공유 — 입력 불변 위반).
+2. Decision 4: `make_read_only()`가 얕음을 명시, 중첩 `Array` 읽기 전용화·packed payload 새 사본·`final_board` 취급 규칙 추가.
+3. Decision 7: `hash32` = MurmurHash3_x86_32(seed 0)로 정확히 정의, 입력 마스킹·`mul32`(시프트 전 마스킹)·`rotl32` 식과 기준 벡터 고정.
+4. `DetRng._init(seed)` → `_init(p_seed)` (전역 `seed()` 가림 경고).
+5. Implementation Guidelines: `board_hash` 1회 호출·칸당 2 part·`crew_key` 캐시, 음수 정수 나눗셈/`posmod`, 4.7 packed 원소 쓰기 setter 규칙.
+6. Verification Required (3) 해소, Risks 갱신.
+
+**4.7.2 headless에서 확인한 사실**: `0xFFFFFFFF` 리터럴 = 4294967295(양수); `-1 & 0xFFFFFFFF` = 4294967295; 위 `mul32`가 9×9 경계값에서
+`(a*b) & 0xFFFFFFFF`와 일치(직접 곱은 64비트에서 랩되어 음수가 됨); `hash32([0])` = 593689054 = 공개 murmur3 벡터; `(0xFFFFFFFF * 0x7FFFFFFF) >> 32` = 2147483646(오버플로 없음);
+`ResourceSaver` `.tres` 왕복에서 `Dictionary` int → `TYPE_INT`, `.tres` 안 `2.0` → `TYPE_FLOAT`; `Dictionary[StringName, int]` 타입 딕셔너리 왕복 유지;
+읽기 전용 딕셔너리의 중첩 `Array`/`PackedInt32Array`는 수정 가능; 중첩 `Array`에 `make_read_only()`하면 차단; `hash32` 3 part ≈ 2.7 µs, 64 part ≈ 38 µs, 64칸 보드 배열 2개 복사 ≈ 0.2 µs (데스크톱).
+
+**남은 미지수**
+- **Android 해시 일치**: GDScript `int`는 모든 플랫폼에서 `int64_t`이고, 고정된 식은 모든 중간값을 2⁶³ 미만으로 유지해 오버플로·구현 정의 동작에 의존하지 않는다 → 위험 LOW.
+  그래도 `tests/unit/rules/rng/` 골든 값을 T0에서 arm64 실기기로 1회 실행(Validation Criteria 유지).
+- **기기 성능**: 데스크톱 수치로는 여유가 크나 저가 Android 미측정 — T0 `t_preview` ≤ 4 ms 실측 유지. 초과 시 Risks의 차분 최적화.
+- 에디터 인스펙터로 `params`를 입력하는 경로의 int/float 선택은 GUI라 미확인 — 검증기가 막는다.
 
 ## Related
 - 첫 ADR — supersede·contradict 없음.
 - `design/gdd/chain-resolver.md` (규칙 1–26, F7·F8, Q5·Q7), `board-rules.md` (규칙 1–17), `scoring.md` (규칙 1–2), `tray-supply.md` (규칙 16–18, F3, Q6),
   `crew-definition.md` (규칙 1–3, 8, 11–13), `chain-preview.md` (규칙 1, 8–9, F3).
 - `production/gate-checks/gate-check-systems-design-2026-11-07.md` § Director Panel — TD-PHASE-GATE 조건.
-- GDD 동기화 필요: chain-resolver 규칙 22의 "(Godot에서는 `RandomNumberGenerator` 인스턴스에 seed 지정)" → "`DetRng`(ADR-0001)"; tray-supply 규칙 16·F3의 "지역 RNG"는 `DetRng`, Q6 해소 표시; F7·F3의 "provisional" 해제는 이 ADR Accept 후.
+- GDD 동기화: chain-resolver 규칙 22와 tray-supply Q6은 2026-11-07 반영 완료. 남은 것 — 원문: "(Godot에서는 `RandomNumberGenerator` 인스턴스에 seed 지정)" → "`DetRng`(ADR-0001)"; tray-supply 규칙 16·F3의 "지역 RNG"는 `DetRng`, Q6 해소 표시; F7·F3의 "provisional" 해제는 이 ADR Accept 후.

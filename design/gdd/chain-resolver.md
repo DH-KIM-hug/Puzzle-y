@@ -170,7 +170,7 @@ Custom Resource로 둘지 enum + 파라미터 Dictionary로 둘지, 보드 복�
 **G. 시드 RNG 계약 (시드 RNG 시스템 #3의 GDD 절 — 구현은 ADR)**
 
 22. 해석기는 전역 랜덤을 쓰지 않는다. 랜덤이 필요한 프리미티브는 `ctx.rng_seed`로 해석기 안에서 만든 **지역** 난수 스트림만 쓴다
-    (Godot에서는 `RandomNumberGenerator` 인스턴스에 seed 지정 — 전역 `randi()` 금지). 같은 `rng_seed` → 같은 결과.
+    (구현: `DetRng.new(ctx.rng_seed)` — ADR-0001. `RandomNumberGenerator`·전역 `randi()` 금지). 같은 `rng_seed` → 같은 결과.
 23. `rng_seed`는 판 진행 흐름이 `seed_for(stage_seed, placement_index)`(F7)로 만들어 미리보기와 실제 배치에 **같은 값**을 넘긴다.
     그래서 랜덤 프리미티브가 생겨도 미리보기 = 결과가 유지된다. 트레이 공급·가챠는 같은 시드 RNG 서비스의 **다른 스트림**을 쓰며
     해석기 스트림을 소비하지 않는다.
