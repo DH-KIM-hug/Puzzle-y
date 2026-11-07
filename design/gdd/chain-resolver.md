@@ -85,7 +85,9 @@ Custom Resource로 둘지 enum + 파라미터 Dictionary로 둘지, 보드 복�
 
 9. **얼굴 순서 = row-major** — 같은 웨이브에서 지워진 얼굴들은 (row 오름차순, 같은 row면 col 오름차순)으로 발동한다. 이는
    board-rules `clear_cells`의 반환 순서와 같다. 발동 순번 `order_index`는 연쇄 전체에서 1부터 이어지는 전역 번호이며,
-   미리보기의 "발동 순서 번호"가 이 값을 그대로 쓴다. 순서가 결과에 영향을 주는 곳은 FILL 프리미티브뿐이다(CLEAR는 합집합).
+   연출 재생기의 같은 웨이브 안 발동 간격 순서와 `CELLS_CLEARED.source_order`가 이 값을 쓴다. **미리보기 배지 숫자는 `order_index`가
+   아니라 `stage`(= `wave` + 1)다** (chain-preview 규칙 5·D3 — 같은 웨이브 얼굴은 같은 숫자; D13). 순서가 결과에 영향을 주는 곳은
+   FILL 프리미티브뿐이다(CLEAR는 합집합).
 10. **깊이 상한에서의 동작 (TD 조건 — board-rules Q1 해소)** — 웨이브 k = `depth_cap`은 **정상적으로 지워진다**(줄 칸 + 직전
     능력 대상 모두). 그 웨이브에서 지워진 얼굴은 발동하지 않고 `FACE_FIZZLED(reason = DEPTH_CAP)`로 사라진다. 이 웨이브에서는
     FILL이 일어나지 않으므로 새 완성 줄이 생기지 않고, 해석기 종료 시 완성 줄 0개(board-rules 불변식 13)가 보장된다.
@@ -143,7 +145,7 @@ Custom Resource로 둘지 enum + 파라미터 Dictionary로 둘지, 보드 복�
     | `WAVE_BEGIN` | `wave`(= 깊이), `causes` ⊆ {`LINE`, `ABILITY`}, `rows[]`, `cols[]` (이 웨이브에 든 유효 완성 줄, 오름차순) | 연출(단계 컷인), 점수(줄 수), HUD |
     | `CELL_MODIFIED` | `cell`, `modifiers_before`, `modifiers_after` (훅 `pre_clear`가 지우지 않고 바꾼 칸) | 연출, 방해물 목표 |
     | `CELLS_CLEARED` | `cells[]` = {`r`, `c`, `crew_id`, `is_face`, `origin`, `by` (`LINE` \| `ABILITY` \| `BOTH`), `source_order`(이 칸을 대상으로 삼은 가장 앞 얼굴의 `order_index`, 줄만이면 null)} row-major; `line_cell_count`; `ability_cell_count`; `kept[]` | 점수(칸 수·깊이), 스테이지 목표(특정 칸), 연출 |
-    | `FACE_ACTIVATED` | `order_index`, `cell`, `crew_id`, `ability_id`, `stage` (= `wave` + 1, "연쇄 N"의 N) | 연출(컷인·순서), 미리보기(순서 번호), 오디오 |
+    | `FACE_ACTIVATED` | `order_index`, `cell`, `crew_id`, `ability_id`, `stage` (= `wave` + 1, "연쇄 N"의 N) | 연출(컷인·`order_index` 순서), 미리보기(단계 배지 = `stage`), 오디오 |
     | `ABILITY_EFFECT` | `order_index`, `primitive`, `kind` (`CLEAR` \| `FILL`), `cells[]` (CLEAR: 다음 웨이브에 실제로 지워질 차 있는 칸 / FILL: 낳은 알 칸, 낳은 순서) | 연출, 미리보기(예상 알) |
     | `FACE_FIZZLED` | `cell`, `crew_id`, `reason` (`DEPTH_CAP` \| `SUPPRESSED`) | 연출(꾸벅), 미리보기 |
     | `DEPTH_CAP_REACHED` | `wave` | 연출, HUD |
@@ -179,7 +181,7 @@ Custom Resource로 둘지 enum + 파라미터 Dictionary로 둘지, 보드 복�
 
 25. 미리보기는 앵커 칸이 **바뀔 때만** `resolve`를 다시 부른다 (트리거는 드래그 & 배치 입력 GDD). 해석기는 순수하므로 결과를
     (`board_version`, 조각 인스턴스 id, `anchor`, `rng_seed`) 키로 캐시해도 된다. `can_place = false`인 앵커에서는 부르지 않는다.
-26. 미리보기가 표시할 정보(지워질 칸, 발동 순서 번호, 예상 알, "연쇄 N 예상")는 모두 `events`/`summary`에 이미 있다. 무엇을 얼마나
+26. 미리보기가 표시할 정보(지워질 칸, 단계 배지(`stage`), 예상 알, "연쇄 N 예상")는 모두 `events`/`summary`에 이미 있다. 무엇을 얼마나
     보여 줄지는 연쇄 미리보기 GDD 소관이다 ("가장 큰 숫자 찾기" 퇴화 위험의 튜닝 지점).
 
 **I. 데이터 기반 값** (standard tier라 Tuning Knobs 섹션은 생략 — 범위와 근거는 여기와 Formulas 변수표에 둔다)
@@ -319,19 +321,21 @@ The egg_selection formula is defined as:
 **Example:** 삐약 얼굴 (3, 5) 지워짐, 3번 행 빈칸 2개 {(3,1),(3,5)}, 5번 열 빈칸 4개 → `fuller` = 행 → 거리순 (3,5)=0, (3,1)=4 →
 알 **2개**(count 3이지만 빈칸 2개). 3번 행이 꽉 차 다음 웨이브에서 지워진다 (재점화, 규칙 12).
 
-**F6. 깊이별 점수 배율 — 참조 (소유: 점수 & 연쇄 배율 GDD, provisional)**
+**F6. 깊이별 점수 배율 — 참조 사본 (소유: 점수 & 연쇄 배율 GDD F2 — 이 문서는 값을 정하지 않는다)**
 
-The depth_multiplier formula is defined as:
+The depth_mult_pct formula is defined as:
 
-`depth_multiplier(k) = 1 + depth_step_bonus × k`
+`depth_mult_pct(k) = min(100 + depth_step_pct × k, depth_mult_max_pct)` (정수 백분율 — scoring F2와 같은 식·같은 변수명, D14)
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
 | k | int | 0 – `depth_cap` | calculated (`CELLS_CLEARED`의 `wave`) | 그 칸이 지워진 웨이브의 깊이 |
-| depth_step_bonus | float | 0.25–1.0 (시작 0.5) | data file (`scoring.md` 소유) | 깊이 1단계당 배율 증가 (컨셉·프로토타입 +50%) |
+| depth_step_pct | int | 25–100 (시작 50) | data file (`scoring.md` 소유) | 깊이 1단계당 배율 증가 (컨셉·프로토타입 +50%) |
+| depth_mult_max_pct | int | 200–600 (시작 400) | data file (`scoring.md` 소유) | 배율 상한 — `depth_cap`과의 결합을 끊는다 |
 
-**Output Range:** 1.0 (k = 0) ~ 1 + 0.5 × 6 = **4.0** (k = `depth_cap`). `depth_cap`을 올리면 배율 상한도 올라간다 — 두 값은 함께 조정한다.
+**Output Range:** 100 (k = 0) ~ 400 (k = `depth_cap` = 6, 상한과 일치). `depth_cap`을 올려도 상한 400에서 멈춘다 (scoring D3) — 이 문서의
+`depth_cap`을 바꾸면 scoring Tuning Knobs의 상호작용 행을 다시 본다.
 **Example:** 웨이브 2에서 9칸 → 프로토타입 공식 `9 × 10 × (1 + 0.5 × 2)` = 180점. 칸당 점수·동시 줄 보너스 등 최종 공식은 점수 GDD가
 확정한다. **해석기는 이 식을 계산하지 않는다** (규칙 20) — 웨이브 깊이가 이벤트에 정확히 실리는 것만 보장한다.
 
@@ -551,7 +555,7 @@ to produce per-asset visual descriptions, dimensions, and generation prompts fro
 
 | # | 질문 | 담당 | 해결 시점 |
 |---|---|---|---|
-| Q1 | 깊이 상한 6이 실제로 자주 닿는가, 닿으면 피즐 얼굴이 "손해"로 느껴지는가 — 상한 도달 시 남은 얼굴에 점수 보너스를 줄지 | systems-designer · 점수 GDD | `/design-system scoring` + T0 플레이테스트 |
+| Q1 | 깊이 상한 6이 실제로 자주 닿는가, 닿으면 피즐 얼굴이 "손해"로 느껴지는가 — **부분 해소**: 점수 쪽은 scoring D6(`fizzle_points` = 0 노브)로 정함. 빈도 추정(systems-designer 리뷰, 기본 팀·무작위 배치): 줄을 지운 배치 중 상한 6 도달 ≈ 1–2% — 드묾. 체감은 T0 플레이테스트 | systems-designer · 점수 GDD | T0 플레이테스트 |
 | Q2 | 동시 얼굴 순서: row-major vs "트리거에 가까운 순"(연출상 더 자연스러울 수 있음). MVP는 row-major 고정 (D3) | game-designer · 연출 GDD | `/design-system chain-presentation` |
 | Q3 | 크루 6명을 MVP 어휘 7종으로 "새 동작" 6개로 만들 수 있는가 — 부족하면 새 프리미티브 추가 (예: `clear_crew_tiles`, `swap`은 계약 17상 금지) | game-designer · 크루 정의 GDD | `/design-system crew-definition` |
 | Q4 | RNG 프리미티브를 허용할 것인가 (시드로 미리보기에 보이면 기둥 3 위반이 아닌가) | creative-director · game-designer | T2 크루 확장 전 |
