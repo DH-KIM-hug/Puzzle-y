@@ -1,0 +1,688 @@
+<!-- PROTOTYPE - NOT FOR PRODUCTION -->
+<!-- Question: 60초 실시간 매치-3에서 크루 스킬 발동과 스킬 간 연쇄가 "한 판 더"를 부르는가? 캐스케이드 중 입력이 끊김 없이 느껴지는가? -->
+<!-- Date: 2026-11-07 -->
+<title>말랑 크루 블리츠</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: one-screen sticker-book play table — HUD strip, paper board, crew sticker bar */
+:root {
+  --paper: #e8d9bd;      /* kraft paper */
+  --paper-dark: #d6c29f;
+  --ink: #3b2f25;        /* brown pencil ink */
+  --ink-soft: #7a6553;
+  --sticker: #fffdf8;    /* sticker white */
+  --accent: #e8574a;     /* cat red, used for urgency */
+  --display: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --body: "Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255,255,255,.25), transparent 40%),
+    repeating-linear-gradient(45deg, rgba(0,0,0,.018) 0 2px, transparent 2px 5px),
+    var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  overflow: hidden;
+  touch-action: none;
+  -webkit-user-select: none; user-select: none;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+#app {
+  height: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-block: 10px;
+}
+.hud { display: flex; align-items: center; gap: 12px; }
+.hud .title { font-family: var(--display); font-size: 20px; line-height: 1; }
+.hud .score { margin-left: auto; font-family: var(--display); font-size: 26px; font-variant-numeric: tabular-nums; }
+.hud .score small { font-family: var(--body); font-size: 12px; color: var(--ink-soft); margin-right: 6px; }
+.timebar {
+  height: 14px; border-radius: 8px; background: var(--paper-dark);
+  border: 3px solid var(--sticker); box-shadow: 0 2px 0 rgba(59,47,37,.18);
+  overflow: hidden;
+}
+.timebar > i { display: block; height: 100%; width: 100%; background: #4bb36b; transform-origin: left; }
+.timebar.hurry > i { background: var(--accent); }
+.boardwrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+canvas#board { display: block; touch-action: none; }
+.crew { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.crew button {
+  position: relative; border: 0; padding: 8px 6px 10px; background: var(--sticker);
+  border-radius: 18px 22px 16px 20px; box-shadow: 0 3px 0 rgba(59,47,37,.22), 0 0 0 2px rgba(59,47,37,.08);
+  font-family: var(--display); font-size: 15px; color: var(--ink); cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  transition: transform .12s;
+}
+.crew button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.crew button canvas { width: 52px; height: 52px; }
+.crew .skill { font-family: var(--body); font-size: 11px; color: var(--ink-soft); }
+.crew .gauge { width: 86%; height: 8px; border-radius: 5px; background: var(--paper-dark); overflow: hidden; }
+.crew .gauge > i { display: block; height: 100%; width: 0%; transition: width .15s; }
+.crew button.ready { animation: wobble .6s ease-in-out infinite; }
+.crew button.ready::after {
+  content: "탭!"; position: absolute; top: -10px; right: -4px; background: var(--ink); color: var(--sticker);
+  font-size: 12px; padding: 2px 7px; border-radius: 10px;
+}
+@keyframes wobble { 0%,100% { transform: rotate(-3deg) scale(1.04); } 50% { transform: rotate(3deg) scale(1.08); } }
+.hint { text-align: center; font-size: 12px; color: var(--ink-soft); min-height: 16px; }
+.overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(232,217,189,.82);
+}
+.card {
+  background: var(--sticker); border-radius: 22px 26px 20px 24px; padding: 22px 24px; text-align: center;
+  box-shadow: 0 6px 0 rgba(59,47,37,.2); transform: rotate(-1.5deg); min-width: 240px; max-width: 100%;
+}
+.card h2 { font-family: var(--display); font-weight: 400; font-size: 30px; margin: 0 0 6px; text-wrap: balance; }
+.card .big { font-family: var(--display); font-size: 44px; font-variant-numeric: tabular-nums; }
+.card dl { display: grid; grid-template-columns: auto auto; gap: 4px 16px; margin: 12px 0 16px; text-align: left; font-size: 14px; }
+.card dt { color: var(--ink-soft); }
+.card dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.card button {
+  font-family: var(--display); font-size: 22px; border: 0; border-radius: 16px; padding: 12px 28px;
+  background: var(--accent); color: var(--sticker); box-shadow: 0 4px 0 #a8382e; cursor: pointer;
+}
+.card button:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.cutin {
+  position: absolute; left: 50%; top: 38%; transform: translate(-50%,-50%) rotate(-4deg);
+  background: var(--sticker); border-radius: 18px; padding: 10px 20px; font-family: var(--display); font-size: 26px;
+  box-shadow: 0 6px 0 rgba(59,47,37,.25); pointer-events: none; white-space: nowrap;
+  animation: peel .9s ease-out forwards;
+}
+.cutin small { display: block; font-family: var(--body); font-size: 13px; color: var(--ink-soft); }
+@keyframes peel {
+  0% { transform: translate(-50%,-50%) rotate(-25deg) scale(.4); opacity: 0; }
+  18% { transform: translate(-50%,-50%) rotate(4deg) scale(1.12); opacity: 1; }
+  30% { transform: translate(-50%,-50%) rotate(-4deg) scale(1); }
+  80% { opacity: 1; }
+  100% { transform: translate(-50%,-70%) rotate(-4deg) scale(.95); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .crew button.ready { animation: none; outline: 3px dashed var(--ink); }
+  .cutin { animation-duration: 1.2s; }
+}
+</style>
+
+<div id="app">
+  <div class="hud">
+    <div class="title">말랑 크루</div>
+    <div class="score"><small id="chainlbl"></small><span id="score">0</span></div>
+  </div>
+  <div class="timebar" id="timebar"><i id="timefill"></i></div>
+  <div class="boardwrap" id="boardwrap">
+    <canvas id="board" aria-label="매치-3 보드"></canvas>
+  </div>
+  <div class="hint" id="hint">타일을 스와이프하면 60초가 시작돼요</div>
+  <div class="crew" id="crew"></div>
+</div>
+
+<script>
+// PROTOTYPE - NOT FOR PRODUCTION — hardcoded everything on purpose.
+(() => {
+"use strict";
+const COLS = 7, ROWS = 9, ROUND_TIME = 60;
+// 0 cat, 1 bear, 2 chick are the team; 3 frog, 4 pig, 5 bunny are filler colors.
+const KINDS = [
+  { name: "냥이", color: "#e8574a", dark: "#b83a30" },
+  { name: "곰곰", color: "#3f7fd9", dark: "#2b5aa0" },
+  { name: "삐약", color: "#f2c230", dark: "#c99a10" },
+  { name: "개굴", color: "#4bb36b", dark: "#2f8048" },
+  { name: "꿀꿀", color: "#ee8fb3", dark: "#c76690" },
+  { name: "깡총", color: "#8e6bd8", dark: "#6748a8" },
+];
+const CREW = [
+  { kind: 0, skill: "할퀴기", desc: "십자 줄 지우기 → 곰곰 충전", max: 14 },
+  { kind: 1, skill: "쿵! 폭탄", desc: "3×3 폭발 3방", max: 18 },
+  { kind: 2, skill: "삐약 물감", desc: "타일을 냥이 색으로", max: 12 },
+];
+
+// ---------- state ----------
+let grid, tiles, particles, floats, score, chain, bestChain, settleTimer;
+let timeLeft, started, over, overTimer, skillsFired, crewChains, lastSkillAt, gauges, shake, flash;
+let retries = 0, now = 0, idSeq = 0;
+let best = 0;
+try { best = +localStorage.getItem("mc_best") || 0; } catch (e) {}
+
+const canvas = document.getElementById("board");
+const ctx = canvas.getContext("2d");
+let ts = 48, dpr = 1, sprites = [];
+
+function rnd(n) { return Math.floor(Math.random() * n); }
+
+function newTile(kind, r, c, y) {
+  return { id: idSeq++, kind, r, c, y, vy: 0, state: y < r ? "fall" : "idle", t: 0, moved: false,
+           fromR: r, fromC: c, p: 1, revert: false, squash: 0, pop: 0 };
+}
+
+function reset() {
+  grid = []; particles = []; floats = [];
+  for (let r = 0; r < ROWS; r++) {
+    grid.push([]);
+    for (let c = 0; c < COLS; c++) {
+      let k;
+      do { k = rnd(6); } while (
+        (c >= 2 && grid[r][c-1].kind === k && grid[r][c-2].kind === k) ||
+        (r >= 2 && grid[r-1][c].kind === k && grid[r-2][c].kind === k));
+      grid[r].push(newTile(k, r, c, r - ROWS - 1 + (ROWS - r) * 0.15));
+      grid[r][c].state = "fall";
+    }
+  }
+  score = 0; chain = 0; bestChain = 0; settleTimer = 0;
+  timeLeft = ROUND_TIME; started = false; over = false; overTimer = 0;
+  skillsFired = 0; crewChains = 0; lastSkillAt = -99; gauges = [0, 0, 0]; shake = 0; flash = 0;
+  document.querySelector(".overlay")?.remove();
+  setHint("타일을 스와이프하면 60초가 시작돼요");
+  updateHud();
+}
+
+// ---------- sprites (sticker animals) ----------
+function buildSprites() {
+  const size = Math.round(ts * dpr);
+  sprites = KINDS.map((k, i) => drawAnimal(i, size));
+}
+function drawAnimal(kind, size, target) {
+  const cv = target || document.createElement("canvas");
+  if (!target) { cv.width = cv.height = size; }
+  const g = cv.getContext("2d");
+  g.clearRect(0, 0, cv.width, cv.height);
+  const s = size, cx = s / 2, cy = s * 0.54, R = s * 0.33;
+  const k = KINDS[kind];
+  // parts as path builders so the white sticker outline wraps all of them
+  const parts = [];
+  const circle = (x, y, r) => g2 => { g2.beginPath(); g2.arc(x, y, r, 0, Math.PI * 2); };
+  const ellipse = (x, y, rx, ry, rot) => g2 => { g2.beginPath(); g2.ellipse(x, y, rx, ry, rot || 0, 0, Math.PI * 2); };
+  const tri = (pts) => g2 => { g2.beginPath(); g2.moveTo(pts[0], pts[1]); g2.lineTo(pts[2], pts[3]); g2.lineTo(pts[4], pts[5]); g2.closePath(); };
+  if (kind === 0) { // cat: pointed ears
+    parts.push(tri([cx - R*0.95, cy - R*0.35, cx - R*0.75, cy - R*1.35, cx - R*0.15, cy - R*0.85]));
+    parts.push(tri([cx + R*0.95, cy - R*0.35, cx + R*0.75, cy - R*1.35, cx + R*0.15, cy - R*0.85]));
+  } else if (kind === 1) { // bear: round ears
+    parts.push(circle(cx - R*0.72, cy - R*0.78, R*0.38));
+    parts.push(circle(cx + R*0.72, cy - R*0.78, R*0.38));
+  } else if (kind === 2) { // chick: tuft
+    parts.push(ellipse(cx - R*0.12, cy - R*1.08, R*0.14, R*0.3, -0.4));
+    parts.push(ellipse(cx + R*0.14, cy - R*1.1, R*0.14, R*0.3, 0.4));
+  } else if (kind === 3) { // frog: bulging eyes
+    parts.push(circle(cx - R*0.5, cy - R*0.82, R*0.36));
+    parts.push(circle(cx + R*0.5, cy - R*0.82, R*0.36));
+  } else if (kind === 5) { // bunny: long ears
+    parts.push(ellipse(cx - R*0.42, cy - R*1.15, R*0.2, R*0.62, -0.15));
+    parts.push(ellipse(cx + R*0.42, cy - R*1.15, R*0.2, R*0.62, 0.15));
+  }
+  const body = kind === 4 ? ellipse(cx, cy, R*1.08, R*0.95) : circle(cx, cy, R);
+  parts.push(body);
+  // sticker shadow + white outline
+  g.save();
+  g.shadowColor = "rgba(59,47,37,.28)"; g.shadowOffsetY = s * 0.03; g.shadowBlur = s * 0.04;
+  g.fillStyle = "#fffdf8"; g.strokeStyle = "#fffdf8"; g.lineWidth = s * 0.11; g.lineJoin = "round";
+  for (const p of parts) { p(g); g.stroke(); g.fill(); }
+  g.restore();
+  g.fillStyle = k.color;
+  for (const p of parts) { p(g); g.fill(); }
+  // inner ear / details
+  g.fillStyle = "rgba(255,255,255,.35)";
+  g.beginPath(); g.ellipse(cx - R*0.35, cy - R*0.4, R*0.28, R*0.16, -0.5, 0, Math.PI*2); g.fill();
+  // face
+  g.fillStyle = "#2b211a";
+  const ey = kind === 3 ? cy - R*0.82 : cy - R*0.08;
+  const ex = kind === 3 ? R*0.5 : R*0.36;
+  if (kind === 3) { g.fillStyle = "#fffdf8"; circle(cx - ex, ey, R*0.22)(g); g.fill(); circle(cx + ex, ey, R*0.22)(g); g.fill(); g.fillStyle = "#2b211a"; }
+  circle(cx - ex, ey, R*0.11)(g); g.fill();
+  circle(cx + ex, ey, R*0.11)(g); g.fill();
+  if (kind === 2) { // beak
+    g.fillStyle = "#e8873a"; tri([cx - R*0.2, cy + R*0.18, cx + R*0.2, cy + R*0.18, cx, cy + R*0.45])(g); g.fill();
+  } else if (kind === 4) { // snout
+    g.fillStyle = k.dark; ellipse(cx, cy + R*0.3, R*0.34, R*0.22)(g); g.fill();
+    g.fillStyle = "#2b211a"; circle(cx - R*0.11, cy + R*0.3, R*0.06)(g); g.fill(); circle(cx + R*0.11, cy + R*0.3, R*0.06)(g); g.fill();
+  } else {
+    g.strokeStyle = "#2b211a"; g.lineWidth = s * 0.03; g.lineCap = "round";
+    g.beginPath(); g.arc(cx - R*0.1, cy + R*0.22, R*0.12, 0.2, Math.PI - 0.2); g.stroke();
+    g.beginPath(); g.arc(cx + R*0.1, cy + R*0.22, R*0.12, 0.2, Math.PI - 0.2); g.stroke();
+  }
+  // blush
+  g.fillStyle = "rgba(255,120,120,.35)";
+  circle(cx - R*0.62, cy + R*0.22, R*0.14)(g); g.fill();
+  circle(cx + R*0.62, cy + R*0.22, R*0.14)(g); g.fill();
+  return cv;
+}
+
+// ---------- crew UI ----------
+const crewEl = document.getElementById("crew");
+const crewBtns = CREW.map((cr, i) => {
+  const b = document.createElement("button");
+  b.id = "crew" + i;
+  b.type = "button";
+  const cv = document.createElement("canvas"); cv.width = cv.height = 104;
+  drawAnimal(cr.kind, 104, cv);
+  b.append(cv);
+  const nm = document.createElement("div"); nm.textContent = KINDS[cr.kind].name + " · " + cr.skill; b.append(nm);
+  const ds = document.createElement("div"); ds.className = "skill"; ds.textContent = cr.desc; b.append(ds);
+  const ga = document.createElement("div"); ga.className = "gauge";
+  const fi = document.createElement("i"); fi.style.background = KINDS[cr.kind].color; ga.append(fi); b.append(ga);
+  b.addEventListener("click", () => fireSkill(i));
+  crewEl.append(b);
+  return { b, fi };
+});
+
+// ---------- layout ----------
+const wrap = document.getElementById("boardwrap");
+function layout() {
+  const w = wrap.clientWidth, h = wrap.clientHeight;
+  ts = Math.max(20, Math.floor(Math.min(w / COLS, h / ROWS)));
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.style.width = ts * COLS + "px"; canvas.style.height = ts * ROWS + "px";
+  canvas.width = Math.round(ts * COLS * dpr); canvas.height = Math.round(ts * ROWS * dpr);
+  buildSprites();
+}
+window.addEventListener("resize", layout);
+
+// ---------- core helpers ----------
+const at = (r, c) => (r >= 0 && r < ROWS && c >= 0 && c < COLS) ? grid[r][c] : null;
+const settled = t => t && t.state === "idle";
+
+function findMatches() {
+  const hit = new Set();
+  const groups = [];
+  const scan = (get, outer, inner) => {
+    for (let a = 0; a < outer; a++) {
+      let run = [];
+      for (let b = 0; b <= inner; b++) {
+        const t = b < inner ? get(a, b) : null;
+        if (settled(t) && run.length && t.kind === run[0].kind) run.push(t);
+        else {
+          if (run.length >= 3) { groups.push(run); run.forEach(x => hit.add(x)); }
+          run = settled(t) ? [t] : [];
+        }
+      }
+    }
+  };
+  scan((r, c) => at(r, c), ROWS, COLS);
+  scan((c, r) => at(r, c), COLS, ROWS);
+  return { hit, groups };
+}
+
+function clearTile(t, opts) {
+  if (!t || t.state === "clear") return false;
+  t.state = "clear"; t.t = 0;
+  const ci = CREW.findIndex(cr => cr.kind === t.kind);
+  if (ci >= 0) addGauge(ci, 1);
+  spawnParticles(t);
+  return true;
+}
+
+function addGauge(i, n) {
+  gauges[i] = Math.min(CREW[i].max, gauges[i] + n);
+}
+
+function spawnParticles(t) {
+  const x = (t.c + 0.5) * ts, y = (t.r + 0.5) * ts;
+  for (let i = 0; i < 6; i++) {
+    const a = Math.random() * Math.PI * 2, sp = (60 + Math.random() * 140);
+    particles.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 80, life: 0.6 + Math.random() * 0.3,
+      t: 0, rot: Math.random() * 6, vr: (Math.random() - .5) * 12, col: i % 3 === 0 ? "#fffdf8" : KINDS[t.kind].color,
+      w: ts * (0.1 + Math.random() * 0.1), h: ts * (0.06 + Math.random() * 0.06) });
+  }
+}
+
+function addFloat(text, x, y, big) {
+  floats.push({ text, x, y, t: 0, big });
+}
+
+function hasMove() {
+  const swapTest = (r1, c1, r2, c2) => {
+    const a = at(r1, c1), b = at(r2, c2);
+    if (!a || !b) return false;
+    const k = (r, c) => (r === r1 && c === c1) ? b.kind : (r === r2 && c === c2) ? a.kind : at(r, c)?.kind;
+    for (const [r, c] of [[r1, c1], [r2, c2]]) {
+      const kk = k(r, c);
+      let h = 1, v = 1;
+      for (let i = c - 1; i >= 0 && k(r, i) === kk; i--) h++;
+      for (let i = c + 1; i < COLS && k(r, i) === kk; i++) h++;
+      for (let i = r - 1; i >= 0 && k(i, c) === kk; i--) v++;
+      for (let i = r + 1; i < ROWS && k(i, c) === kk; i++) v++;
+      if (h >= 3 || v >= 3) return true;
+    }
+    return false;
+  };
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    if (swapTest(r, c, r, c + 1) || swapTest(r, c, r + 1, c)) return true;
+  }
+  return false;
+}
+function findMove() {
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    for (const [dr, dc] of [[0, 1], [1, 0]]) {
+      const a = at(r, c), b = at(r + dr, c + dc);
+      if (!settled(a) || !settled(b) || a.kind === b.kind) continue;
+      [a.kind, b.kind] = [b.kind, a.kind];
+      const ok = findMatches().hit.size > 0;
+      [a.kind, b.kind] = [b.kind, a.kind];
+      if (ok) return [r, c, r + dr, c + dc];
+    }
+  }
+  return null;
+}
+
+// ---------- swapping ----------
+function trySwap(r1, c1, r2, c2) {
+  if (over) return false;
+  const a = at(r1, c1), b = at(r2, c2);
+  if (!settled(a) || !settled(b)) return false;
+  if (!started) { started = true; setHint(""); }
+  doSwap(a, b, false);
+  return true;
+}
+function doSwap(a, b, revert) {
+  const ar = a.r, ac = a.c;
+  grid[b.r][b.c] = a; grid[ar][ac] = b;
+  a.fromR = a.r; a.fromC = a.c; b.fromR = b.r; b.fromC = b.c;
+  a.r = b.fromR; a.c = b.fromC; b.r = ar; b.c = ac;
+  a.y = a.r; b.y = b.r;
+  for (const t of [a, b]) { t.state = "swap"; t.p = 0; t.revert = revert; t.moved = false; t.partner = t === a ? b : a; }
+}
+
+// ---------- skills ----------
+const cutin = (text, sub) => {
+  const el = document.createElement("div");
+  el.className = "cutin"; el.textContent = text;
+  if (sub) { const s = document.createElement("small"); s.textContent = sub; el.append(s); }
+  wrap.append(el); setTimeout(() => el.remove(), 950);
+};
+
+function fireSkill(i) {
+  if (over || gauges[i] < CREW[i].max) return;
+  if (!started) { started = true; setHint(""); }
+  gauges[i] = 0; skillsFired++;
+  const crewChain = now - lastSkillAt < 3.0;
+  lastSkillAt = now;
+  if (crewChain) crewChains++;
+  const mult = crewChain ? 2 : 1;
+  let cleared = 0;
+  shake = 0.35; flash = 0.25;
+  const cr = CREW[i];
+  if (cr.kind === 0) {
+    // cross through the row and column holding the most cat tiles
+    let br = 0, bc = 0, bestR = -1, bestC = -1;
+    for (let r = 0; r < ROWS; r++) { let n = 0; for (let c = 0; c < COLS; c++) if (at(r, c)?.kind === 0) n++; if (n > bestR) { bestR = n; br = r; } }
+    for (let c = 0; c < COLS; c++) { let n = 0; for (let r = 0; r < ROWS; r++) if (at(r, c)?.kind === 0) n++; if (n > bestC) { bestC = n; bc = c; } }
+    for (let c = 0; c < COLS; c++) { const t = at(br, c); if (settled(t) && clearTile(t)) cleared++; }
+    for (let r = 0; r < ROWS; r++) { const t = at(r, bc); if (settled(t) && clearTile(t)) cleared++; }
+    const bonus = Math.ceil(cleared * 0.7);
+    addGauge(1, bonus);
+    cutin("냥이 할퀴기!", crewChain ? "크루 연쇄 ×2 · 곰곰 게이지 +" + bonus : "곰곰 게이지 +" + bonus);
+  } else if (cr.kind === 1) {
+    const centers = [];
+    for (let n = 0; n < 3; n++) centers.push([1 + rnd(ROWS - 2), 1 + rnd(COLS - 2)]);
+    for (const [r0, c0] of centers) for (let r = r0 - 1; r <= r0 + 1; r++) for (let c = c0 - 1; c <= c0 + 1; c++) {
+      const t = at(r, c); if (settled(t) && clearTile(t)) cleared++;
+    }
+    shake = 0.55;
+    cutin("곰곰 쿵! 폭탄", crewChain ? "크루 연쇄 ×2" : "");
+  } else {
+    // paint the most common filler color into cat red, up to 10 tiles
+    const counts = [0, 0, 0, 0, 0, 0];
+    for (const row of grid) for (const t of row) if (settled(t)) counts[t.kind]++;
+    const target = [3, 4, 5].sort((a, b) => counts[b] - counts[a])[0];
+    const pool = [];
+    for (const row of grid) for (const t of row) if (settled(t) && t.kind === target) pool.push(t);
+    pool.sort(() => Math.random() - 0.5).slice(0, 10).forEach(t => { t.kind = 0; t.pop = 1; t.moved = true; cleared++; });
+    cutin("삐약 물감!", (crewChain ? "크루 연쇄 ×2 · " : "") + KINDS[target].name + " " + cleared + "개 → 냥이 색");
+    cleared = 0; // painting scores via the matches it causes
+  }
+  const pts = cleared * 30 * mult;
+  score += pts;
+  if (pts) addFloat("+" + pts, COLS * ts / 2, ROWS * ts * 0.45, true);
+}
+
+// ---------- update ----------
+const SWAP_TIME = 0.12, CLEAR_TIME = 0.2, GRAV = 55; // rows/s^2
+
+function update(dt) {
+  now += dt;
+  if (started && !over) {
+    timeLeft -= dt;
+    if (timeLeft <= 0) { timeLeft = 0; over = true; overTimer = 0; setHint("시간 끝!"); }
+  }
+  if (over) { overTimer += dt; if (overTimer > 1.2 && !document.querySelector(".overlay")) showResults(); }
+
+  let busy = false;
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const t = grid[r][c]; if (!t) continue;
+    if (t.squash > 0) t.squash = Math.max(0, t.squash - dt * 5);
+    if (t.pop > 0) t.pop = Math.max(0, t.pop - dt * 3);
+    if (t.state === "swap") {
+      busy = true;
+      t.p += dt / SWAP_TIME;
+      if (t.p >= 1) { t.p = 1; t.state = "idle"; t.done = true; }
+    } else if (t.state === "fall") {
+      busy = true;
+      t.vy += GRAV * dt; t.y += t.vy * dt;
+      if (t.y >= t.r) { t.y = t.r; t.vy = 0; t.state = "idle"; t.squash = 1; }
+    } else if (t.state === "clear") {
+      busy = true;
+      t.t += dt;
+      if (t.t >= CLEAR_TIME) grid[r][c] = null;
+    }
+  }
+
+  // matching on settled tiles only — the rest of the board keeps moving
+  const { hit, groups } = findMatches();
+  // swap revert: a finished non-revert swap whose tiles did not match goes back
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const t = grid[r][c];
+    if (t && t.done) {
+      t.done = false;
+      const p = t.partner;
+      if (!t.revert && p && p.done !== undefined && !hit.has(t) && !hit.has(p) && settled(p) && settled(t) && p.partner === t) {
+        p.done = false; t.partner = p.partner = null;
+        doSwap(t, p, true);
+      }
+    }
+  }
+  if (groups.length) {
+    // a match the player made directly starts a new chain; matches from falling tiles extend it
+    const direct = groups.some(g => !g.some(t => t.moved));
+    const cascade = groups.some(g => g.some(t => t.moved));
+    if (direct) chain = 0;
+    if (cascade) { chain++; bestChain = Math.max(bestChain, chain); }
+    const n = hit.size;
+    const pts = Math.round(n * 10 * (1 + 0.5 * chain));
+    score += pts;
+    let sx = 0, sy = 0; hit.forEach(t => { sx += t.c; sy += t.r; });
+    addFloat("+" + pts + (chain > 1 ? "  연쇄 " + chain : ""), (sx / n + 0.5) * ts, (sy / n + 0.5) * ts, chain > 2);
+    hit.forEach(t => clearTile(t));
+    busy = true;
+  }
+
+  // gravity: compact each column; tiles mid-swap or mid-clear hold their spot
+  for (let c = 0; c < COLS; c++) {
+    let write = ROWS - 1;
+    for (let r = ROWS - 1; r >= 0; r--) {
+      const t = grid[r][c];
+      if (!t) continue;
+      if (t.state === "clear" || t.state === "swap") { write = r - 1; continue; }
+      if (r !== write) {
+        grid[write][c] = t; grid[r][c] = null;
+        t.r = write; t.state = "fall"; t.moved = true;
+      }
+      write--;
+    }
+    const n = write + 1;
+    for (let r = write; r >= 0; r--) {
+      if (grid[r][c]) continue;
+      const t = newTile(rnd(6), r, c, r - n - 0.3);
+      t.moved = true;
+      grid[r][c] = t;
+    }
+  }
+
+  if (busy) settleTimer = 0;
+  else {
+    settleTimer += dt;
+    if (settleTimer > 0.25) chain = 0;
+    if (settleTimer > 0.5 && settleTimer - dt <= 0.5 && !hasMove()) reshuffle();
+  }
+
+  for (const p of particles) { p.t += dt; p.vy += 500 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt; }
+  particles = particles.filter(p => p.t < p.life);
+  for (const f of floats) f.t += dt;
+  floats = floats.filter(f => f.t < 0.9);
+  shake = Math.max(0, shake - dt); flash = Math.max(0, flash - dt);
+  updateHud();
+}
+
+function reshuffle() {
+  for (const row of grid) for (const t of row) if (settled(t)) { t.kind = rnd(6); t.pop = 1; }
+  setHint("섞는 중!");
+  setTimeout(() => !over && setHint(""), 800);
+}
+
+// ---------- draw ----------
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, COLS * ts, ROWS * ts);
+  if (shake > 0) ctx.translate((Math.random() - .5) * ts * 0.25 * shake, (Math.random() - .5) * ts * 0.25 * shake);
+  // board paper
+  ctx.fillStyle = "#f3e8d3";
+  roundRect(2, 2, COLS * ts - 4, ROWS * ts - 4, ts * 0.3); ctx.fill();
+  ctx.fillStyle = "rgba(59,47,37,.05)";
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) if ((r + c) % 2 === 0) ctx.fillRect(c * ts + 3, r * ts + 3, ts - 6, ts - 6);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, COLS * ts, ROWS * ts); ctx.clip();
+  for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+    const t = grid[r][c]; if (!t) continue;
+    let x = t.c, y = t.y;
+    if (t.state === "swap") { const e = easeOut(t.p); x = t.fromC + (t.c - t.fromC) * e; y = t.fromR + (t.r - t.fromR) * e; }
+    let sx = 1, sy = 1, a = 1, rot = 0;
+    if (t.state === "clear") { const k = t.t / CLEAR_TIME; sx = sy = 1 + k * 0.35; a = 1 - k; rot = k * 0.5; }
+    if (t.squash > 0) { sx = 1 + t.squash * 0.12; sy = 1 - t.squash * 0.12; }
+    if (t.pop > 0) { sx = sy = 1 + Math.sin(t.pop * Math.PI) * 0.3; }
+    if (sel && sel.r === t.r && sel.c === t.c && t.state === "idle") { sx *= 1.12; sy *= 1.12; rot = Math.sin(now * 12) * 0.12; }
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.translate((x + 0.5) * ts, (y + 0.5) * ts + (1 - sy) * ts * 0.4);
+    ctx.rotate(rot); ctx.scale(sx, sy);
+    ctx.drawImage(sprites[t.kind], -ts / 2, -ts / 2, ts, ts);
+    ctx.restore();
+  }
+  ctx.restore();
+  for (const p of particles) {
+    ctx.save(); ctx.globalAlpha = 1 - p.t / p.life; ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+    ctx.fillStyle = p.col; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+  }
+  for (const f of floats) {
+    const k = f.t / 0.9;
+    ctx.save(); ctx.globalAlpha = 1 - k * k;
+    ctx.font = (f.big ? ts * 0.7 : ts * 0.42) + "px Jua, system-ui, sans-serif";
+    ctx.textAlign = "center"; ctx.lineJoin = "round";
+    ctx.lineWidth = ts * 0.12; ctx.strokeStyle = "#fffdf8"; ctx.fillStyle = "#3b2f25";
+    const y = f.y - k * ts * 0.9;
+    ctx.strokeText(f.text, f.x, y); ctx.fillText(f.text, f.x, y);
+    ctx.restore();
+  }
+  if (flash > 0) { ctx.fillStyle = "rgba(255,253,248," + flash * 1.6 + ")"; ctx.fillRect(-20, -20, COLS * ts + 40, ROWS * ts + 40); }
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+const easeOut = p => 1 - (1 - p) * (1 - p);
+
+// ---------- HUD ----------
+const scoreEl = document.getElementById("score"), chainEl = document.getElementById("chainlbl");
+const timeFill = document.getElementById("timefill"), timeBar = document.getElementById("timebar"), hintEl = document.getElementById("hint");
+function setHint(s) { hintEl.textContent = s; }
+function updateHud() {
+  scoreEl.textContent = score;
+  chainEl.textContent = chain > 1 ? "연쇄 " + chain : "";
+  timeFill.style.transform = "scaleX(" + (timeLeft / ROUND_TIME) + ")";
+  timeBar.classList.toggle("hurry", timeLeft < 10);
+  crewBtns.forEach((cb, i) => {
+    cb.fi.style.width = (gauges[i] / CREW[i].max * 100) + "%";
+    cb.b.classList.toggle("ready", gauges[i] >= CREW[i].max && !over);
+  });
+}
+
+function showResults() {
+  if (score > best) { best = score; try { localStorage.setItem("mc_best", String(best)); } catch (e) {} }
+  const ov = document.createElement("div"); ov.className = "overlay";
+  const card = document.createElement("div"); card.className = "card";
+  const fails = score < 3000;
+  card.innerHTML =
+    '<h2>' + (fails ? "푸슝… 아깝다!" : "크루 대활약!") + '</h2>' +
+    '<div class="big">' + score + '</div>' +
+    '<dl>' +
+    '<dt>최고 연쇄</dt><dd>' + bestChain + '</dd>' +
+    '<dt>스킬 발동</dt><dd>' + skillsFired + '회</dd>' +
+    '<dt>크루 연쇄 (3초 안 연속 스킬)</dt><dd>' + crewChains + '회</dd>' +
+    '<dt>내 최고 점수</dt><dd>' + best + '</dd>' +
+    '<dt>이번 세션 재도전</dt><dd>' + retries + '회</dd>' +
+    '</dl>';
+  const btn = document.createElement("button"); btn.id = "retry"; btn.type = "button"; btn.textContent = "한 판 더";
+  btn.addEventListener("click", () => { retries++; reset(); });
+  card.append(btn); ov.append(card); wrap.append(ov);
+  btn.focus();
+}
+
+// ---------- input ----------
+let down = null, sel = null;
+function cellAt(e) {
+  const rect = canvas.getBoundingClientRect();
+  return { c: Math.floor((e.clientX - rect.left) / ts), r: Math.floor((e.clientY - rect.top) / ts), x: e.clientX, y: e.clientY };
+}
+canvas.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  const p = cellAt(e);
+  if (!at(p.r, p.c)) return;
+  down = { ...p, used: false };
+  canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove", e => {
+  if (!down || down.used) return;
+  const dx = e.clientX - down.x, dy = e.clientY - down.y;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < ts * 0.3) return;
+  down.used = true;
+  const [dr, dc] = Math.abs(dx) > Math.abs(dy) ? [0, Math.sign(dx)] : [Math.sign(dy), 0];
+  trySwap(down.r, down.c, down.r + dr, down.c + dc);
+  sel = null;
+});
+canvas.addEventListener("pointerup", e => {
+  if (down && !down.used) {
+    if (sel && Math.abs(sel.r - down.r) + Math.abs(sel.c - down.c) === 1) { trySwap(sel.r, sel.c, down.r, down.c); sel = null; }
+    else sel = { r: down.r, c: down.c };
+  }
+  down = null;
+});
+document.addEventListener("visibilitychange", () => { paused = document.hidden; });
+document.addEventListener("keydown", e => { if (e.key >= "1" && e.key <= "3") fireSkill(+e.key - 1); });
+
+// ---------- loop ----------
+let last = performance.now(), paused = false, frames = 0;
+function loop(ts_) {
+  const dt = Math.min(0.05, (ts_ - last) / 1000); last = ts_;
+  if (!paused) { update(dt); draw(); frames++; }
+  requestAnimationFrame(loop);
+}
+
+// test hook for headless verification (prototype only)
+window.__mc = {
+  get state() { return { score, chain, bestChain, timeLeft, started, over, skillsFired, crewChains, gauges: gauges.slice(), frames, retries }; },
+  autoMove() { const m = findMove(); if (m) trySwap(...m); return !!m; },
+  fire: i => fireSkill(i),
+  fillGauges() { CREW.forEach((c, i) => gauges[i] = c.max); },
+};
+
+layout(); reset();
+requestAnimationFrame(t => { last = t; loop(t); });
+})();
+</script>
