@@ -30,5 +30,5 @@ project:
 # precedence order.
 
 modes:
-  rigor: full
+  rigor: standard
   automation: guided
