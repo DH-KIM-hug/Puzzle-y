@@ -224,6 +224,7 @@ formulas:
     source: design/gdd/chain-resolver.md
     referenced_by:
       - design/gdd/chain-resolver.md
+      - design/gdd/chain-preview.md
     variables:
       - activated_faces_per_wave
       - depth_cap
@@ -254,6 +255,7 @@ formulas:
     source: design/gdd/scoring.md
     referenced_by:
       - design/gdd/scoring.md
+      - design/gdd/chain-preview.md
     variables:
       - placement_points
       - clear_points_per_wave
@@ -316,6 +318,7 @@ constants:
       - design/gdd/board-rules.md
       - design/gdd/chain-resolver.md
       - design/gdd/placement-input.md
+      - design/gdd/chain-preview.md
     value: 8
     unit: cells
     added: 2026-11-07
@@ -327,6 +330,7 @@ constants:
       - design/gdd/board-rules.md
       - design/gdd/chain-resolver.md
       - design/gdd/placement-input.md
+      - design/gdd/chain-preview.md
     value: 8
     unit: cells
     added: 2026-11-07
@@ -350,6 +354,7 @@ constants:
       - design/gdd/chain-resolver.md
       - design/gdd/game-concept.md
       - design/gdd/scoring.md
+      - design/gdd/chain-preview.md
     value: 6
     unit: waves
     added: 2026-11-07
