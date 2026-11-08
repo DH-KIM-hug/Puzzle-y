@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PlacementInputTuning" format=3]
+
+[ext_resource type="Script" path="res://src/gameplay/input/placement_input_tuning.gd" id="1_pit"]
+
+[resource]
+script = ExtResource("1_pit")
+lift_offset_cells = 0.6
+drag_slop_px = 20.0
+snap_hysteresis_cells = 0.12
+tray_piece_scale = 0.72
+lift_anim_s = 0.08
+return_anim_s = 0.15
+invalid_wiggle_s = 0.1
+drag_shadow_px = 8.0
+commit_snap_s = 0.06
+tray_slot_margin_px = 12.0
