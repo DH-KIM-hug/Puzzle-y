@@ -5,7 +5,9 @@
 ## a drag with the chain preview visible, a chain mid-playback, the result
 ## panel, and the board after one-tap "한 판 더". Move choice reads the preview
 ## model (Rules Core) — it is a test bot, not game logic.
-## Options: [code]--shots=<res:// or abs dir>[/code], [code]--seed=N[/code].
+## Options: [code]--shots=<res:// or abs dir>[/code], [code]--seed=N[/code],
+## [code]--min-depth=N[/code] (hunt a chain of at least N before the chain shots, default 2),
+## [code]--burst[/code] (also save a frame series t0-03-burst-NN through the whole chain).
 class_name DebugAutoplay
 extends Node
 
@@ -18,6 +20,8 @@ var screen: GameScreen
 
 var _dir: String
 var _settled: bool = false
+var _min_depth: int = 2
+var _burst: bool = false
 
 
 func _ready() -> void:
@@ -25,6 +29,10 @@ func _ready() -> void:
 	for a: String in OS.get_cmdline_user_args():
 		if a.begins_with("--shots="):
 			_dir = a.get_slice("=", 1)
+		elif a.begins_with("--min-depth="):
+			_min_depth = int(a.get_slice("=", 1))
+		elif a == "--burst":
+			_burst = true
 	if _dir.begins_with("res://"):
 		_dir = ProjectSettings.globalize_path(_dir)
 	DirAccess.make_dir_recursive_absolute(_dir)
@@ -43,13 +51,24 @@ func _run() -> void:
 		if move.is_empty():
 			break
 		var depth: int = move[&"depth"]
-		var want_shots := not chain_done and (depth >= 2 or (n >= 20 and depth >= 1))
+		var want_shots := not chain_done and (depth >= _min_depth or (n >= 40 and depth >= 1))
 		await _drag_to(move[&"slot"], move[&"anchor"], want_shots and not preview_done)
 		if want_shots:
 			preview_done = true
 		_settled = false
 		_touch(Vector2.ZERO, false, true)
-		if want_shots:
+		if want_shots and _burst:
+			var k := 0
+			while not screen.player.is_playing():
+				await get_tree().process_frame
+			while screen.player.is_playing() and k < 40:
+				await _frames(3)
+				await _shot("t0-03-burst-%02d" % k)
+				print("AUTOPLAY burst %02d clock=%.2f" % [k, screen.player.clock])
+				k += 1
+			chain_done = true
+			print("AUTOPLAY chain shot: depth=%d placement=%d" % [depth, n + 1])
+		elif want_shots:
 			await _wait_mid_chain()
 			await _shot("t0-03-chain-midplay")
 			chain_done = true

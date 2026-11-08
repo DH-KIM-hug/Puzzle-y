@@ -7,6 +7,11 @@
 ## [method RoundFlow.commit] (independent resolve) → [ChainPlayer] replays the
 ## events → refill + no_moves → READY or the result panel ("한 판 더" = retry).
 ##
+## Polish (chain-presentation D15–D18): [ChainFx] juice layer, camera punch +
+## shake on the board layers, score roll-up with pop / gold milestone flash,
+## idle life (face breathe / blink / twinkle, background sparkle dust, tray bob).
+## Reduced motion = tuning flag OR OS "reduce animation" OR [code]-- --reduced-motion[/code].
+##
 ## Debug: launch with [code]-- --autoplay[/code] to attach [DebugAutoplay]
 ## (scripted touches + screenshots). [code]-- --seed=N[/code] sets the base seed.
 class_name GameScreen
@@ -46,6 +51,12 @@ var font: Font
 var shown_score: int = 0
 ## Placements committed this attempt.
 var placements: int = 0
+## Real-time effects layer.
+var fx: ChainFx
+## Effective reduced-motion flag.
+var reduced: bool = false
+## Score value currently rendered by the HUD (rolls toward [member shown_score]).
+var score_rolled: float = 0.0
 
 var _preview_settings := PreviewSettings.new()
 var _cache: Dictionary = {}
@@ -63,6 +74,11 @@ var _result: Control
 var _result_score: Label
 var _result_best: Label
 var _result_count: Label
+var _score_pop: float = 0.0
+var _score_gold: float = 0.0
+var _time: float = 0.0
+var _placeable: Array[bool] = []
+var _placeable_key: String = ""
 
 
 func _ready() -> void:
@@ -76,6 +92,9 @@ func _ready() -> void:
 		return
 	input_tuning = load(INPUT_TUNING_PATH)
 	tuning = load(PRESENTATION_TUNING_PATH)
+	reduced = tuning.reduced_motion or "--reduced-motion" in OS.get_cmdline_user_args()
+	if tuning.follow_os_reduced_motion and DisplayServer.accessibility_should_reduce_animation() == 1:
+		reduced = true
 	visuals = CrewVisuals.from_registry(registry)
 	var cfg := registry.board_config
 	var tray_rules: TrayRules = load(TRAY_RULES_PATH)
@@ -97,7 +116,16 @@ func _ready() -> void:
 	preview.layout = layout
 	preview.tuning = tuning
 	preview.font = font
+	fx = ChainFx.new()
+	fx.tuning = tuning
+	fx.layout = layout
+	fx.font = font
+	fx.reduced = reduced
+	add_child(fx)
+	fx.fly_arrived.connect(func(_t: String) -> void: _score_pop = 1.0)
 	player = ChainPlayer.new()
+	player.fx = fx
+	player.reduced = reduced
 	player.tuning = tuning
 	player.visuals = visuals
 	player.layout = layout
@@ -117,16 +145,22 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	_time += delta
 	preview.tick(delta)
+	_tick_score(delta)
 	if _lift_t < 1.0:
 		_lift_t = minf(1.0, _lift_t + delta / maxf(input_tuning.lift_anim_s, 0.001))
 	if not _ret.is_empty():
 		_ret[&"t"] = float(_ret[&"t"]) + delta
 		if float(_ret[&"t"]) >= float(_ret[&"dur"]):
 			_ret = {}
+	# Camera punch (scale about the firing face) + shake, board layers only.
 	var off := player.shake_offset
+	var z := player.zoom
 	for k: StringName in [&"board", &"overlay"]:
-		(_layers[k] as Node2D).position = off
+		var l := _layers[k] as Node2D
+		l.scale = Vector2(z, z)
+		l.position = player.zoom_focus * (1.0 - z) + off
 	_redraw()
 
 
@@ -224,7 +258,7 @@ func _on_placement_requested(slot: int, anchor: Vector2i) -> void:
 
 func _on_wave_presented(_wave: int, points: int) -> void:
 	shown_score += points
-	_refresh_hud()
+	_score_pop = maxf(_score_pop, 0.6)
 
 
 func _on_playback_finished(_was_skipped: bool) -> void:
@@ -245,6 +279,8 @@ func retry() -> void:
 	placements = 0
 	preview.clear()
 	_ret = {}
+	score_rolled = 0.0
+	fx.clear()
 	_result.visible = false
 	drag.set_enabled(true)
 	_refresh_hud()
@@ -265,6 +301,10 @@ func _build_hud() -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(root)
 	_hud_score = _label(root, Rect2(layout.hud_rect.position + Vector2(24, 18), Vector2(420, 60)), 44, HORIZONTAL_ALIGNMENT_LEFT)
+	_hud_score.add_theme_constant_override(&"outline_size", 8)
+	_hud_score.add_theme_color_override(&"font_outline_color", Palette.STICKER_WHITE)
+	_hud_score.pivot_offset = Vector2(0, 30)
+	fx.score_target = _hud_score.position + Vector2(150, 30)
 	_hud_attempt = _label(root, Rect2(Vector2(layout.canvas.x - 324, 30), Vector2(300, 40)), 24, HORIZONTAL_ALIGNMENT_RIGHT)
 	_hud_attempt.add_theme_color_override(&"font_color", Palette.INK_LIGHT)
 	_result = Control.new()
@@ -272,7 +312,8 @@ func _build_hud() -> void:
 	_result.visible = false
 	root.add_child(_result)
 	var dim := ColorRect.new()
-	dim.color = Color(Palette.INK_DARK, 0.45)
+	# Failure never darkens (art-bible §2): a warm paper veil, not an ink dim.
+	dim.color = Color(Palette.KRAFT, 0.62)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_result.add_child(dim)
 	var card := PanelContainer.new()
@@ -336,8 +377,34 @@ func _label(parent: Control, rect: Rect2, size: int, align: HorizontalAlignment)
 
 
 func _refresh_hud() -> void:
-	_hud_score.text = tr("UI_SCORE_VALUE") % shown_score
+	_hud_score.text = tr("UI_SCORE_VALUE") % int(roundf(score_rolled))
 	_hud_attempt.text = tr("UI_ATTEMPT") % (flow.attempt + 1)
+
+
+## Score HUD roll-up toward [member shown_score] with a bounce pop and a gold
+## outline flash when a [member PresentationTuning.score_milestone] is crossed.
+func _tick_score(delta: float) -> void:
+	var target := float(shown_score)
+	if target < score_rolled:
+		score_rolled = target
+	elif score_rolled < target:
+		var before := int(roundf(score_rolled))
+		var k := 1.0 - exp(-delta / maxf(tuning.score_roll_s * 0.3, 0.01))
+		score_rolled = minf(target, score_rolled + maxf((target - score_rolled) * k, 1.0))
+		var after := int(roundf(score_rolled))
+		var m := maxi(tuning.score_milestone, 1)
+		if after / m > before / m:
+			_score_gold = 1.0
+			fx.sparkle_burst(fx.score_target, 10, 90.0, Palette.GOLD)
+		_score_pop = maxf(_score_pop, 0.35)
+	_score_pop = maxf(0.0, _score_pop - delta * 3.5)
+	_score_gold = maxf(0.0, _score_gold - delta * 1.4)
+	var e := _score_pop * _score_pop
+	var sc := 1.0 + tuning.score_pop_scale * e * (1.0 if not reduced else 0.0)
+	_hud_score.scale = Vector2(sc, sc)
+	_hud_score.add_theme_color_override(&"font_outline_color", Palette.STICKER_WHITE.lerp(Palette.GOLD, minf(1.0, _score_gold * 1.5 + e * 0.6)))
+	_hud_score.add_theme_constant_override(&"outline_size", int(8 + 6 * _score_gold))
+	_refresh_hud()
 
 
 func _show_result() -> void:
@@ -361,8 +428,8 @@ func is_result_visible() -> bool:
 
 func _build_layers() -> void:
 	# chain-preview rule 18: paper → stickers → outlines → ghost → dragged piece → eggs → badges → banner.
-	for spec: Array in [[&"board", _draw_board], [&"tray", _draw_tray], [&"drag", _draw_drag],
-			[&"overlay", _draw_overlay], [&"banner", _draw_banner]]:
+	for spec: Array in [[&"bg", _draw_bg], [&"board", _draw_board], [&"tray", _draw_tray], [&"drag", _draw_drag],
+			[&"overlay", _draw_overlay], [&"banner", _draw_banner], [&"screen", _draw_screen]]:
 		var l := DrawLayer.new()
 		l.painter = spec[1]
 		add_child(l)
@@ -404,8 +471,17 @@ func _draw_board(ci: CanvasItem) -> void:
 		if not b.blocks_placement(i):
 			continue
 		var cell := b.cell_of(i)
-		items.append({&"rect": layout.cell_rect(cell), &"look": visuals.look(b.crew_at(i)), &"face": b.is_face(i),
-				&"egg": b.origin(i) == BoardState.ORIGIN_EGG})
+		var rect := layout.cell_rect(cell)
+		var k := player.cell_scale(cell)
+		if k != Vector2.ONE:
+			# Landing squash / egg bounce: scale about the cell's bottom centre.
+			var bc := Vector2(rect.get_center().x, rect.end.y)
+			rect = Rect2(bc - Vector2(rect.size.x * k.x * 0.5, rect.size.y * k.y), rect.size * k)
+		var it := {&"rect": rect, &"look": visuals.look(b.crew_at(i)), &"face": b.is_face(i),
+				&"egg": b.origin(i) == BoardState.ORIGIN_EGG}
+		if it[&"face"]:
+			_idle_face(it, i)
+		items.append(it)
 	StickerPainter.draw_board_cells(ci, items)
 	preview.draw_outlines(ci)
 	# Ghost (placement-input rule 12): only at a valid anchor, 35 %.
@@ -418,6 +494,39 @@ func _draw_board(ci: CanvasItem) -> void:
 			StickerPainter.rounded(ci, rect, Color(look[CrewVisuals.K_BASE], 0.35), s * 0.2)
 			if k == p.face_index:
 				ci.draw_circle(rect.get_center(), s * 0.32, Color(Palette.FACE_CREAM, 0.6), true, -1.0, true)
+
+
+## Idle life for one board face: slow breathe, staggered blink, highlight twinkle
+## (art-bible §2 "얼굴 칸의 느린 반짝, 약 3초 간격, 칸마다 엇갈림").
+func _idle_face(it: Dictionary, i: int) -> void:
+	if reduced:
+		return
+	var ph := float((i * 37) % 97) / 97.0
+	it[&"breath"] = 1.0 + tuning.idle_breathe_amp * sin((_time / tuning.idle_breathe_period_s + ph) * TAU)
+	var bt := fmod(_time + ph * tuning.idle_blink_every_s, tuning.idle_blink_every_s)
+	it[&"blink"] = bt < tuning.idle_blink_s
+	var tw := fmod(_time / 3.0 + ph, 1.0)
+	it[&"twinkle"] = sin(tw / 0.12 * PI) if tw < 0.12 else 0.0
+
+
+## Cached per board version: which tray slots have at least one legal anchor.
+func _slot_placeable(i: int) -> bool:
+	var key := "%d|%d|%d" % [flow.core.board_version, flow.attempt, placements]
+	if key != _placeable_key or _placeable.size() != flow.slot_count():
+		_placeable_key = key
+		_placeable.clear()
+		for slot: int in flow.slot_count():
+			var ok := false
+			if flow.piece_at(slot) != null:
+				for r: int in layout.cells.x:
+					for c: int in layout.cells.y:
+						if flow.can_place(slot, Vector2i(r, c)):
+							ok = true
+							break
+					if ok:
+						break
+			_placeable.append(ok)
+	return _placeable[i]
 
 
 func _piece_rects(p: PieceInstance, top_left: Vector2, cs: float) -> Array[Rect2]:
@@ -459,7 +568,12 @@ func _draw_tray(ci: CanvasItem) -> void:
 				wig = sin(float(_ret[&"t"]) / float(_ret[&"wiggle"]) * TAU * 2.0) * 8.0
 			var cs := lerpf(layout.s, tl[1], e)
 			rects = _piece_rects(p, from.lerp(tl[0], e) + Vector2(wig, 0), cs)
-		StickerPainter.draw_piece(ci, rects, p.face_index, visuals.look(p.crew_id), {StickerPainter.O_SHADOW: 3.0})
+		var bob := 0.0
+		if not reduced and _ret.is_empty() and not player.is_playing() and _slot_placeable(i):
+			bob = sin((_time / tuning.tray_bob_period_s + i * 0.33) * TAU) * tuning.tray_bob_px * layout.canvas.x / 1080.0
+			for k: int in rects.size():
+				rects[k].position.y += bob
+		StickerPainter.draw_piece(ci, rects, p.face_index, visuals.look(p.crew_id), {StickerPainter.O_SHADOW: 3.0 - bob * 0.4})
 
 
 func _draw_drag(ci: CanvasItem) -> void:
@@ -479,12 +593,23 @@ func _draw_drag(ci: CanvasItem) -> void:
 			{StickerPainter.O_SHADOW: drag.ref_px(input_tuning.drag_shadow_px), StickerPainter.O_GREY: grey})
 
 
+func _draw_bg(ci: CanvasItem) -> void:
+	fx.draw_back(ci)
+
+
 func _draw_overlay(ci: CanvasItem) -> void:
 	preview.draw_top(ci)
 	player.draw_overlay(ci)
+	fx.draw_front(ci)
+	player.draw_texts(ci)
+
+
+func _draw_screen(ci: CanvasItem) -> void:
+	fx.draw_screen(ci)
 
 
 func _draw_banner(ci: CanvasItem) -> void:
+	fx.draw_flies(ci)
 	if player.is_playing():
 		player.draw_banner(ci)
 	else:

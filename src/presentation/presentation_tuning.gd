@@ -68,6 +68,75 @@ extends Resource
 ## Reduced motion (rule 25) — greybox honours it for shake/rotation.
 @export var reduced_motion: bool = false
 
+## Flash-off accessibility toggle (rule 25 / D8): no screen flash, no brightness pulse.
+@export var flash_off: bool = false
+## Follow the OS "reduce animation" accessibility setting (DisplayServer).
+@export var follow_os_reduced_motion: bool = true
+
+@export_group("Polish FX (chain-presentation D15–D18)")
+## Hit-stop (playback clock frozen) at each chain wave start, s, by level 1..
+@export var hitstop_base_s: float = 0.06
+@export var hitstop_step_s: float = 0.02
+@export var hitstop_max_s: float = 0.11
+## Sum of all hit-stops in one playback (keeps depth 6 ≤ t_budget + this ≈ 4.5 s).
+@export var hitstop_total_cap_s: float = 0.45
+## Camera punch-in toward the firing face: zoom gain per level and its cap.
+@export var punch_zoom_step: float = 0.025
+@export var punch_zoom_max: float = 0.06
+## Punch ease-back length, s (real time).
+@export var punch_release_s: float = 0.32
+## Screen flash alpha (sticker white) at a wave start: base + step × level, capped.
+@export var flash_base_alpha: float = 0.08
+@export var flash_step_alpha: float = 0.04
+@export var flash_max_alpha: float = 0.22
+## Minimum real time between flashes (art-bible pulse ≤ 3/s).
+@export var flash_min_gap_s: float = 0.34
+## Flash fade, s.
+@export var flash_dur_s: float = 0.18
+## Line sweep: travel time along one cleared line, s; cascade gap between lines, s.
+@export var sweep_dur_s: float = 0.22
+@export var sweep_cascade_s: float = 0.05
+## Confetti pieces per peeled cell: plain line clear / chain wave (+ step per level).
+@export var confetti_line_per_cell: int = 2
+@export var confetti_chain_per_cell: int = 3
+@export var confetti_chain_step: int = 1
+## Hard cap of live paper particles (mobile / web budget).
+@export var particle_cap: int = 220
+## Confetti cannon pieces per side for the finisher card.
+@export var cannon_per_side: int = 36
+## Finisher card ("대연쇄!!") when depth ≥ this or lines in one wave ≥ finisher_lines.
+@export var finisher_depth: int = 4
+@export var finisher_lines: int = 3
+## Finisher card life, s (real time; it shrinks away, never blocks input).
+@export var finisher_dur_s: float = 1.2
+## Deep-chain mood (level ≥ deep_level): background ink veil alpha and board glow alpha.
+@export var deep_level: int = 2
+@export var deep_veil_alpha: float = 0.14
+@export var deep_glow_alpha: float = 0.55
+## Glow pulse rate, Hz (≤ 3).
+@export var deep_glow_hz: float = 1.2
+## Banner scale gain per level and wobble (deg, Hz ≤ 3).
+@export var banner_scale_step: float = 0.1
+@export var banner_wobble_deg: float = 2.5
+@export var banner_wobble_hz: float = 1.5
+## Placement landing squash amount (fraction) and dust puff count.
+@export var land_squash: float = 0.14
+@export var land_dust: int = 8
+## Score HUD roll-up time constant, s; pop scale; gold flash every N points.
+@export var score_roll_s: float = 0.35
+@export var score_pop_scale: float = 0.28
+@export var score_milestone: int = 500
+## Idle life: face breathe amplitude (fraction) and period, blink interval / length.
+@export var idle_breathe_amp: float = 0.025
+@export var idle_breathe_period_s: float = 3.2
+@export var idle_blink_every_s: float = 3.6
+@export var idle_blink_s: float = 0.12
+## Background sparkle dust count.
+@export var idle_dust_count: int = 14
+## Tray bob for placeable pieces, px@1080 and period, s.
+@export var tray_bob_px: float = 4.0
+@export var tray_bob_period_s: float = 2.2
+
 @export_group("Chain preview (chain-preview F1, F4)")
 ## F1 badge diameter / cell.
 @export var badge_scale: float = 0.40

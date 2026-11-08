@@ -1,0 +1,8 @@
+Reviewed-Content-Hash: src/presentation/chain_fx.gd 0021c564d560dabac0b28dee88710ec0c072571d
+Reviewed-Content-Hash: src/presentation/chain_player.gd 03ddac6493b74a1b12769a4174037f881e8a1630
+Reviewed-Content-Hash: src/presentation/sticker_painter.gd eba628a254624568b2c4ce0692ca0ce97260398a
+Reviewed-Content-Hash: src/presentation/presentation_tuning.gd 0b5d53130068a8d1438da85995d3d8fd54d65581
+Reviewed-Content-Hash: src/game/game_screen.gd fcce315fc9cd22b8c56a5762b25f9c711d471e1a
+Reviewed-Content-Hash: src/game/debug_autoplay.gd dbe83663118b8704ae5ae05dfc4870df35341d61
+Reviewed-Content-Hash: assets/data/presentation/presentation_tuning.tres a526b7ecb6330e4008f578b8603ee14444fc519f
+Reviewed-Content-Hash: assets/locale/strings.csv fae7f47efd8e9dfa4800dc588ef78792bd9fe5cd

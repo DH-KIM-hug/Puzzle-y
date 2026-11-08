@@ -4,3 +4,7 @@
 
 [resource]
 script = ExtResource("1_pt")
+shake_base_px = 5.0
+shake_step_px = 3.0
+shake_max_px = 16.0
+shake_dur = 0.32

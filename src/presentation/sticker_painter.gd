@@ -42,7 +42,7 @@ static func rounded(ci: CanvasItem, rect: Rect2, color: Color, radius: float) ->
 
 ## Ellipse centred at [param c] with radii [param r].
 static func ellipse(ci: CanvasItem, c: Vector2, r: Vector2, color: Color) -> void:
-	if r.x <= 0.0 or r.y <= 0.0:
+	if r.x < 0.5 or r.y < 0.5:
 		return
 	# Polygon, not draw_set_transform: callers may already be inside a transform.
 	var pts := PackedVector2Array()
@@ -116,7 +116,10 @@ static func draw_board_cells(ci: CanvasItem, items: Array[Dictionary]) -> void:
 			draw_body_cell(ci, it[&"rect"], look[CrewVisuals.K_BASE], look[CrewVisuals.K_SHADE], look[CrewVisuals.K_PATTERN], 1.0)
 	for it: Dictionary in items:
 		if it.get(&"face", false):
-			draw_face(ci, (it[&"rect"] as Rect2).get_center(), s, it[&"look"], it.get(&"expr", Expr.NORMAL), 1.0)
+			# Optional idle life: &"breath" (size factor), &"blink" (eyelids closed), &"twinkle" (0..1 highlight).
+			var fs: float = (it[&"rect"] as Rect2).size.x * float(it.get(&"breath", 1.0))
+			draw_face(ci, (it[&"rect"] as Rect2).get_center(), fs, it[&"look"], it.get(&"expr", Expr.NORMAL), 1.0, false,
+					it.get(&"blink", false), float(it.get(&"twinkle", 0.0)))
 
 
 ## One body cell: crew colour, shade band (lower quarter), low-contrast pattern.
@@ -153,7 +156,10 @@ static func draw_body_cell(ci: CanvasItem, r: Rect2, base: Color, shade: Color, 
 
 
 ## Face head (crew colour) + silhouette feature + cream muzzle + ink features.
-static func draw_face(ci: CanvasItem, c: Vector2, s: float, look: Dictionary, expr: int, a: float, grey: bool = false) -> void:
+## [param blink] closes the eyes for one idle blink frame (not an expression);
+## [param twinkle] 0..1 grows the white highlight into a small star (idle sparkle).
+static func draw_face(ci: CanvasItem, c: Vector2, s: float, look: Dictionary, expr: int, a: float, grey: bool = false,
+		blink: bool = false, twinkle: float = 0.0) -> void:
 	var base: Color = Palette.GREY_TONE if grey else look[CrewVisuals.K_BASE]
 	var shade: Color = Palette.GREY_TONE.darkened(0.2) if grey else look[CrewVisuals.K_SHADE]
 	var r := s * 0.55
@@ -179,6 +185,10 @@ static func draw_face(ci: CanvasItem, c: Vector2, s: float, look: Dictionary, ex
 			for sx: float in [-1.0, 1.0]:
 				ci.draw_line(Vector2(c.x + sx * ex - r * 0.12, eye_y), Vector2(c.x + sx * ex + r * 0.12, eye_y), ink, s * 0.045, true)
 			ci.draw_line(c + Vector2(-r * 0.12, r * 0.4), c + Vector2(r * 0.12, r * 0.4), ink, s * 0.04, true)
+		_ when blink:
+			for sx: float in [-1.0, 1.0]:
+				ci.draw_arc(Vector2(c.x + sx * ex, eye_y - r * 0.04), r * 0.11, PI * 0.1, PI * 0.9, 6, ink, s * 0.045, true)
+			ci.draw_arc(c + Vector2(0, r * 0.26), r * 0.16, PI * 0.15, PI * 0.85, 8, ink, s * 0.04, true)
 		_:
 			for sx: float in [-1.0, 1.0]:
 				ci.draw_circle(Vector2(c.x + sx * ex, eye_y), r * 0.11, ink, true, -1.0, true)
@@ -190,6 +200,12 @@ static func draw_face(ci: CanvasItem, c: Vector2, s: float, look: Dictionary, ex
 		ci.draw_colored_polygon(PackedVector2Array([b + Vector2(-r * 0.16, 0), b + Vector2(r * 0.16, 0), b + Vector2(0, r * 0.2)]), Color(Palette.BEAK, a))
 	# Sparkle (sticker white = "touch me").
 	ci.draw_circle(c + Vector2(r * 0.55, -r * 0.55), r * 0.1, white, true, -1.0, true)
+	if twinkle > 0.01:
+		var sc := c + Vector2(r * 0.55, -r * 0.55)
+		var R := r * (0.12 + 0.28 * twinkle)
+		var k := R * 0.25
+		ci.draw_colored_polygon(PackedVector2Array([sc + Vector2(0, -R), sc + Vector2(k, -k), sc + Vector2(R, 0), sc + Vector2(k, k),
+				sc + Vector2(0, R), sc + Vector2(-k, k), sc + Vector2(-R, 0), sc + Vector2(-k, -k)]), white)
 
 
 static func _feature(ci: CanvasItem, feature: StringName, c: Vector2, r: float, s: float, base: Color, shade: Color, a: float, outline: bool) -> void:
