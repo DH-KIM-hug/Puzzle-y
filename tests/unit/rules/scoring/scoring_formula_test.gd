@@ -8,7 +8,8 @@ func _rules() -> ScoringRules:
 
 
 func test_domino_golden_total_is_356() -> void:
-	# Arrange (AC-S09)
+	# Arrange (AC-S09 AND — arithmetic-only event list; the resolver-reachable
+	# value 341 is asserted in scoring_rules_test.gd)
 	var events := EventFixture.domino_golden()
 	# Act
 	var s := ScoreCalculator.score_placement(events, _rules())

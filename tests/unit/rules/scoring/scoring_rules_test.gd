@@ -92,7 +92,7 @@ func test_schema_violation_scores_placement_only() -> void:
 func test_resolver_domino_events_score_end_to_end() -> void:
 	# Integration cross-check: the resolver's AC-03 fixture. Its column 5 keeps one
 	# empty cell (a stable board cannot hold a complete column), so wave 1 clears 6
-	# ability cells, not AC-S09's 7: 1 + 80 + 20 + 90 + 30 + 120 = 341.
+	# ability cells: 1 + 80 + 20 + 90 + 30 + 120 = 341 (AC-S09 primary value, D12).
 	var res := ChainFixture.resolve_single(ChainFixture.DOMINO_NG, Vector2i(7, 3))
 	var s := ScoreCalculator.score_placement(res.events, ScoringRules.new())
 	assert_array(s.waves.map(func(w: Dictionary) -> int: return w[ScoreBreakdown.K_CLEAR_POINTS])).is_equal([80, 90, 120])

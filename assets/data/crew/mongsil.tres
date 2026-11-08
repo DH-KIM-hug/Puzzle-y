@@ -1,0 +1,61 @@
+[gd_resource type="Resource" script_class="CrewDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/data/crew/crew_ability.gd" id="1_ab"]
+[ext_resource type="Script" path="res://src/core/data/crew/ability_step.gd" id="2_st"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_def.gd" id="3_cd"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_shape_entry.gd" id="4_se"]
+[ext_resource type="Resource" path="res://assets/data/shapes/x5.tres" id="5_x5"]
+[ext_resource type="Resource" path="res://assets/data/shapes/p5_a.tres" id="6_p5_a"]
+[ext_resource type="Resource" path="res://assets/data/shapes/l3_b.tres" id="7_l3_b"]
+[ext_resource type="Resource" path="res://assets/data/shapes/i3_h.tres" id="8_i3_h"]
+[ext_resource type="Resource" path="res://assets/data/shapes/d2_h.tres" id="9_d2_h"]
+
+[sub_resource type="Resource" id="Resource_step"]
+script = ExtResource("2_st")
+primitive = &"lay_eggs_pattern"
+params = {
+&"offsets": [Vector2i(-1, 0), Vector2i(0, -1), Vector2i(0, 0), Vector2i(0, 1), Vector2i(1, 0)]
+}
+
+[sub_resource type="Resource" id="Resource_ability"]
+script = ExtResource("1_ab")
+ability_id = &"mongsil_wool_cushion"
+steps = Array[ExtResource("2_st")]([SubResource("Resource_step")])
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("4_se")
+shape = ExtResource("5_x5")
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("4_se")
+shape = ExtResource("6_p5_a")
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("4_se")
+shape = ExtResource("7_l3_b")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_e3"]
+script = ExtResource("4_se")
+shape = ExtResource("8_i3_h")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_e4"]
+script = ExtResource("4_se")
+shape = ExtResource("9_d2_h")
+weight = 2
+
+[resource]
+script = ExtResource("3_cd")
+id = &"mongsil"
+name_key = "CREW_MONGSIL_NAME"
+species = &"sheep"
+colour_slot = 6
+rarity = 1
+shapes = Array[ExtResource("4_se")]([SubResource("Resource_e0"), SubResource("Resource_e1"), SubResource("Resource_e2"), SubResource("Resource_e3"), SubResource("Resource_e4")])
+ability = SubResource("Resource_ability")
+ability_name_key = "CREW_MONGSIL_ABILITY_NAME"
+ability_desc_key = "CREW_MONGSIL_ABILITY_DESC"
+silhouette_feature = &"wool_curl"
+body_pattern = &"curls"
+fill_visual = &"wool_puff"

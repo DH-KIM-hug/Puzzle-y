@@ -6,8 +6,11 @@
 [ext_resource type="Resource" path="res://assets/data/crew/gomgom.tres" id="4_36sau"]
 [ext_resource type="Resource" path="res://assets/data/crew/piyak.tres" id="5_q0cpc"]
 [ext_resource type="Script" path="res://src/core/data/crew/crew_registry.gd" id="6_rdua2"]
+[ext_resource type="Resource" path="res://assets/data/crew/gaegul.tres" id="7_gaegul"]
+[ext_resource type="Resource" path="res://assets/data/crew/kkangchong.tres" id="8_kkang"]
+[ext_resource type="Resource" path="res://assets/data/crew/mongsil.tres" id="9_mongs"]
 
 [resource]
 script = ExtResource("6_rdua2")
-crews = Array[ExtResource("2_ym8o2")]([ExtResource("3_q2me7"), ExtResource("4_36sau"), ExtResource("5_q0cpc")])
+crews = Array[ExtResource("2_ym8o2")]([ExtResource("3_q2me7"), ExtResource("4_36sau"), ExtResource("5_q0cpc"), ExtResource("7_gaegul"), ExtResource("8_kkang"), ExtResource("9_mongs")])
 board_config = ExtResource("1_yan4m")

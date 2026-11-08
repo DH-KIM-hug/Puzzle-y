@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="PieceShape" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/board/piece_shape.gd" id="1_shape"]
+
+[resource]
+script = ExtResource("1_shape")
+id = &"L3_D"
+offsets = Array[Vector2i]([Vector2i(0, 1), Vector2i(1, 0), Vector2i(1, 1)])

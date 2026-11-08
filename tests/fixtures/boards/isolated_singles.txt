@@ -1,0 +1,10 @@
+# tray-supply AC-12 / AC-13: only isolated single empty cells (no two adjacent);
+# every row and column has an empty (stable board). Only 1-cell shapes fit.
+###.#.##
+#.######
+######.#
+.#######
+#####.##
+#######.
+##.#####
+####.###

@@ -1,0 +1,54 @@
+[gd_resource type="Resource" script_class="CrewDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/data/crew/crew_ability.gd" id="1_ab"]
+[ext_resource type="Script" path="res://src/core/data/crew/ability_step.gd" id="2_st"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_def.gd" id="3_cd"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_shape_entry.gd" id="4_se"]
+[ext_resource type="Resource" path="res://assets/data/shapes/i4_v.tres" id="5_i4_v"]
+[ext_resource type="Resource" path="res://assets/data/shapes/t4_u.tres" id="6_t4_u"]
+[ext_resource type="Resource" path="res://assets/data/shapes/u5.tres" id="7_u5"]
+[ext_resource type="Resource" path="res://assets/data/shapes/i3_v.tres" id="8_i3_v"]
+
+[sub_resource type="Resource" id="Resource_step"]
+script = ExtResource("2_st")
+primitive = &"clear_pattern"
+params = {
+&"offsets": [Vector2i(-2, -2), Vector2i(-2, 0), Vector2i(-2, 2), Vector2i(0, -2), Vector2i(0, 2), Vector2i(2, -2), Vector2i(2, 0), Vector2i(2, 2)]
+}
+
+[sub_resource type="Resource" id="Resource_ability"]
+script = ExtResource("1_ab")
+ability_id = &"kkangchong_double_hop"
+steps = Array[ExtResource("2_st")]([SubResource("Resource_step")])
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("4_se")
+shape = ExtResource("5_i4_v")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("4_se")
+shape = ExtResource("6_t4_u")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("4_se")
+shape = ExtResource("7_u5")
+
+[sub_resource type="Resource" id="Resource_e3"]
+script = ExtResource("4_se")
+shape = ExtResource("8_i3_v")
+
+[resource]
+script = ExtResource("3_cd")
+id = &"kkangchong"
+name_key = "CREW_KKANGCHONG_NAME"
+species = &"rabbit"
+colour_slot = 5
+rarity = 2
+shapes = Array[ExtResource("4_se")]([SubResource("Resource_e0"), SubResource("Resource_e1"), SubResource("Resource_e2"), SubResource("Resource_e3")])
+ability = SubResource("Resource_ability")
+ability_name_key = "CREW_KKANGCHONG_ABILITY_NAME"
+ability_desc_key = "CREW_KKANGCHONG_ABILITY_DESC"
+silhouette_feature = &"long_ears"
+body_pattern = &"checks"

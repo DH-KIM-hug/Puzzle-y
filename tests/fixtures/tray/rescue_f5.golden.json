@@ -1,0 +1,24 @@
+{
+  "board": "rescue_f5.txt",
+  "candidates": [
+    "I4_H:nyangi:2",
+    "D2_V:piyak:1",
+    "O4:gomgom:2"
+  ],
+  "rescued": {
+    "from_shape": "I4_H",
+    "slot": 0,
+    "to_shape": "I3_H"
+  },
+  "stage_seed": 68,
+  "team": [
+    "nyangi",
+    "gomgom",
+    "piyak"
+  ],
+  "tray": [
+    "I3_H:nyangi:1",
+    "D2_V:piyak:1",
+    "O4:gomgom:2"
+  ]
+}

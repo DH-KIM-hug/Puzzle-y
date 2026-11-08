@@ -2,7 +2,7 @@
 
 > **Status**: Designed (pending `/design-review` in a fresh session)
 > **Author**: user (위임) + Claude (`/design-system`)
-> **Last Updated**: 2026-11-07
+> **Last Updated**: 2026-11-08
 > **Last Verified**: 2026-11-07
 > **Creative Director Review (CD-GDD-ALIGN)**: NOT ASSESSED 2026-11-07 — skipped (review_mode lean; not a PHASE-GATE)
 > **Implements Pillar**: 기둥 1 도미노의 손맛 · 기둥 3 보이는 연쇄
@@ -205,6 +205,9 @@ The placement_total formula is defined as:
 **도달 가능성 주의 (systems-designer 리뷰, D11)**: 실제 해석기에서 웨이브 0에 7번 행으로 지워진 냥이의 십자 대상은 **5번 열 7칸뿐**이다(행은 이미 비어 있음,
 chain-resolver AC-03). 따라서 "웨이브 1 능력 칸 10"은 산술 픽스처로는 유효하지만 해석기가 만들 수 없는 이벤트 목록이다. 해석기 출력과 맞춘 값은
 웨이브 1 = 7칸 → 7 × 15 = 105, **total = 1 + 80 + 20 + 105 + 30 + 120 = 356**. AC-S09·AC-S06(qa-lead 소관)을 이 값으로 맞출지는 Q8.
+**정정 (구현 검증 2026-11-08, D12)**: "5번 열 7칸"도 *안정 보드*에서는 도달할 수 없다 — 5번 열 0–6행이 모두 차 있으면 7번 행의 냥이까지 합쳐 열이 완성되어
+불변식 13(안정 보드에 완성 줄 0)을 어긴다. 해석기로 실제 도달하는 보드(chain-resolver AC-03 `domino_ng`, `(0,5)` 빈칸 유지)에서 웨이브 1은 **6칸** →
+6 × 15 = 90, **total = 1 + 80 + 20 + 90 + 30 + 120 = 341**. 356(7칸)은 손으로 쓴 이벤트 목록으로만 만들 수 있는 **산술 전용** 값이다.
 
 **F6. 배치 총점 상한 (검증용)**
 
@@ -377,8 +380,14 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 
 - **AC-S08 [Logic] (F1·F2·F3 표)** — **GIVEN** 시작값, **WHEN** 함수를 직접 부르면, **THEN** `placement_points(6) = 6`; `depth_mult_pct(0..6) = 100,150,200,250,300,350,400`;
   `line_mult_pct(0,1,2,3,7) = 100,100,200,300,700`. **AND** `depth_step_pct = 50`, `depth_mult_max_pct = 400`, `k = 8`이면 400 (상한).
-- **AC-S09 [Logic] (F4·F5, 도미노 골든 값)** — **GIVEN** F5 Example의 이벤트 목록(1칸 배치; 웨이브 0 행 8칸 LINE + 냥이 발동; 웨이브 1 ABILITY 7칸(냥이 십자의 5번 열 — 해석기로 도달 가능, D11) + 곰곰 발동; 웨이브 2 ABILITY 6칸),
-  **WHEN** 채점, **THEN** 웨이브별 `clear_points = 80, 105, 120`, `activation_points = 20, 30, 0`, **total = 356** (Q8 해결: 도달 불가 값 401은 AC에서 쓰지 않는다).
+- **AC-S09 [Logic] (F4·F5, 도미노 골든 값 — 해석기 도달 가능 픽스처)** — **GIVEN** chain-resolver AC-03 픽스처 `domino_ng`(`tests/unit/rules/fixtures/chain_fixture.gd` `DOMINO_NG`:
+  7번 행은 (7,3)만 빔, 냥이 (7,5), 곰곰 (4,5), 안정 보드 불변식을 위해 `(0,5)` 빈칸 유지)에 1칸 조각을 (7,3)에 놓아 **실제 해석기**가 낸 이벤트 목록
+  (웨이브 0 행 8칸 LINE + 냥이 발동; 웨이브 1 ABILITY 6칸(냥이 십자의 5번 열 중 차 있던 칸) + 곰곰 발동; 웨이브 2 ABILITY 6칸), **WHEN** 채점,
+  **THEN** 웨이브별 `clear_points = 80, 90, 120`, `activation_points = 20, 30, 0`, **total = 341**
+  (테스트: `tests/unit/rules/scoring/scoring_rules_test.gd` `test_resolver_domino_events_score_end_to_end`).
+  **AND (산술 전용)** 같은 식을 손으로 쓴 이벤트 목록(`EventFixture.domino_golden()`, 웨이브 1 ABILITY 7칸)에 적용하면 `clear_points = 80, 105, 120`, total = 356 —
+  해석기로는 도달할 수 없는 목록이므로(F5 정정, D12) 공식 산술 확인용으로만 쓰고 미리보기·불변식 픽스처에는 쓰지 않는다
+  (테스트: `scoring_formula_test.gd` `test_domino_golden_total_is_356`). 도달 불가 값 401은 어느 AC에도 쓰지 않는다 (Q8).
 - **AC-S10 [Logic] (F4, 프로토타입 일치)** — **GIVEN** 웨이브 0 행 1 + 열 1 (15칸, L=2) 한 웨이브, **WHEN** 채점, **THEN** `clear_points = 300`. **AND** 웨이브 2 ABILITY 9칸이면 180.
 - **AC-S11 [Logic] (F4 내림)** — **GIVEN** `cell_points = 7`, `depth_step_pct = 33`, 웨이브 1 LINE 5칸, **WHEN** 채점, **THEN** `clear_points = ⌊5 × 100 × 7 × 133 / 10000⌋ = 46`
   (칸마다가 아니라 웨이브에서 한 번 내림).
@@ -386,7 +395,7 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
   **THEN** 웨이브 6 `depth_mult_pct = 400`, `clear_points = 9 × 100 × 10 × 400 / 10000 = 360`, `activation_points = 0`, 피즐 2개는 `fizzle_points × 2`(시작값 0)만 더한다.
 - **AC-S13 [Logic] (F6, 상한·데이터 검증)** — **GIVEN** 64칸 전부 LINE·L=16·k=6인 합성 웨이브, **WHEN** 채점, **THEN** 오버플로 없이 F6 `total_max` 이하의 양의 정수.
   **AND** `cell_points = 0` 또는 `depth_mult_max_pct = 50`인 `ScoringRules`는 로드가 거부되고 오류에 노브 이름·값이 적힌다.
-- **AC-S15 [Config] (노브 데이터화)** — **GIVEN** `ScoringRules` 파일에서 `depth_step_pct`만 100으로 바꾸면, **WHEN** AC-S09 픽스처를 채점, **THEN** 코드 변경 없이 웨이브 1·2 배율이 200·300
+- **AC-S15 [Config] (노브 데이터화)** — **GIVEN** `ScoringRules` 파일에서 `depth_step_pct`만 100으로 바꾸면, **WHEN** AC-S09의 산술 전용 이벤트 목록(웨이브 1 7칸)을 채점, **THEN** 코드 변경 없이 웨이브 1·2 배율이 200·300
   (`clear_points = 80, 140, 180`, `activation_points = 20, 40, 0`, total = 461).
 
 **미리보기 = 결과 (불변식)**
@@ -409,7 +418,7 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 | Q4 | 방해물 겹 벗기기(`CELL_MODIFIED`)·특정 칸 지우기에 별도 점수가 필요한가 | 칸 종류 & 방해물 GDD | `/design-system obstacles` |
 | Q5 | systems-index: 판 진행 흐름 → 점수, (예상 점수 표시 시) 연쇄 미리보기 → 점수 의존 추가 | producer · `/map-systems` | 해당 GDD 작성 전 |
 | Q6 | ~~chain-resolver F6 변수명 정렬~~ — **해소**: chain-resolver F6을 이 문서 F2 식·변수명·상한으로 교체 (chain-resolver D14) | — | 해소 |
-| Q8 (Resolved 2026-11-07: AC는 356 사용, qa-lead) | AC-S09/AC-S06 골든 값 401이 해석기로 도달 불가능한 픽스처(웨이브 1 능력 칸 10 > 최대 7)에 기댄다 — 도달 가능한 356으로 바꿀지, "산술 전용 픽스처"로 명시할지 | qa-lead | 다음 AC 개정 |
+| Q8 (Resolved 2026-11-07: AC는 356 사용, qa-lead; **2026-11-08 개정 — D12: AC-S09 주 값은 해석기 도달 가능한 341, 356은 산술 전용**) | AC-S09/AC-S06 골든 값 401이 해석기로 도달 불가능한 픽스처(웨이브 1 능력 칸 10 > 최대 7)에 기댄다 — 도달 가능한 356으로 바꿀지, "산술 전용 픽스처"로 명시할지 | qa-lead | 다음 AC 개정 |
 | Q7 | 스테이지 클리어 시 남은 조각 보너스를 둘 것인가 — 둔다면 스테이지 & 목표 소유, 이 문서의 누계에 더하는 항으로 | 스테이지 & 목표 GDD | `/design-system stage-goals` |
 
 ### Decision Log (사용자 위임 "진행부탁 알아서 다" — 질문 없이 권장안 채택)
@@ -427,3 +436,4 @@ chain-resolver 다음 개정 때 F6 변수명을 이 문서로 맞춘다 (Q6).
 | D9 | 크루·과금 보정 | MVP 없음, T2도 비권장 (Q3) | 크루별 점수 가중 — "과금 = 수치 우위" 안티 기둥 |
 | D11 | F5 예시 도달 가능성 (systems-designer 리뷰) | 예시 401은 유지하되 해석기 도달 불가 주석 + 도달 가능 값 356 병기, AC 수정은 qa-lead(Q8) | 예시만 356으로 교체 — AC-S09와 즉시 모순 |
 | D10 | 감점·콤보 유지 보너스 | 없음 (턴 사이 콤보 없음 — 점수는 배치 단위로 닫힘) | 연속 배치 콤보 — 미리보기로 보이지 않는 상태가 생겨 기둥 3 약화 |
+| D12 | AC-S09 골든 값 (구현 검증 2026-11-08, 사용자 위임) | AC-S09 주 단언을 해석기 도달 가능한 `domino_ng` 픽스처의 **341**(웨이브 1 능력 6칸)로 바꾸고, 356(7칸)은 손으로 쓴 이벤트 목록의 산술 전용 확인으로 남김. AC-S15(461)는 그 산술 목록을 쓴다고 명시. 근거: 7칸이 되려면 5번 열 0–6행이 모두 차야 하는데, 그러면 7번 행 냥이와 함께 열이 완성되어 안정 보드 불변식 13 위반 — 실제 해석기 테스트(`test_resolver_domino_events_score_end_to_end`)가 341을 낸다 | 356을 주 값으로 유지 — 도달 불가 보드에 기대는 골든 값이 되어 Q8의 원래 문제(401)가 재발; 픽스처를 바꿔 356 맞추기 — 안정 보드로는 불가능 |

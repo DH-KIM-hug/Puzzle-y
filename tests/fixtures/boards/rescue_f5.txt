@@ -1,0 +1,10 @@
+# tray-supply F5 / AC-11: one horizontal 3-cell gap (row 0, cols 3-5) plus
+# isolated single empties; every row and column has an empty (stable board).
+###...##
+#.######
+######.#
+.#######
+#####.##
+#######.
+##.#####
+####.###

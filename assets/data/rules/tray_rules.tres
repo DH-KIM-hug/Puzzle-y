@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="TrayRules" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/tray/tray_rules.gd" id="1_tray"]
+
+[resource]
+script = ExtResource("1_tray")
+tray_size = 3
+crew_bag_copies = 1
+rescue_enabled = true

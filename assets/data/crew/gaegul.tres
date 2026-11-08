@@ -1,0 +1,60 @@
+[gd_resource type="Resource" script_class="CrewDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/data/crew/crew_ability.gd" id="1_ab"]
+[ext_resource type="Script" path="res://src/core/data/crew/ability_step.gd" id="2_st"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_def.gd" id="3_cd"]
+[ext_resource type="Script" path="res://src/core/data/crew/crew_shape_entry.gd" id="4_se"]
+[ext_resource type="Resource" path="res://assets/data/shapes/s4_h.tres" id="5_s4_h"]
+[ext_resource type="Resource" path="res://assets/data/shapes/z4_h.tres" id="6_z4_h"]
+[ext_resource type="Resource" path="res://assets/data/shapes/l3_d.tres" id="7_l3_d"]
+[ext_resource type="Resource" path="res://assets/data/shapes/s4_v.tres" id="8_s4_v"]
+[ext_resource type="Resource" path="res://assets/data/shapes/z4_v.tres" id="9_z4_v"]
+
+[sub_resource type="Resource" id="Resource_step"]
+script = ExtResource("2_st")
+primitive = &"clear_diagonals"
+params = {
+&"reach": -1
+}
+
+[sub_resource type="Resource" id="Resource_ability"]
+script = ExtResource("1_ab")
+ability_id = &"gaegul_x_leap"
+steps = Array[ExtResource("2_st")]([SubResource("Resource_step")])
+
+[sub_resource type="Resource" id="Resource_e0"]
+script = ExtResource("4_se")
+shape = ExtResource("5_s4_h")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_e1"]
+script = ExtResource("4_se")
+shape = ExtResource("6_z4_h")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_e2"]
+script = ExtResource("4_se")
+shape = ExtResource("7_l3_d")
+weight = 2
+
+[sub_resource type="Resource" id="Resource_e3"]
+script = ExtResource("4_se")
+shape = ExtResource("8_s4_v")
+
+[sub_resource type="Resource" id="Resource_e4"]
+script = ExtResource("4_se")
+shape = ExtResource("9_z4_v")
+
+[resource]
+script = ExtResource("3_cd")
+id = &"gaegul"
+name_key = "CREW_GAEGUL_NAME"
+species = &"frog"
+colour_slot = 4
+rarity = 1
+shapes = Array[ExtResource("4_se")]([SubResource("Resource_e0"), SubResource("Resource_e1"), SubResource("Resource_e2"), SubResource("Resource_e3"), SubResource("Resource_e4")])
+ability = SubResource("Resource_ability")
+ability_name_key = "CREW_GAEGUL_ABILITY_NAME"
+ability_desc_key = "CREW_GAEGUL_ABILITY_DESC"
+silhouette_feature = &"lily_pad"
+body_pattern = &"waves"
