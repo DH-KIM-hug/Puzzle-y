@@ -493,7 +493,21 @@ func _draw_banner(ci: CanvasItem) -> void:
 
 # --- helpers -------------------------------------------------------------------
 
+## Bundled Korean face (Jua, SIL OFL — assets/fonts/OFL.txt) so web/mobile builds
+## render Hangul without system fonts; SystemFont stays as the fallback chain.
+const BUNDLED_FONT_PATH := "res://assets/fonts/Jua-Regular.ttf"
+
+
 static func _make_font() -> Font:
+	var system := _make_system_font()
+	if ResourceLoader.exists(BUNDLED_FONT_PATH):
+		var bundled: FontFile = load(BUNDLED_FONT_PATH)
+		bundled.fallbacks = [system]
+		return bundled
+	return system
+
+
+static func _make_system_font() -> Font:
 	var f := SystemFont.new()
 	f.font_names = PackedStringArray(["Noto Sans CJK KR", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", "WenQuanYi Zen Hei", "sans-serif"])
 	f.font_weight = 700
