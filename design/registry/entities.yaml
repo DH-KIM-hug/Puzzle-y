@@ -230,6 +230,7 @@ formulas:
       - design/gdd/chain-resolver.md
       - design/gdd/chain-preview.md
       - design/gdd/round-flow.md
+      - design/gdd/stage-goals.md
     variables:
       - activated_faces_per_wave
       - depth_cap
@@ -323,6 +324,7 @@ formulas:
     source: design/gdd/obstacles.md
     referenced_by:
       - design/gdd/obstacles.md
+      - design/gdd/stage-goals.md
     variables:
       - ice_layers
     output_range: [0, 128]
@@ -356,12 +358,30 @@ formulas:
     source: design/gdd/round-flow.md
     referenced_by:
       - design/gdd/round-flow.md
+      - design/gdd/stage-goals.md
     variables:
       - piece_limit
       - placements_used
     output_range: [0, piece_limit]
     expression: "pieces_left = piece_limit - placements_used (inf if piece_limit unset); refill_budget = piece_limit - pieces_dealt"
     notes: "piece_limit comes from StageDef (stage-goals). Tray never deals beyond piece_limit. Read by HUD, stage-goals (out-of-pieces, stars), tray-supply (refill budget)."
+    added: 2026-11-09
+    revised: ""
+  - name: star_rating
+    status: active
+    source: design/gdd/stage-goals.md
+    referenced_by:
+      - design/gdd/stage-goals.md
+      - design/gdd/round-flow.md
+    variables:
+      - cleared
+      - final_score
+      - star_points_S2
+      - star_points_S3
+      - cell_points
+    output_range: [0, 3]
+    expression: "cleared ? 1 + [final_score >= floor(S2*cell_points/10)] + [final_score >= floor(S3*cell_points/10)] : 0; final_score = stage_score + pieces_left*floor(leftover_piece_points*cell_points/10)"
+    notes: "Fills RoundResult.stars. Leftover bonus is a separate term, never added to scoring's stage_score. S2 < S3 enforced at load. Thresholds are written at cell_points_ref=10."
     added: 2026-11-09
     revised: ""
 
@@ -383,6 +403,7 @@ constants:
       - design/gdd/chain-resolver.md
       - design/gdd/placement-input.md
       - design/gdd/chain-preview.md
+      - design/gdd/stage-goals.md
     value: 8
     unit: cells
     added: 2026-11-07
@@ -395,6 +416,7 @@ constants:
       - design/gdd/chain-resolver.md
       - design/gdd/placement-input.md
       - design/gdd/chain-preview.md
+      - design/gdd/stage-goals.md
     value: 8
     unit: cells
     added: 2026-11-07
@@ -423,6 +445,7 @@ constants:
       - design/gdd/chain-presentation.md
       - design/gdd/audio.md
       - design/gdd/obstacles.md
+      - design/gdd/stage-goals.md
     value: 6
     unit: waves
     added: 2026-11-07
@@ -454,6 +477,7 @@ constants:
     source: design/gdd/scoring.md
     referenced_by:
       - design/gdd/scoring.md
+      - design/gdd/stage-goals.md
     value: 10
     unit: points per cleared cell
     added: 2026-11-07
@@ -549,5 +573,14 @@ constants:
       - design/gdd/round-flow.md
     value: 0.5
     unit: seconds (result-screen retry tap to first piece draggable, low-end Android)
+    added: 2026-11-09
+    revised: ""
+  - name: leftover_piece_points
+    status: active
+    source: design/gdd/stage-goals.md
+    referenced_by:
+      - design/gdd/stage-goals.md
+    value: 100
+    unit: points per unused piece at clear (at cell_points_ref 10)
     added: 2026-11-09
     revised: ""

@@ -354,10 +354,10 @@ The leftover_bonus formula is defined as:
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
 | cleared | bool | — | calculated (F4 참으로 끝남) | 클리어 여부 |
-| pieces_left | int | 0 – 37 | calculated (F2) | 클리어 순간 남은 조각 (트레이에 남은 것 + 아직 안 나온 것) |
+| pieces_left | int | 0 – 39 | calculated (F2) | 클리어 순간 남은 조각 (트레이에 남은 것 + 아직 안 나온 것) |
 | leftover_piece_points | int | 0 – 300 (시작 100) | data file (`StageRules`) | 남은 조각 1개의 보너스 (기준 스케일) |
 
-**Output Range:** 0 ~ 37 × 300 = 11,100 (이론); MVP 스테이지 시작값에서 대개 200 ~ 800. **Example:** 1-7(`piece_limit` 16)을 11개로 클리어 → 5 × 100 = **500**.
+**Output Range:** 0 ~ 39 × 300 = 11,700 (이론); MVP 스테이지 시작값에서 대개 200 ~ 800. **Example:** 1-7(`piece_limit` 16)을 11개로 클리어 → 5 × 100 = **500**.
 
 **F6. 최종 점수**
 
