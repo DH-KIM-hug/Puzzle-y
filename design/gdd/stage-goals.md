@@ -61,12 +61,10 @@ Verification (3)이 `.tres` int 왕복을 확인했다 — `2.0`처럼 적힌 �
    | `cell_legend` | Dictionary[String → `CellSpec`] | `{".": EMPTY}` | 글자 → 칸 정의. `.`는 항상 `EMPTY`로 예약 | 이 문서 |
    | `target_cells` | Array[Vector2i] | `[]` | 목표 칸 좌표 (row, col) — 보드 위 **겹 표시**이며 칸 종류가 아니다 (규칙 5) | 이 문서 |
    | `goals` | Array[`GoalDef`] | — | 1~`max_goals_per_stage`(2)개, 모두 달성해야 클리어 (규칙 8) | 이 문서 |
-   | `piece_limit` | int | — | 이 판에 공급되는 조각 총수, `piece_limit_min`(3) ~ `piece_limit_max`(40) | 이 문서 |
+   | `piece_limit` | int | — | 이 판에 공급되는 조각 총수, `piece_limit_min`(3) ~ `piece_limit_max`(40). `−1` = 무제한 — **자유 플레이 `StageDef`**(목표 없음; T0 그레이박스·자동 플레이용, round-flow 규칙 24)에서만 허용 | 이 문서 · round-flow F1 |
    | `star_points` | PackedInt32Array | — | `[S2, S3]` — 별 2·3개 기준 `final_score` (기준 `cell_points_ref` = 10에서 적은 값, F1) | 이 문서 |
-   | `team_mode` | enum | `FREE` | `FREE`(팀 편성에서 고름) \| `FIXED`(`fixed_team` 그대로, 편성 화면 잠금) (규칙 13) | 이 문서 |
-   | `fixed_team` | Array[StringName] | `[]` | `FIXED`일 때 1~3명 crew id, 팀 슬롯 순서 | 이 문서 · crew-definition (id 유효성) |
-   | `allowed_crew` | Array[StringName] | `[]` | `FREE`일 때 고를 수 있는 크루 (빈 배열 = 보유 크루 전부). MVP 출시 스테이지는 모두 빈 배열 | 이 문서 |
-   | `recommended_team` | Array[StringName] | `[]` | 표시용 추천 (규칙 없음) | 메타 화면 UI |
+   | `team_rule` | `TeamRule` | 3인·제한 없음 | { `team_size`: 1–3 (기본 3), `locked`: Array[{`slot`, `crew_id`}] (기본 `[]`), `banned`: Array[StringName] (기본 `[]`) } (규칙 13) | team-composition 규칙 5–8 (의미·검증) · 이 문서 (필드 보유) |
+   | `recommended_team` | Array[StringName] | `[]` | 표시용 추천 (규칙 없음) | 메타 화면 UI · 팀 편성 |
    | `stage_seed` | int | — | 0 ~ 2³¹−1, `FIXED` 시드 모드에서 필수 | tray-supply 규칙 18 · ADR-0001 `SeedHash` |
    | `tray_seed_mode` | enum | `FIXED` | `FIXED` \| `PER_ATTEMPT` | tray-supply 규칙 18 |
    | `stage_base_seed` | int | 0 | `PER_ATTEMPT`일 때만 사용 | tray-supply F3 |
@@ -82,7 +80,9 @@ Verification (3)이 `.tres` int 왕복을 확인했다 — `2.0`처럼 적힌 �
      `is_face`: bool, `origin`: `PIECE` \| `EGG`, `modifiers`: Array[StringName] }. board-rules 규칙 2의 칸 = 칸 종류 + 내용물을 그대로 옮긴 것이다.
      시작 보드 칸의 `placement_id`는 0(= "스테이지가 깐 칸").
    - **`GoalDef`** = { `type`: `SCORE` \| `CLEAR_CELLS` \| `CLEAR_OBSTACLES` \| `CHAIN`, `required`: int, `keys`: Array[StringName]
-     (`CLEAR_OBSTACLES`만), `depth`: int (`CHAIN`만) }. 의미와 세는 법은 규칙 B.
+     (`CLEAR_OBSTACLES`만 — 방해물 GDD의 modifier `kind`, MVP는 `ice`), `depth`: int (`CHAIN`만) }. 의미와 세는 법은 규칙 B.
+   - **방해물 칸 표기** (obstacles 규칙 6): 돌 `{ type: STONE }`, 얼음 칸 `{ type: TILE, is_face: false, crew_id: null, modifiers: [{kind: ice, layers: n}] }`,
+     얼어붙은 얼굴 `{ type: TILE, is_face: true, crew_id: X, modifiers: [{kind: ice, layers: 1}] }`. `CellSpec.modifiers`는 `{kind, layers}` 항목 배열이다.
    - **보드 텍스트 예시** (1-3 제안, 가로 = col 0→7):
      ```
      board_rows = ["........", "........", "...ggG..", "...ggg..", "........", "........", "nnnnn.nn", "........"]
@@ -97,22 +97,29 @@ Verification (3)이 `.tres` int 왕복을 확인했다 — `2.0`처럼 적힌 �
      통과(완성 줄 0개, 얼굴 칸은 `crew_id` 있음), 얼굴 칸의 `crew_id`가 크루 레지스트리에 있음(chain-resolver 규칙 18 — 팀 밖 크루도 가능).
    - 목표: `goals` 1~`max_goals_per_stage`개, 같은 `type` 중복 없음, 각 `required ≥ 1`. 유형별: `SCORE` → `required ≤ score_target_max`;
      `CLEAR_CELLS` → `target_cells` 비지 않음, 모든 좌표가 보드 안·중복 없음, `required ≤ |target_cells|`, 목표 칸의 시작 칸 종류는
-     `removable_by_clear = true`이거나 `EMPTY`; `CLEAR_OBSTACLES` → `keys` 비지 않음, `required ≤` 시작 보드에서 키에 맞는 칸 수(F3c — MVP는
-     방해물이 판 도중 생기지 않으므로), 키에 맞는 칸은 `removable_by_clear = true`; `CHAIN` → `1 ≤ depth ≤ depth_cap`(chain-resolver, 6).
-     `target_cells`가 있는데 `CLEAR_CELLS` 목표가 없으면 오류(쓸모없는 표식).
-   - 조각·별: `piece_limit` 범위 안; `star_points`는 정확히 2개이고 `0 < S2 < S3`.
-   - 팀: `FIXED` → `fixed_team` 1~3명, 중복 없음, 모두 레지스트리에 있음; `FREE` → `fixed_team` 비어 있음, `allowed_crew`의 id가 모두 레지스트리에 있고
-     비어 있지 않다면 기본 보유 3인(`starter_ids()`) 중 1명 이상 포함.
+     `removable_by_clear = true`이거나 `EMPTY`(돌 칸은 목표 칸이 될 수 없다); `CLEAR_OBSTACLES` → `keys` 비지 않음, 모두 방해물 GDD에 등록된
+     modifier `kind`, `required ≤` 시작 보드에서 그 `kind`를 가진 칸 수(F3c — 방해물은 판 도중 생기지 않는다, obstacles 규칙 2·15);
+     `CHAIN` → `1 ≤ depth ≤ depth_cap`(chain-resolver, 6). `target_cells`가 있는데 `CLEAR_CELLS` 목표가 없으면 오류(쓸모없는 표식).
+     방해물 배치 자체는 obstacles `validate_obstacles`(V1–V5)가 검증한다.
+   - 조각·별: `piece_limit` 범위 안; `star_points`는 정확히 2개이고 `0 < S2 < S3`. 자유 플레이(`piece_limit = −1`)는 `goals`·`star_points`가 비어 있어야 한다.
+   - 팀: team-composition 규칙 6 (`locked` 슬롯 < `team_size`, 중복 금지, `banned`와 충돌 금지, `colour_slot` 중복 금지, 모든 id가 레지스트리에 있음).
+     `team_size < 3`이면 `locked`가 모든 슬롯을 채워야 한다(1–2인 팀은 튜토리얼 고정 팀 전용 — 이 문서의 추가 조건).
    - 트레이 필드: tray-supply 규칙 22 (스크립트 검증), `FIXED` 시드 모드에서 `stage_seed` 필수(tray-supply Edge Cases).
    - **린트 경고 (로드는 됨)**: `SCORE` 목표에서 `S2 ≤ required` (클리어하면 별 2가 거의 자동), `goals`가 2개인데 둘 다 `SCORE`·`CHAIN`처럼
      연쇄 하나로 동시에 끝나기 쉬운 조합, `piece_limit`이 F8 안내 범위 밖.
 
 **B. 목표 유형과 세는 법 — 이벤트만 읽는다**
 
-3. **목표 추적기 계약** — `apply_placement(progress, stage, board_before, events, stage_score) → progress'`. 순수 함수다: 입력을 바꾸지 않고,
-   `board_before`(이번 배치의 `resolve` 입력 = 안정 보드), 연쇄 해석기 `events`(한 배치분), 커밋 후 `stage_score`(scoring 규칙 11)만 읽는다.
-   보드를 다시 판정하지 않고 해석기를 다시 부르지 않는다. **진행도는 단조 증가**한다 — 한 번 센 것은 줄지 않는다. 판 진행 흐름이 배치 커밋 직후
-   (점수 확정과 같은 순간, 연출 재생 전) 한 번 부른다. 연쇄 미리보기는 같은 함수를 가상 결과에 적용해 목표 표식을 만든다 (규칙 14).
+3. **목표 추적기 `GoalTracker` 계약** (round-flow Q3의 이름을 그대로 쓴다):
+   - `start(stage_def, start_board)` — 진행 0. 시작 보드에서 **방해물 장부** `ice_cells`(좌표 → 남은 겹, F3c)를 한 번 만든다. 방해물은 판 도중 생기지 않으므로
+     (obstacles 규칙 2·15, chain-resolver 규칙 17) 이후 장부는 이벤트만으로 정확히 따라간다.
+   - `apply(result, breakdown, stage_score)` — 배치 하나의 `ChainResult`(이벤트 목록)와 커밋 후 누계 `stage_score`(scoring 규칙 11)를 받아 진행을 갱신한다.
+     `breakdown`(`ScoreBreakdown`)은 round-flow 커밋 순서 6)이 넘기는 값이며 MVP 목표는 쓰지 않는다. 보드를 다시 판정하지 않고 해석기를 다시 부르지 않는다
+     (ADR-0001 결정 3: 목표 진행은 이벤트에서만).
+   - `is_met() → bool` (F4), `pieces_out(pieces_left) → bool` (규칙 9), `snapshot()` (HUD·결과 화면용 목표별 진행), `preview(result) → GoalPreview` (규칙 14).
+   - **결정성** — 같은 시작 보드와 같은 이벤트 열 → 같은 진행. 정수만 쓴다. **진행도는 단조 증가**한다 — 한 번 센 것은 줄지 않는다. 판 진행 흐름이 배치 커밋
+     직후(점수 확정과 같은 순간, 연출 재생 전) 한 번 부른다.
+   - **별 계산** `stars(stage_def, round_result) → 0..3` (F7)과 `final_score`(F6)는 상태 없는 함수다 — round-flow `RoundResult.stars`를 채운다.
 4. **`SCORE`** — 진행도 = `stage_score` (F3a). `stage_score ≥ required_eff`(F1로 환산)이면 달성. 남은 조각 보너스(F5)는 **포함하지 않는다** —
    보너스는 클리어 *뒤에* 붙는다.
 5. **`CLEAR_CELLS` (목표 칸)** — `target_cells` T는 보드 좌표 위의 겹 표시다(칸 종류가 아님 — 칸 내용이 바뀌어도 표시는 그 좌표에 남는다).
@@ -120,11 +127,13 @@ Verification (3)이 `.tres` int 왕복을 확인했다 — `2.0`처럼 적힌 �
    `CELL_MODIFIED`는 세지 않는다 — "지워졌다"만 센다. 지운 이유(`by` = `LINE`·`ABILITY`·`BOTH`)와 칸 출처(`origin` = `PIECE`·`EGG`)는 따지지 않는다:
    알이 채운 칸이 지워져도 그 좌표는 끝난다. 한 좌표는 한 번만 센다. 목표 칸이 빈칸으로 시작하면 플레이어가 그 칸을 채워 지워야 한다.
    진행도 = `|done|`, `|done| ≥ required`이면 달성.
-6. **`CLEAR_OBSTACLES` (방해물)** — `keys`는 방해물 GDD가 등록한 **칸 종류 id** 또는 **modifier id** 목록이다. 이번 배치의 `CELLS_CLEARED`
-   `cells[]`를 이벤트 순서대로 훑으며, 이 배치에서 **처음** 지워지는 좌표 (r, c)마다: `board_before[r][c]`의 칸 종류가 `keys`에 있거나 그 칸의
-   `modifiers`에 `keys`의 항목이 있으면 +1 (F3c). 같은 배치에서 같은 좌표가 다시 지워지면(알이 채운 뒤 다시 지워짐) 세지 않는다 — 그 칸은 이미
-   방해물이 아니다. 근거: MVP에서 방해물은 판 도중 생기지 않는다(프리미티브는 알만 만든다, chain-resolver 규칙 17). 겹 벗기기(`CELL_MODIFIED`)는
-   세지 않는다 — **완전히 치워야** 1개 (Open Question Q2).
+6. **`CLEAR_OBSTACLES` (방해물 — MVP는 얼음)** — `keys`는 방해물 GDD가 등록한 modifier `kind` 목록이다(MVP: `ice` — 얼음 칸과 얼어붙은 얼굴이 모두
+   `ice`다, obstacles 규칙 2·3). **단위는 "얼음에서 풀려난 칸"**이다 — obstacles F3의 `iced_cells` 감소분이며, 겹 수(`ice_remaining`)가 아니다 (D5).
+   이번 배치의 `CELL_MODIFIED` 이벤트를 순서대로 읽어, `modifiers_before`에 `keys`의 `kind`가 있고 `modifiers_after`에 없는 칸마다 +1 (F3c).
+   2겹 얼음은 첫 타격에서 `layers` 2 → 1(진행 없음), 두 번째 타격에서 1 → 0(+1)이다. 얼음이 벗겨진 칸이 나중에 지워지는 것(`CELLS_CLEARED`)은 세지 않는다 —
+   이미 센 칸이다. 돌(`STONE`)은 지울 수 없는 칸 종류라 목표가 될 수 없다(obstacles F3 "돌은 세지 않는다"). 얼음 `kind`가 칸에서 지워지는 다른 경로는 MVP에
+   없다(얼음 칸은 `pre_clear`가 언제나 `KEEP`한다, obstacles 규칙 7). Post-MVP 방해물이 `CELLS_CLEARED`로 사라지는 종류라면 같은 장부에서 "그 좌표가 처음
+   지워질 때 +1"로 센다 — 장부가 시작 보드에서 오므로 알이 채운 칸을 방해물로 잘못 세지 않는다.
 7. **`CHAIN` (연쇄 N)** — `CHAIN_END.chain_depth ≥ depth`인 배치마다 +1 (F3d). `required`번이면 달성 (기본 1 = "연쇄 N을 한 번"). `chain_depth`는
    chain-resolver F2 정의 그대로다: 얼굴이 하나 이상 *발동*한 웨이브 수이고, 상한 도달 웨이브와 `SUPPRESSED`만 있는 웨이브는 세지 않는다.
    crew-definition F4a 근사에 따르면 기본 팀은 줄을 지운 배치의 ≈ 90%에서 연쇄 1이 나므로, **일반 스테이지의 `depth`는 3 이상**을 쓴다.
@@ -134,18 +143,19 @@ Verification (3)이 `.tres` int 왕복을 확인했다 — `2.0`처럼 적힌 �
 
 **C. 판 결과 판정**
 
-9. **판정 시점과 순서** — 판 진행 흐름은 배치를 커밋할 때마다 (1) `stage_score` 갱신(scoring), (2) `apply_placement`, (3) `evaluate`를 이 순서로
-   부른다. `evaluate(progress, stage, pieces_placed) → ONGOING | CLEARED | FAILED_OUT_OF_PIECES`:
-   1. 모든 목표가 달성(F4)이면 **`CLEARED`**.
-   2. 아니고 `pieces_left = 0`(F2)이면 **`FAILED_OUT_OF_PIECES`** — 제한 조각 소진 실패는 이 시스템이 판정한다 (board-rules D12).
-   3. 아니면 `ONGOING`. 그 뒤 판 진행 흐름이 (필요하면 재충전 후) `no_moves`를 평가해 참이면 **`FAILED_BLOCKED`**로 끝낸다 (board-rules 규칙 15).
-   따라서 같은 배치에서 목표 달성과 막힘(또는 조각 소진)이 함께 성립하면 **클리어**다 (board-rules AC-17). 결과 우선순위: `CLEARED` > `FAILED_OUT_OF_PIECES`
-   > `FAILED_BLOCKED`. 연쇄 해석은 동기적으로 한 번에 끝나므로(chain-resolver 규칙 6) "연쇄 도중 달성"은 따로 없다 — 그 배치의 연쇄 전체가 점수와
-   진행도에 들어간 뒤 판정한다.
+9. **판정 기준 (시점·우선순위는 round-flow 규칙 7·9)** — 판 진행 흐름은 배치를 커밋할 때마다 채점(scoring) → `GoalTracker.apply` → 트레이 소비·재충전
+   → 종료 판정 순서로 부르며, 종료 판정에서 이 시스템의 두 질의를 쓴다:
+   1. `is_met()` — 모든 목표가 달성(F4)이면 **`CLEARED`**.
+   2. `pieces_out(pieces_left)` — `pieces_left = 0`(F2)이고 목표 미달성이면 참 → **`FAILED(OUT_OF_PIECES)`**. 제한 조각 소진 실패의 *기준*은 이 시스템이
+      소유한다 (board-rules D12). round-flow의 "트레이가 비었고 `refill_budget = 0`"은 재충전이 빈 트레이에서만 일어나므로 같은 조건이다(round-flow F2).
+   3. 그 밖의 막힘은 board-rules `no_moves` → **`FAILED(NO_MOVES)`** (보드 규칙 판정, 판 진행 흐름 호출).
+   우선순위는 `CLEARED` > `FAILED(OUT_OF_PIECES)` > `FAILED(NO_MOVES)`다 — 같은 배치에서 목표 달성과 막힘·조각 소진이 함께 성립하면 **클리어**다
+   (board-rules AC-17, round-flow 규칙 9). 연쇄 해석은 동기적으로 한 번에 끝나므로(chain-resolver 규칙 6) "연쇄 도중 달성"은 따로 없다 — 그 배치의 연쇄
+   전체가 점수와 진행도에 들어간 뒤 판정한다 (round-flow 규칙 10).
 10. **클리어는 즉시** — `CLEARED`가 되면 남은 조각은 쓰지 않고 판이 끝난다(연출 재생 후 결과 화면). 쓰지 않은 조각은 **남은 조각 보너스**(F5)가 된다:
     `final_score = stage_score + leftover_bonus` (F6), 별은 F7. 보너스는 `stage_score`에 더하지 않고 별도 값으로 둔다 — scoring의 누계 정의를 바꾸지
-    않는다 (scoring Q7 해소). 결과 화면은 `stage_score`, 보너스, `final_score`, 별을 함께 보여 준다.
-11. **실패** — `FAILED_OUT_OF_PIECES`·`FAILED_BLOCKED`는 별 0, 보너스 0. 페널티·재화 차감 없음(컨셉 Recovery from failure). 실패 연출은 귀엽게(기둥 5)
+    않는다 (scoring Q7 해소, round-flow Q1 해소: 즉시 종료 + 남은 조각당 보너스). 결과 화면은 `stage_score`, 보너스, `final_score`, 별을 함께 보여 준다.
+11. **실패** — `FAILED(OUT_OF_PIECES)`·`FAILED(NO_MOVES)`·포기(`ABANDONED`)는 별 0, 보너스 0. 페널티·재화 차감 없음(컨셉 Recovery from failure). 실패 연출은 귀엽게(기둥 5)
     하며, 원탭 재시작은 직전 팀을 유지한다(기둥 4 — 판 진행 흐름 소관).
 12. **재시도** — 진행도·`pieces_placed`·`stage_score`를 0으로 되돌리고 같은 `StageDef`를 다시 로드한다. `tray_seed_mode = FIXED`면 같은 팀일 때 첫 트레이와
     순서가 같다(tray-supply AC-18) — "아까 그 수를 다르게"가 바로 가능하다.
@@ -159,9 +169,10 @@ Verification (3)이 `.tres` int 왕복을 확인했다 — `2.0`처럼 적힌 �
 
 **E. 미리보기와 목표 표식 (chain-preview Q2 해소)**
 
-14. **`goal_preview(stage, progress, board_before, preview_events) → GoalPreview`** — 연쇄 미리보기가 가상 결과에 부르는 표식 훅. 순수 함수이며 규칙 B와
-    **같은 세기 코드**를 쓴다(미리보기용 근사 금지 — chain-resolver 규칙 3과 같은 방침). 반환: `target_cells_hit`(아직 안 끝난 목표 칸 중 이 배치로 지워질 좌표),
-    `obstacles_hit`(이 배치로 치워질 방해물 좌표), `chain_goal_hit`(이 배치의 `chain_depth ≥ depth`인 `CHAIN` 목표 id), `completes_stage`(이 배치로 모든 목표가
+14. **`GoalTracker.preview(result) → GoalPreview`** (chain-preview의 `goal_markers` 훅) — 연쇄 미리보기가 가상 결과(같은 `resolve`의 `ChainResult`)에 부르는
+    표식 질의. 추적기 상태를 바꾸지 않으며 규칙 B와 **같은 세기 코드**를 쓴다(미리보기용 근사 금지 — chain-resolver 규칙 3과 같은 방침). 반환:
+    `target_cells_hit`(아직 안 끝난 목표 칸 중 이 배치로 지워질 좌표), `obstacles_freed`(이 배치로 얼음에서 풀려날 좌표 — 겹만 벗겨질 칸은 obstacles 규칙 14의
+    "금" 표시가 이미 보여 준다), `chain_goal_hit`(이 배치의 `chain_depth ≥ depth`인 `CHAIN` 목표 id), `completes_stage`(이 배치로 모든 목표가
     달성되는가). `goal_markers = false`면 미리보기는 이를 무시한다. **점수 목표는 표식이 없다** — 예상 점수는 `show_predicted_score`일 때만 보인다(chain-preview D2,
     "값은 숨긴다"). 표식은 **사실만** 말한다(지워질 목표 칸에 동그라미, 배너에 ✓) — "추천 자리", 히트맵, 다른 앵커와의 비교는 없다(chain-preview 규칙 14).
 

@@ -30,9 +30,11 @@ signal wave_presented(wave: int, points: int)
 signal playback_finished(was_skipped: bool)
 ## Something visual changed; owners redraw.
 signal redraw_requested
-## Audio hook (no sound yet): a cue fired. [param level] = chain level (pitch step),
-## [param index] = order inside its burst (line cascade / egg sequence), for rising pitch.
-signal cue_fired(kind: int, level: int, index: int)
+## Audio hook (design/gdd/audio.md): a cue fired. [param kind] = [enum ChainTimeline.Kind]
+## (-1 = the "대연쇄!!" finisher), [param level] = chain level, [param index] = order
+## inside its burst (line cascade / egg sequence) or the wave number (SHAKE, PEEL),
+## [param species] = crew species of the cue (EFFECT / EGG / PEEL / FIZZLE), else empty.
+signal cue_fired(kind: int, level: int, index: int, species: StringName)
 
 ## Tuning (timings).
 var tuning: PresentationTuning
@@ -191,7 +193,7 @@ func _advance(dt: float) -> void:
 		_finisher_t = -1.0
 		if fx != null:
 			fx.finisher(tr("UI_CHAIN_FINISH"), _finisher_sub, _crew_cols)
-		cue_fired.emit(-1, _max_level, 0)
+		cue_fired.emit(-1, _max_level, 0, &"")
 	_update_shake()
 	if _next >= timeline.cues.size() and _effects_done():
 		_finish()
@@ -251,7 +253,7 @@ func _fire(cue: Dictionary) -> void:
 					minx = minf(minx, r.position.x)
 					maxx = maxf(maxx, r.end.x)
 				fx.dust(Vector2((minx + maxx) * 0.5, lo), tuning.land_dust, (maxx - minx) * 0.45)
-			cue_fired.emit(kind, 0, 0)
+			cue_fired.emit(kind, 0, 0, &"")
 		ChainTimeline.Kind.PEEL:
 			var cell: Vector2i = cue[ChainTimeline.K_CELL]
 			var act: bool = cue[ChainTimeline.K_ACTIVATED]
@@ -264,6 +266,7 @@ func _fire(cue: Dictionary) -> void:
 				fx.confetti(layout.cell_center(Vector2(cell)), [look[CrewVisuals.K_BASE], look[CrewVisuals.K_SHADE]], n, 0.8 + 0.15 * level)
 				if act:
 					fx.sparkle_burst(layout.cell_center(Vector2(cell)), 6, s * 1.1, Palette.GOLD)
+			cue_fired.emit(kind, level, int(cue[ChainTimeline.K_WAVE]), _species(cue[ChainTimeline.K_CREW]))
 		ChainTimeline.Kind.POPUP:
 			var pts: int = cue[ChainTimeline.K_POINTS]
 			var mult: int = cue[ChainTimeline.K_MULT_PCT]
@@ -295,11 +298,11 @@ func _fire(cue: Dictionary) -> void:
 			_banner = {&"t0": t0, &"dur": dur, &"text": _chain_text(stage),
 					&"sub": tr(visuals.look(cue[ChainTimeline.K_CREW])[CrewVisuals.K_NAME_KEY]), &"crew": cue[ChainTimeline.K_CREW],
 					&"level": level, &"gold": false, &"stage": stage, &"burst": false}
-			cue_fired.emit(kind, level, stage)
+			cue_fired.emit(kind, level, stage, &"")
 		ChainTimeline.Kind.CAP_BANNER:
 			_banner = {&"t0": t0, &"dur": dur, &"text": tr("UI_CHAIN_MAX"), &"sub": "", &"crew": &"", &"level": tuning.level_cap,
 					&"gold": true, &"stage": timeline.chain_depth, &"burst": false}
-			cue_fired.emit(kind, tuning.level_cap, 0)
+			cue_fired.emit(kind, tuning.level_cap, 0, &"")
 		ChainTimeline.Kind.EFFECT:
 			var crew: StringName = cue[ChainTimeline.K_CREW]
 			var look := visuals.look(crew)
@@ -311,7 +314,7 @@ func _fire(cue: Dictionary) -> void:
 				fx.ring(fp, col, s * (2.2 + 0.5 * level), 0.42, 0.0, 10.0)
 				if level >= 1:
 					fx.ring(fp, Palette.GOLD, layout.canvas.x * (0.55 + 0.1 * level), 0.6, 0.05, 6.0)
-			cue_fired.emit(kind, level, 0)
+			cue_fired.emit(kind, level, 0, look[CrewVisuals.K_SPECIES])
 		ChainTimeline.Kind.EGG:
 			var cell: Vector2i = cue[ChainTimeline.K_CELL]
 			_pops[cell] = {&"t0": t0, &"dur": maxf(dur * 2.0, 0.2)}
@@ -322,7 +325,7 @@ func _fire(cue: Dictionary) -> void:
 				if look[CrewVisuals.K_SPECIES] == &"sheep":
 					fx.dust(c + Vector2(0, s * 0.3), 6, s * 0.3)
 				fx.sparkle_burst(c, 4, s * 0.7, Palette.FACE_CREAM if look[CrewVisuals.K_SPECIES] == &"sheep" else Palette.GOLD)
-			cue_fired.emit(kind, level, _pops.size())
+			cue_fired.emit(kind, level, _pops.size(), _species(cue[ChainTimeline.K_CREW]))
 		ChainTimeline.Kind.LINE_FLASH:
 			var cells: Array = cue[ChainTimeline.K_CELLS]
 			_flashes.append({&"t0": t0, &"dur": maxf(dur, 0.05), &"cells": cells, &"egg": false})
@@ -332,14 +335,22 @@ func _fire(cue: Dictionary) -> void:
 				if fx != null:
 					fx.sweep(layout.cell_center(Vector2(ln[0] as Vector2i)), layout.cell_center(Vector2(ln[1] as Vector2i)),
 							Palette.GOLD if level == 0 else _level_colour(level), tuning.sweep_cascade_s * i)
-				cue_fired.emit(kind, level, i)
+				cue_fired.emit(kind, level, i, &"")
 			if lines.size() >= 2:
 				_labels.append({&"t0": t0, &"dur": tuning.label_dur, &"pos": _label_pos(ChainTimeline._centroid(cells)),
 						&"text": tr("UI_LINES_N") % lines.size(), &"gold": true})
 		ChainTimeline.Kind.FIZZLE:
 			_fizzles.append({&"t0": t0, &"dur": maxf(dur, 0.1) + 0.3, &"cell": cue[ChainTimeline.K_CELL], &"crew": cue[ChainTimeline.K_CREW]})
+			cue_fired.emit(kind, level, 0, _species(cue[ChainTimeline.K_CREW]))
 		ChainTimeline.Kind.SHAKE:
 			_wave_start(int(cue[ChainTimeline.K_WAVE]), level)
+
+
+## Crew species of a cue's crew id (empty when unknown).
+func _species(crew: Variant) -> StringName:
+	if crew == null or visuals == null:
+		return &""
+	return StringName(visuals.look(crew).get(CrewVisuals.K_SPECIES, &""))
 
 
 ## A chain wave begins: hit-stop, punch-in toward the firing face, flash, then a
@@ -367,7 +378,7 @@ func _wave_start(wave: int, level: int) -> void:
 				&"hold": hs}
 	if hs <= 0.0:
 		_release_shake()
-	cue_fired.emit(ChainTimeline.Kind.SHAKE, level, wave)
+	cue_fired.emit(ChainTimeline.Kind.SHAKE, level, wave, &"")
 
 
 func _release_shake() -> void:
