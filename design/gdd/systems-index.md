@@ -64,7 +64,7 @@
 | 8 | 연쇄 미리보기 (Chain Preview) | Gameplay | MVP | Designed | [design/gdd/chain-preview.md](chain-preview.md) | 연쇄 해석기, 드래그 & 배치 입력 |
 | 9 | 칸 종류 & 방해물 (Cell Types & Obstacles) | Gameplay | MVP | Designed | [design/gdd/obstacles.md](obstacles.md) | 보드 & 조각 규칙, 연쇄 해석기 |
 | 10 | 스테이지 & 목표 (Stage & Goals) | Gameplay | MVP | Not Started | design/gdd/stage-goals.md | 보드 & 조각 규칙, 점수, 트레이 공급, 칸 종류 & 방해물 |
-| 11 | 판 진행 흐름 (Round Flow) | Core | MVP | Not Started | design/gdd/round-flow.md | 보드 & 조각 규칙, 스테이지 & 목표, 트레이 공급, 연쇄 해석기, 팀 편성 |
+| 11 | 판 진행 흐름 (Round Flow) | Core | MVP | Designed | [design/gdd/round-flow.md](round-flow.md) | 보드 & 조각 규칙, 스테이지 & 목표, 트레이 공급, 연쇄 해석기, 팀 편성, 점수, 드래그 & 배치 입력, 연쇄 미리보기, 연쇄 연출 재생기 |
 | 12 | 화면 흐름 & 내비게이션 (Scene Flow) (inferred) | Core | MVP | Not Started | design/gdd/scene-flow.md | 판 진행 흐름 |
 | 13 | 보유 크루 (Crew Ownership) (inferred) | Progression | MVP | Not Started | design/gdd/crew-ownership.md | 크루 정의 |
 | 14 | 팀 편성 (Team Composition) | Gameplay | MVP | Designed | [design/gdd/team-composition.md](team-composition.md) | 크루 정의, 보유 크루, 스테이지 & 목표 (soft — `team_rule`) |
@@ -151,7 +151,7 @@
 2. **칸 종류 & 방해물** — depends on: 보드 & 조각 규칙, 연쇄 해석기
 3. **팀 편성** — depends on: 크루 정의, 보유 크루
 4. **스테이지 & 목표** — depends on: 보드 & 조각 규칙, 점수, 트레이 공급, 칸 종류 & 방해물
-5. **판 진행 흐름** — depends on: 보드 & 조각 규칙 (`place`·`no_moves` 직접 호출), 스테이지 & 목표, 트레이 공급, 연쇄 해석기, 팀 편성
+5. **판 진행 흐름** — depends on: 보드 & 조각 규칙 (`place`·`no_moves` 직접 호출), 스테이지 & 목표, 트레이 공급, 연쇄 해석기, 팀 편성, 점수, 드래그 & 배치 입력, 연쇄 미리보기 (`ctx` 공급), 연쇄 연출 재생기 (호출자) — round-flow Dependencies
 6. **스테이지 진행 & 해금** — depends on: 스테이지 & 목표
 7. **재화 & 보상** — depends on: 스테이지 & 목표, 스테이지 진행
 8. **가챠** — depends on: 재화 & 보상, 크루 정의, 보유 크루, 시드 RNG
@@ -251,7 +251,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 | Design docs started | 2 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 12/22 (2026-11-09 재집계: Designed 행 11 + 시드 RNG; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
+| MVP systems designed | 13/22 (2026-11-09 재집계: Designed 행 12 + 시드 RNG; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
 | Vertical Slice systems designed | 0/2 |
 
 ---
@@ -291,6 +291,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 - [x] `/design-system chain-presentation` (2026-11-07, Designed — `/design-review` 대기; 이벤트 → 타임라인 선계산, 웨이브 박자 0.54 s × 템포 1.0→0.6, 연쇄 6단 ≤ 4.0 s 압축 상한, 탭 빨리 감기 ×3 / 2회 건너뛰기, 움직임 줄이기, 펄스 ≥ 0.34 s 간격; UX Flag: 배너·팝업 레이어 + 일시정지 메뉴 토글; Depends On에 판 진행 흐름(호출자)·점수·크루 정의 Soft 의존 표기 제안 — chain-presentation Q6)
 - [x] `/design-system audio` (2026-11-09, Designed — `/design-review` 대기; 합성 SFX 21종, 웨이브 깊이마다 온음 상승(상한 6), 풀 12 + 발음 제한, 첫 입력 전 무음(웹), 빨리 감기 = 우선순위 ≥ 2만 −6 dB(chain-presentation Q5 해소); BGM은 Music 버스만 — audio Q1)
 - [x] `/design-system team-composition` (2026-11-09, Designed — `/design-review` 대기; 서로 다른 3인 + 보유/게스트 + 색 슬롯 동일 차단, `StageDef.team_rule` {team_size, locked, banned} 제안(stage-goals), 스테이지별→전역→기본 3인 자동 채우기, 재도전 = 화면 생략, 궁합표 미노출 + 실제 연결만 적는 궁합 노트; 보유 크루 최소 계약 provisional; #14 Depends On에 스테이지 & 목표(soft) 추가; UX Flag: 팀 편성 화면 `/ux-design`)
+- [x] `/design-system round-flow` (2026-11-09, Designed — `/design-review` 대기; 커밋 프레임에 해석·채점·목표·소비·재충전·종료 판정 전부 확정, 연출은 표시만; 클리어 > 조각 소진 > 막힘; 원탭 재시작 = 같은 팀·`FIXED` 시드·씬 재로드 없음 ≤ 0.5 s; 되돌리기 MVP 없음; 일시정지 = 연출 정지(타이머 없음), 백그라운드 = 플러시·자동 일시정지 없음; T0 `RoundFlow` 확장 a–g; #11 Depends On에 점수·입력·미리보기·연출 추가(scoring Q5·placement-input Q1·chain-preview Q4·chain-presentation Q6 해소); stage-goals 인터페이스 `StageDef`·`GoalTracker`·`stars` provisional — round-flow Q3; tray-supply 규칙 3 문구 — round-flow Q4; UX Flag: HUD 일시정지·결과 화면 `/ux-design`)
 - [ ] Run `/gate-check technical-setup` when MVP systems are designed
 - [ ] (선택) review_mode full에서 TD-SYSTEM-BOUNDARY / PR-SCOPE / CD-SYSTEMS 재실행
 - [ ] Validate the highest-risk systems with `/vertical-slice` before committing to Production

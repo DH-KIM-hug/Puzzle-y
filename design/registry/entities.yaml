@@ -54,7 +54,7 @@
 #   in any other shape is reported as unsupported layout, with its number.
 
 version: 1
-last_updated: "2026-11-07"
+last_updated: "2026-11-09"
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -229,6 +229,7 @@ formulas:
     referenced_by:
       - design/gdd/chain-resolver.md
       - design/gdd/chain-preview.md
+      - design/gdd/round-flow.md
     variables:
       - activated_faces_per_wave
       - depth_cap
@@ -304,6 +305,7 @@ formulas:
     source: design/gdd/chain-presentation.md
     referenced_by:
       - design/gdd/chain-presentation.md
+      - design/gdd/round-flow.md
     variables:
       - waves
       - tempo
@@ -349,6 +351,19 @@ formulas:
 #       damage_cap in combat.md clamps at 999."
 #     added: 2026-03-26
 #     revised: ""
+  - name: pieces_left
+    status: active
+    source: design/gdd/round-flow.md
+    referenced_by:
+      - design/gdd/round-flow.md
+    variables:
+      - piece_limit
+      - placements_used
+    output_range: [0, piece_limit]
+    expression: "pieces_left = piece_limit - placements_used (inf if piece_limit unset); refill_budget = piece_limit - pieces_dealt"
+    notes: "piece_limit comes from StageDef (stage-goals). Tray never deals beyond piece_limit. Read by HUD, stage-goals (out-of-pieces, stars), tray-supply (refill budget)."
+    added: 2026-11-09
+    revised: ""
 
 
 # ─── CONSTANTS ───────────────────────────────────────────────────────────────
@@ -470,6 +485,7 @@ constants:
       - design/gdd/tray-supply.md
       - design/gdd/board-rules.md
       - design/gdd/placement-input.md
+      - design/gdd/round-flow.md
     value: 3
     unit: slots
     added: 2026-11-07
@@ -526,3 +542,12 @@ constants:
 #     unit: slots
 #     added: 2026-03-26
 #     revised: ""
+  - name: retry_budget_s
+    status: active
+    source: design/gdd/round-flow.md
+    referenced_by:
+      - design/gdd/round-flow.md
+    value: 0.5
+    unit: seconds (result-screen retry tap to first piece draggable, low-end Android)
+    added: 2026-11-09
+    revised: ""
