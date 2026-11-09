@@ -1,16 +1,20 @@
 # 스테이지 & 목표 (Stage & Goals)
 
-> **Status**: In Design
+> **Status**: Designed (pending `/design-review` in a fresh session)
 > **Author**: user (위임) + Claude (`/design-system`)
 > **Last Updated**: 2026-11-09
 > **Last Verified**: 2026-11-09
+> **Creative Director Review (CD-GDD-ALIGN)**: NOT ASSESSED 2026-11-09 — skipped (review_mode lean; not a PHASE-GATE)
 > **Implements Pillar**: 기둥 2 크루가 곧 전략 · 기둥 3 보이는 연쇄 · 기둥 4 한 판 더
 
 ## Summary
 
-[To be designed]
+스테이지 & 목표는 한 판의 데이터(`StageDef` — 시작 보드, 목표 1~2개, 제한 조각 수, 별 기준, 팀 규칙, 트레이 시드·스크립트)와, 판 도중 연쇄 해석기 이벤트와
+점수 누계만 읽어 목표 진행을 세는 `GoalTracker`를 정의한다. 목표는 점수 / 목표 칸 지우기 / 얼음 방해물 풀기 / 연쇄 N 네 가지이고, 목표를 이루면 즉시 클리어되어
+남은 조각이 보너스가 되며 별은 클리어(1) + 최종 점수 임계값 2개로 매긴다 — "가장 큰 연쇄를 노릴까, 목표를 먼저 끝낼까"라는 트레이드오프로 미리보기가 "최고 숫자
+찾기"로 퇴화하는 위험을 막는다 (기둥 2·3·4). MVP 10스테이지 학습 곡선(얼굴 없는 줄 → 얼굴 → 2단 연쇄 → 3인 팀 → 방해물)을 튜닝 목표와 함께 제안한다.
 
-> **Quick reference** — Layer: `Feature` · Priority: `MVP` · Key deps: `[To be designed]`
+> **Quick reference** — Layer: `Feature` · Priority: `MVP` · Key deps: `보드 & 조각 규칙`, `연쇄 해석기 & 능력 프리미티브`, `점수 & 연쇄 배율`, `트레이 공급`, `칸 종류 & 방해물` (upstream) — downstream: 판 진행 흐름, 팀 편성, 연쇄 미리보기, 스테이지 진행 & 해금, 재화 & 보상, 플레이 HUD, 메타 화면 UI, 튜토리얼
 
 ## Overview
 
@@ -572,8 +576,98 @@ dimensions, and generation prompts from this section.
 
 ## Acceptance Criteria
 
-[To be designed]
+> *Specialist note*: `qa-lead` not consulted — Section H는 lean에서도 spawn 대상이지만 Agent 도구가 없어 생략. Review manually before production.
+> 태그 = 스토리 유형 → 증거·게이트 (tray-supply AC 머리말과 같은 규약): `[Logic]` `tests/unit/stage_goals/` (BLOCKING) · `[Integration]` `tests/integration/stage_goals/`
+> (BLOCKING) · `[UI]` 보존 스크린샷 `production/qa/evidence/` (BLOCKING) · `[Config]` 데이터 로드·스모크 (ADVISORY) · `[Playtest]` `/playtest-report` (ADVISORY — 스토리 완료 조건 아님).
+> **결정성**: 이벤트 목록은 커밋된 픽스처(`tests/fixtures/stage_goals/*.events.json`, 손으로 쓴 것은 "산술 전용"이라 명시) 또는 커밋된 보드 문자열에서 실제 `resolve`로 만든다.
+> 모든 `stage_seed`는 픽스처에 적는다. 테스트 파일: `tests/unit/stage_goals/stage_goals_{load,goals,outcome,stars,preview}_test.gd`,
+> `tests/integration/stage_goals/stage_goals_{round,catalog}_test.gd`.
+
+**데이터·로드 (규칙 1–2)**
+
+- **AC-SG01 [Logic] (규칙 1)** — **GIVEN** 1-3 예시 `board_rows`·`cell_legend`, **WHEN** 로드, **THEN** (2, 5)는 `TILE(gomgom, is_face)`, (6, 5)는 `EMPTY`, `placement_id` 모두 0, 완성 줄 0개.
+- **AC-SG02 [Logic] (규칙 2)** — **GIVEN** 각각 하나씩 규칙을 어긴 `StageDef` 12종(레전드에 없는 글자 · 8줄이 아닌 보드 · 목표 0개 · 목표 3개 · `CHAIN depth = 7` · `CLEAR_CELLS`인데
+  `target_cells` 비어 있음 · 목표 칸이 보드 밖 · 목표 칸이 `STONE` · `CLEAR_OBSTACLES [ice] 5`인데 시작 얼음 칸 4 · `star_points = [700, 600]` · `FIXED` 시드인데 `stage_seed` 없음 ·
+  `team_size = 2`인데 `locked` 1칸), **WHEN** 로드, **THEN** 12종 모두 로드 오류이고 오류 메시지에 위반 필드 이름이 들어 있다.
+- **AC-SG03 [Logic] (규칙 2 린트)** — **GIVEN** `SCORE 1500`·`star_points = [1400, 2000]`인 스테이지, **WHEN** 로드, **THEN** 로드는 성공하고 린트 경고 1건("S2 ≤ required").
+- **AC-SG04 [Config] (규칙 G)** — **GIVEN** MVP `StageCatalog`(10개), **WHEN** 로드, **THEN** 오류 0·린트 경고 0, id `1-1`~`1-10` 순서, 모든 스테이지 `preview_detail = FULL`.
+
+**목표 세기 (규칙 3–8, F3·F4)**
+
+- **AC-SG05 [Logic] (규칙 4, F1)** — **GIVEN** `SCORE 160`, `cell_points = 10`, **WHEN** 커밋 후 `stage_score`가 159 → 165, **THEN** `is_met()`는 거짓 → 참. **AND** `cell_points = 20`이면
+  기준은 320이다.
+- **AC-SG06 [Logic] (규칙 5)** — **GIVEN** `target_cells = {(0,7), (7,0)}`와 `CELLS_CLEARED` 픽스처: (0,7)이 `by = BOTH`로 1회, 웨이브 2에서 (0,7)이 알로 다시 지워짐, (7,0)은 `kept[]`에만,
+  **WHEN** `apply`, **THEN** `P_cells = 1`이고 `done = {(0,7)}`.
+- **AC-SG07 [Logic] (규칙 6, F3c)** — **GIVEN** 시작 보드에 1겹 얼음 칸 A, 2겹 얼음 칸 B, 얼어붙은 얼굴 C와 `CLEAR_OBSTACLES [ice] 3`, **WHEN** 배치 1(A `ice:1→없음`, B `ice:2→1`),
+  배치 2(B `ice:1→없음`, C `ice:1→없음`, 같은 연쇄에서 C가 지워져 발동), **THEN** `P_obst`는 1 → 3, 배치 2 뒤 `is_met()` 참, A가 이후 `CELLS_CLEARED`로 지워져도 3 그대로.
+- **AC-SG08 [Logic] (규칙 7)** — **GIVEN** `CHAIN depth 3 × 2`, **WHEN** `chain_depth` 2·3·6·0인 배치 4개, **THEN** `P_chain` = 0·1·2·2, 세 번째 배치 뒤 `is_met()` 참.
+- **AC-SG09 [Logic] (규칙 8)** — **GIVEN** 1-10 목표(`CLEAR_CELLS 6` + `CLEAR_OBSTACLES 4`), **WHEN** 목표 칸 6을 먼저 끝내고 얼음 3 → 4, **THEN** 얼음 4가 되는 배치에서만 `is_met()` 참,
+  그 전 `snapshot()`은 목표 칸 ✓ + 얼음 3/4.
+- **AC-SG10 [Logic] (규칙 3 결정성·단조)** — **GIVEN** 같은 시작 보드와 같은 이벤트 열, **WHEN** `GoalTracker`를 두 번 돌림, **THEN** 모든 배치 뒤 `snapshot()`이 같고, 어떤 배치 뒤에도 진행 값이 줄지 않는다.
+
+**판 결과 (규칙 9–12, F2·F5–F7)**
+
+- **AC-SG11 [Integration] (규칙 9)** — **GIVEN** `piece_limit = 4`, 4번째 배치가 목표를 달성하고 그 뒤 `no_moves`도 참인 픽스처 판, **WHEN** 4번째 커밋, **THEN** outcome `CLEARED`, `pieces_left = 0`, 보너스 0 (board-rules AC-17과 같은 단언).
+- **AC-SG12 [Integration] (규칙 9)** — **GIVEN** `piece_limit = 4`, 목표 미달, **WHEN** 4번째 커밋, **THEN** `pieces_out(0)` 참 → `FAILED(OUT_OF_PIECES)`; **AND** 같은 순간 `no_moves`가 참인 변형에서도 사유는 `OUT_OF_PIECES`.
+- **AC-SG13 [Logic] (F5–F7)** — **GIVEN** `star_points = [1700, 2400]`, `leftover_piece_points = 100`, `cell_points = 10`, **WHEN** (`stage_score`, `pieces_left`, cleared) = (1240, 5, 참) / (1900, 6, 참) /
+  (1500, 1, 참) / (3000, 0, 거짓), **THEN** `final_score` = 1740 / 2500 / 1600 / 3000이고 별 = 2 / 3 / 1 / 0.
+- **AC-SG14 [Integration] (규칙 10)** — **GIVEN** 목표를 7번째 배치에 달성하는 판(`piece_limit` 12), **WHEN** 커밋, **THEN** 판이 즉시 끝나 8번째 배치를 받을 수 없고 `RoundResult.pieces_left = 5`,
+  `stage_score`에는 보너스가 들어 있지 않으며 `final_score = stage_score + 500`.
+- **AC-SG15 [Integration] (규칙 12)** — **GIVEN** `FIXED` 시드 스테이지에서 3배치 후 재시도, **WHEN** 재시작, **THEN** 진행·`stage_score`·`pieces_placed` 0이고 첫 트레이가 첫 시도와 같다(tray-supply AC-18 연계).
+
+**팀·미리보기 (규칙 13–14)**
+
+- **AC-SG16 [Integration] (규칙 13)** — **GIVEN** 1-3(`team_size 2`, `locked` [냥이, 곰곰])과 곰곰을 보유하지 않은 세이브, **WHEN** 스테이지 시작, **THEN** 팀 = [냥이, 곰곰](곰곰은 게스트),
+  편성 화면에서 바꿀 수 없고, 판이 끝난 뒤 보유 크루 목록은 그대로다.
+- **AC-SG17 [Logic] (규칙 14)** — **GIVEN** 목표 칸 (3,3) 미완료와 (3,3)을 지우는 가상 `ChainResult`, **WHEN** `preview(result)`, **THEN** `target_cells_hit = {(3,3)}`이고, 그 뒤 `snapshot()`은
+  호출 전과 같다(추적기 상태 불변). **AND** 같은 결과를 `apply`하면 `P_cells`가 정확히 `target_cells_hit` 크기만큼 오른다 (미리보기 = 실제).
+- **AC-SG18 [Logic] (규칙 14)** — **GIVEN** 마지막 남은 목표를 달성하는 가상 결과, **WHEN** `preview`, **THEN** `completes_stage = true`; `SCORE` 목표만 남은 판에서는 `show_predicted_score = false`이면
+  표식이 비어 있다(점수 표식 없음).
+
+**콘텐츠 검증 (규칙 G, F8·F9)**
+
+- **AC-SG19 [Integration] (규칙 G)** — **GIVEN** 스크립트 스테이지 1-1·1-2·1-3과 커밋된 해법 배치 목록, **WHEN** 자동 재생, **THEN** 모든 배치가 `can_place = true`이고 `CLEARED`, 별 ≥ 1 (tray-supply AC-15b와 같은 하네스).
+- **AC-SG20 [Integration] (규칙 13 — 기본 보유 보장)** — **GIVEN** MVP 10스테이지 × 기본 보유 3인(고정 팀은 그 팀) × 고정 봇 시드 50개, **WHEN** T0 자동 플레이 봇으로 플레이,
+  **THEN** 모든 스테이지에서 별 1 클리어가 1회 이상 나오고, 클리어율이 1-1~1-4 ≥ 95%, 1-5~1-10 ≥ 70%. 미달 스테이지는 `piece_limit`·목표를 F8로 조정하기 전까지 이 AC가 실패한다.
+- **AC-SG21 [Playtest] (규칙 F·G — 퇴화 위험)** — **GIVEN** 외부 테스터 ≥ 5명이 1-1~1-10을 처음 플레이, **WHEN** 관찰·로그 집계, **THEN** (a) 1-4·1-7에서 미리보기상 가장 큰 연쇄가 아닌 자리를
+  목표 때문에 고른 배치가 테스터당 1회 이상(chain-preview AC-P21과 공유), (b) 별 3 비율이 클리어의 20~40%, (c) 1-1~1-4 첫 시도 클리어율 ≥ 90%. 벗어나면 별 기준·보너스를
+  F9로 재조정하고 결과를 `/playtest-report`에 기록한다.
+
+**UI**
+
+- **AC-SG22 [UI] (UI Requirements)** — **GIVEN** 1-10 진행 중(목표 칸 4/6, 얼음 3/4, 남은 조각 7), **WHEN** HUD 캡처, **THEN** 두 목표가 아이콘(모양)+숫자로 한 줄에, 남은 조각 7, 별 눈금 2개가 보이는
+  스크린샷이 `production/qa/evidence/`에 보존된다. 클리어·실패 결과 화면도 각각 1장.
+
+*Section D 공식별 커버리지*: F1 → AC-SG05 · F2 → AC-SG11/14 · F3 → AC-SG05–08 · F4 → AC-SG09 · F5–F7 → AC-SG13 · F8·F9(설계 시점) → AC-SG20/21.
 
 ## Open Questions
 
-[To be designed]
+| # | 질문 | 담당 | 해결 시점 |
+|---|---|---|---|
+| Q1 | 10스테이지 표(규칙 G)의 목표 수치·조각 수·별 기준은 근사로 잡은 시작값이다 — T0 자동 플레이(AC-SG20)와 F8·F9로 확정. 특히 1-9(얼음 6 + 연쇄 3, 18조각)가 9번째로 적절한 난이도인가 | level-designer · systems-designer | T0 자동 플레이 → `/balance-check` |
+| Q2 | 얼음 2겹 칸을 "벗길 때마다 진행"(`ice_remaining`)으로 바꿀 필요가 있는가 — 현재는 완전 해제만 셈(D5). 2겹 칸의 첫 타격이 "헛손질"로 느껴지면 재검토 | game-designer | T0 플레이테스트 |
+| Q3 | `leftover_piece_points` 100이 "탐욕 vs 안전"(T2)의 균형점인가 — 봇·사람 데이터에서 한쪽 전략이 별 3을 독점하면 조정 | systems-designer | AC-SG21 이후 |
+| Q4 | 컨셉 Open Question "어떤 목표형이 가장 재밌나" — 4형 모두 MVP에 넣고 외부 테스트에서 스테이지별 재시도율·선호를 기록해 T2 스테이지 배분에 반영 | game-designer · producer | T1 외부 플레이테스트 |
+| Q5 | `FIXED` 시드 해법 외우기 (tray-supply Q4) — 별 3 획득 후 `PER_ATTEMPT` "연습 모드"를 열지 | game-designer | 메타 화면 UI 설계 시 |
+| Q6 | 재화 & 보상이 스테이지별 보상 차등을 원하면 `StageDef`에 `reward_profile` 필드를 추가할지(현재 없음) | economy-designer · 재화 & 보상 GDD | `/design-system currency-rewards` |
+| Q7 | 1-1의 `show_predicted_score = true`가 이후 스테이지(기본 false)와 기대 불일치를 만드는가 — 숨기는 시점에 안내가 필요한지 | game-designer · 튜토리얼 GDD | VS |
+| Q8 | `CellSpec.modifiers`가 obstacles 규칙 6의 `{kind, layers}` 객체 배열인데 board-rules 규칙 2는 `modifiers[]`를 보존만 한다 — `.tres` 표현(하위 Resource vs Dictionary)과 ADR-0001의 int 강제 검증 범위 | lead-programmer | `/architecture-decision` (StageDef 로드) |
+
+### Decision Log (사용자 위임 — 질문 없이 권장안 채택)
+
+| # | 결정 | 채택 | 기각한 대안 |
+|---|---|---|---|
+| D1 | 섹션 구성 | standard 필수 5 + Formulas(별·보너스·목표 수치 정의) + Visual/Audio·Game Feel(Gameplay 필수)·UI·Cross-References·Open Questions. Player Fantasy·Tuning Knobs는 tier 생략(값은 규칙 H 표) | Tuning Knobs 별도 섹션 — 다른 standard GDD와 형식 불일치 |
+| D2 | 스테이지 데이터 형식 | `StageDef` Custom Resource + 보드는 글자 격자 텍스트 + `cell_legend` | 칸마다 하위 Resource 64개 — 에디터·diff에서 읽을 수 없음; JSON 파일 — 프로젝트 데이터 방침(ADR-0001 결정 8)과 불일치 |
+| D3 | 목표 유형 | 컨셉의 4형 그대로(`SCORE`·`CLEAR_CELLS`·`CLEAR_OBSTACLES`·`CHAIN`), 모두 이벤트로만 셈 | 5번째 "줄 N개 지우기" — 1-1 학습엔 편하지만 `SCORE`로 대체 가능, 컨셉 범위 밖; 크루별 발동 횟수 목표 — 팀 강제가 되어 기둥 2 자유 약화 |
+| D4 | 목표 묶음 | 1~2개, 모두 달성(AND) | OR 목표 — HUD·판정 문구 복잡; 3개 이상 — 세로 HUD 한 줄 초과 |
+| D5 | 방해물 목표 단위 | 얼음에서 풀려난 칸(`iced_cells` 감소, `CELL_MODIFIED`의 `ice` 해제) — obstacles UI의 택일 요청에 답 | `ice_remaining`(겹 수) — 2겹 칸이 2로 세져 "얼음 6개" 문구와 실제 칸 수가 어긋남(Q2로 재검토 여지); `CELLS_CLEARED` 기준 — 얼음 칸은 지워지지 않고 KEEP되므로 셀 수 없음 |
+| D6 | 목표 칸 표현 | 좌표 겹 표시(칸 종류 아님), 지워진 적이 있으면 완료 | 목표 칸을 칸 종류로 — 조각을 놓으면 칸 종류가 `TILE`로 바뀌어 사라짐(board-rules 규칙 2 "칸은 종류 하나"); "그 칸에 놓기" 목표 — 지우기 퍼즐과 무관 |
+| D7 | 팀 규칙 필드 | team-composition 규칙 5의 `team_rule` {team_size, locked, banned} 그대로 채택 | 이 문서 초안의 `team_mode`/`fixed_team`/`allowed_crew` — 동시 작성된 팀 편성 제안과 이름이 갈라져 consistency 충돌 |
+| D8 | 클리어 시점 | 목표 달성 즉시 종료 (round-flow 현행) | 남은 조각을 계속 놓는 "보너스 놓기" — 판이 길어지고(기둥 4) 클리어 후 실패 가능성 같은 이상한 상태 |
+| D9 | 남은 조각 처리 | 조각당 보너스 100(기준 스케일), `stage_score`와 별도 항 (scoring Q7·round-flow Q1 해소) | 보너스 없음 — 빨리 끝내는 동기 없음, 별이 점수 경쟁만 → "최고 숫자 찾기"; `stage_score`에 합산 — scoring 누계 정의와 점수 목표 판정이 섞임 |
+| D10 | 별 기준 | 별 1 = 클리어, 별 2·3 = `final_score` 임계값 2개(스테이지 데이터), `cell_points` 기준 스케일 환산 | 별 = 남은 조각 수만 — 연쇄(기둥 1)가 별에 보상되지 않음; 별마다 다른 조건(예: 별 3 = 연쇄 5) — 표현력은 높지만 HUD·결과 설명 부담, MVP 이후 후보; 점수만(남은 조각 무시) — T2 트레이드오프 소실 |
+| D11 | 미리보기 목표 표식 (chain-preview Q2) | 채택 — 목표 칸·풀려날 얼음·연쇄 목표 ✓·`completes_stage`, 같은 세기 코드, 점수 표식 없음 | 표식 없음 — 트레이드오프가 보이지 않아 "목표 vs 연쇄" 선택이 기억 싸움이 됨(기둥 3); 예상 진행 숫자까지 — 비교 도구화 |
+| D12 | 10스테이지 학습 곡선 | 1-1 얼굴 없음 → 1-2 얼굴 → 1-3 2단 연쇄 → 1-4 목표 칸 → 1-5 3인 팀 → 1-6 알 → 1-7 목표 vs 연쇄 → 1-8 얼음 → 1-9 얼어붙은 얼굴 → 1-10 종합(돌) | 1-4 전에 3인 팀 — 삐약 알은 읽기 어려워 2인으로 목표 개념부터; 방해물 1-6 이전 — 컨셉 곡선 순서(목표 → 조각 제한 → 방해물)와 어긋남 |
+| D13 | 시드 정책 | MVP 10스테이지 모두 `FIXED` (tray-supply D6) | `PER_ATTEMPT` — 재도전이 운 시험 |
+| D14 | 1~2인 고정 팀 | 1-1~1-4만, `team_size < 3`이면 `locked` 필수 | 자유 편성 1~2인 — 팀 편성 화면 규칙 복잡, MVP 필요 없음 |
