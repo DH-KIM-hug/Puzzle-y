@@ -1,0 +1,58 @@
+[gd_resource type="Resource" script_class="AudioTuning" format=3]
+
+[ext_resource type="Script" path="res://src/audio/audio_tuning.gd" id="1_at"]
+
+[resource]
+script = ExtResource("1_at")
+sfx_dir = "res://assets/audio/sfx/"
+sounds = {
+&"ui_tap": {"gain_db": -8.0, "priority": 1, "max_voices": 2, "jitter_cents": 0.0},
+&"pick_up": {"gain_db": -8.0, "priority": 1, "max_voices": 2, "jitter_cents": 0.0},
+&"place_thud": {"gain_db": -4.0, "priority": 1, "max_voices": 2, "jitter_cents": 0.0},
+&"invalid_return": {"gain_db": -7.0, "priority": 1, "max_voices": 1, "jitter_cents": 0.0},
+&"line_sweep": {"gain_db": -9.0, "priority": 1, "max_voices": 4, "jitter_cents": 0.0},
+&"cell_pop": {"gain_db": -12.0, "priority": 0, "max_voices": 3, "jitter_cents": 25.0},
+&"sticker_peel": {"gain_db": -8.0, "priority": 1, "max_voices": 2, "jitter_cents": 25.0},
+&"ab_cat_claw": {"gain_db": -3.0, "priority": 2, "max_voices": 2, "jitter_cents": 0.0},
+&"ab_bear_thump": {"gain_db": -3.0, "priority": 2, "max_voices": 2, "jitter_cents": 0.0},
+&"ab_chick_pop": {"gain_db": -4.0, "priority": 2, "max_voices": 2, "jitter_cents": 0.0},
+&"ab_sheep_pop": {"gain_db": -4.0, "priority": 2, "max_voices": 2, "jitter_cents": 0.0},
+&"ab_frog_splash": {"gain_db": -4.0, "priority": 2, "max_voices": 2, "jitter_cents": 0.0},
+&"ab_rabbit_hop": {"gain_db": -4.0, "priority": 2, "max_voices": 2, "jitter_cents": 0.0},
+&"chain_hit": {"gain_db": -3.0, "priority": 2, "max_voices": 2, "jitter_cents": 0.0},
+&"banner_slam": {"gain_db": -4.0, "priority": 2, "max_voices": 1, "jitter_cents": 0.0},
+&"fizzle": {"gain_db": -6.0, "priority": 2, "max_voices": 2, "jitter_cents": 0.0},
+&"cap_fanfare": {"gain_db": -3.0, "priority": 3, "max_voices": 1, "jitter_cents": 0.0},
+&"finisher_fanfare": {"gain_db": -2.0, "priority": 3, "max_voices": 1, "jitter_cents": 0.0},
+&"confetti_burst": {"gain_db": -6.0, "priority": 3, "max_voices": 1, "jitter_cents": 0.0},
+&"score_tick": {"gain_db": -16.0, "priority": 0, "max_voices": 2, "jitter_cents": 25.0},
+&"result_chime": {"gain_db": -4.0, "priority": 3, "max_voices": 1, "jitter_cents": 0.0}
+}
+species_sounds = {
+&"cat": &"ab_cat_claw",
+&"bear": &"ab_bear_thump",
+&"chick": &"ab_chick_pop",
+&"sheep": &"ab_sheep_pop",
+&"frog": &"ab_frog_splash",
+&"rabbit": &"ab_rabbit_hop"
+}
+fallback_ability = &"cell_pop"
+chain_semitone_step = 2.0
+chain_pitch_cap = 6
+index_semitone_step = 2.0
+index_pitch_cap = 4
+tick_gap_s = 0.05
+tick_semitone_step = 0.5
+tick_pitch_cap = 14
+jitter_seed = 11
+pool_size = 12
+min_repeat_gap_s = 0.035
+default_max_voices = 3
+ff_min_priority = 2
+ff_gain_db = -6.0
+off_board_return_db = -6.0
+master_volume = 1.0
+sfx_volume = 0.8
+music_volume = 0.7
+muted = false
+settings_path = "user://audio_settings.cfg"

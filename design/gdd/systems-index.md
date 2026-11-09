@@ -62,12 +62,12 @@
 | 6 | 트레이 공급 (Tray Supply) | Gameplay | MVP | Designed | [design/gdd/tray-supply.md](tray-supply.md) | 보드 & 조각 규칙, 크루 정의, 시드 RNG |
 | 7 | 드래그 & 배치 입력 (Drag & Placement Input) (inferred) | Core | MVP | Designed | [design/gdd/placement-input.md](placement-input.md) | 보드 & 조각 규칙 |
 | 8 | 연쇄 미리보기 (Chain Preview) | Gameplay | MVP | Designed | [design/gdd/chain-preview.md](chain-preview.md) | 연쇄 해석기, 드래그 & 배치 입력 |
-| 9 | 칸 종류 & 방해물 (Cell Types & Obstacles) | Gameplay | MVP | Not Started | design/gdd/obstacles.md | 보드 & 조각 규칙, 연쇄 해석기 |
+| 9 | 칸 종류 & 방해물 (Cell Types & Obstacles) | Gameplay | MVP | Designed | [design/gdd/obstacles.md](obstacles.md) | 보드 & 조각 규칙, 연쇄 해석기 |
 | 10 | 스테이지 & 목표 (Stage & Goals) | Gameplay | MVP | Not Started | design/gdd/stage-goals.md | 보드 & 조각 규칙, 점수, 트레이 공급, 칸 종류 & 방해물 |
 | 11 | 판 진행 흐름 (Round Flow) | Core | MVP | Not Started | design/gdd/round-flow.md | 보드 & 조각 규칙, 스테이지 & 목표, 트레이 공급, 연쇄 해석기, 팀 편성 |
 | 12 | 화면 흐름 & 내비게이션 (Scene Flow) (inferred) | Core | MVP | Not Started | design/gdd/scene-flow.md | 판 진행 흐름 |
 | 13 | 보유 크루 (Crew Ownership) (inferred) | Progression | MVP | Not Started | design/gdd/crew-ownership.md | 크루 정의 |
-| 14 | 팀 편성 (Team Composition) | Gameplay | MVP | Not Started | design/gdd/team-composition.md | 크루 정의, 보유 크루 |
+| 14 | 팀 편성 (Team Composition) | Gameplay | MVP | Designed | [design/gdd/team-composition.md](team-composition.md) | 크루 정의, 보유 크루, 스테이지 & 목표 (soft — `team_rule`) |
 | 15 | 스테이지 진행 & 해금 (Stage Progression) (inferred) | Progression | MVP | Not Started | design/gdd/stage-progression.md | 스테이지 & 목표 |
 | 16 | 재화 & 보상 (Currency & Rewards) | Economy | MVP | Not Started | design/gdd/currency-rewards.md | 스테이지 & 목표, 스테이지 진행 |
 | 17 | 가챠 (Gacha: 천장·샤드·확률) | Economy | MVP | Not Started | design/gdd/gacha.md | 재화 & 보상, 크루 정의, 보유 크루, 시드 RNG |
@@ -76,7 +76,7 @@
 | 20 | 플레이 HUD (Gameplay HUD) | UI | MVP | Not Started | design/gdd/gameplay-hud.md | 스테이지 & 목표, 점수, 판 진행 흐름 |
 | 21 | 메타 화면 UI (스테이지 선택·팀 편성·결과) | UI | MVP | Not Started | design/gdd/meta-screens-ui.md | 스테이지 진행, 팀 편성, 판 진행 흐름, 화면 흐름 |
 | 22 | 가챠 UI & 확률 표시 (Gacha UI) | UI | MVP | Not Started | design/gdd/gacha-ui.md | 가챠 |
-| 23 | 오디오 SFX (Audio) | Audio | MVP | Not Started | design/gdd/audio.md | 연쇄 연출 재생기, 판 진행 흐름 |
+| 23 | 오디오 SFX (Audio) | Audio | MVP | Designed | [design/gdd/audio.md](audio.md) | 연쇄 연출 재생기, 판 진행 흐름 |
 | 24 | 플랫폼 & 화면 (Platform & Display) (inferred) | Core | MVP | Not Started | design/gdd/platform-display.md | — (모든 UI가 이를 따름) |
 | 25 | 튜토리얼 & 힌트 (Tutorial & Hints) | Meta | Vertical Slice | Not Started | design/gdd/tutorial.md | 스테이지 & 목표, 연쇄 미리보기, 플레이 HUD |
 | 26 | 설정 & 접근성 (Settings & Accessibility) | Meta | Vertical Slice | Not Started | design/gdd/settings-accessibility.md | 로컬 세이브, 오디오 |
@@ -251,7 +251,7 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 | Design docs started | 2 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 8/22 (시드 RNG 포함; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
+| MVP systems designed | 12/22 (2026-11-09 재집계: Designed 행 11 + 시드 RNG; GDD 대상은 21 — 시드 RNG는 chain-resolver 규칙 G + ADR 대기) |
 | Vertical Slice systems designed | 0/2 |
 
 ---
@@ -289,6 +289,8 @@ phase gate 권고 순서(보드/해석기 → 크루 능력 → 스테이지 →
 - [ ] `/architecture-decision` — 결정적 연쇄 해석기 (첫 critical ADR, 해석기 GDD와 병행)
 - [ ] Run `/design-review` on each completed GDD
 - [x] `/design-system chain-presentation` (2026-11-07, Designed — `/design-review` 대기; 이벤트 → 타임라인 선계산, 웨이브 박자 0.54 s × 템포 1.0→0.6, 연쇄 6단 ≤ 4.0 s 압축 상한, 탭 빨리 감기 ×3 / 2회 건너뛰기, 움직임 줄이기, 펄스 ≥ 0.34 s 간격; UX Flag: 배너·팝업 레이어 + 일시정지 메뉴 토글; Depends On에 판 진행 흐름(호출자)·점수·크루 정의 Soft 의존 표기 제안 — chain-presentation Q6)
+- [x] `/design-system audio` (2026-11-09, Designed — `/design-review` 대기; 합성 SFX 21종, 웨이브 깊이마다 온음 상승(상한 6), 풀 12 + 발음 제한, 첫 입력 전 무음(웹), 빨리 감기 = 우선순위 ≥ 2만 −6 dB(chain-presentation Q5 해소); BGM은 Music 버스만 — audio Q1)
+- [x] `/design-system team-composition` (2026-11-09, Designed — `/design-review` 대기; 서로 다른 3인 + 보유/게스트 + 색 슬롯 동일 차단, `StageDef.team_rule` {team_size, locked, banned} 제안(stage-goals), 스테이지별→전역→기본 3인 자동 채우기, 재도전 = 화면 생략, 궁합표 미노출 + 실제 연결만 적는 궁합 노트; 보유 크루 최소 계약 provisional; #14 Depends On에 스테이지 & 목표(soft) 추가; UX Flag: 팀 편성 화면 `/ux-design`)
 - [ ] Run `/gate-check technical-setup` when MVP systems are designed
 - [ ] (선택) review_mode full에서 TD-SYSTEM-BOUNDARY / PR-SCOPE / CD-SYSTEMS 재실행
 - [ ] Validate the highest-risk systems with `/vertical-slice` before committing to Production

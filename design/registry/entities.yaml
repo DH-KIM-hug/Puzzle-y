@@ -71,6 +71,7 @@ entities:
     source: design/gdd/crew-definition.md
     referenced_by:
       - design/gdd/crew-definition.md
+      - design/gdd/team-composition.md
     display_name: "냥이"
     colour_slot: 1
     rarity: COMMON
@@ -84,6 +85,7 @@ entities:
     source: design/gdd/crew-definition.md
     referenced_by:
       - design/gdd/crew-definition.md
+      - design/gdd/team-composition.md
     display_name: "곰곰"
     colour_slot: 2
     rarity: COMMON
@@ -97,6 +99,7 @@ entities:
     source: design/gdd/crew-definition.md
     referenced_by:
       - design/gdd/crew-definition.md
+      - design/gdd/team-composition.md
     display_name: "삐약"
     colour_slot: 3
     rarity: COMMON
@@ -209,6 +212,7 @@ formulas:
       - design/gdd/board-rules.md
       - design/gdd/chain-resolver.md
       - design/gdd/scoring.md
+      - design/gdd/obstacles.md
     variables:
       - board_width
       - board_height
@@ -312,6 +316,18 @@ formulas:
     notes: "Seconds at speed 1.0. beat(k)=(0.24+0.30)*tempo(k)+stagger; tempo 1.0 -> 0.6 floor. Depth-6 capped 3.51 s, worst 4.00 s. Read by round-flow (input wait), audio, HUD."
     added: 2026-11-07
     revised: ""
+  - name: ice_remaining
+    status: active
+    source: design/gdd/obstacles.md
+    referenced_by:
+      - design/gdd/obstacles.md
+    variables:
+      - ice_layers
+    output_range: [0, 128]
+    expression: "sum over cells of ice_layers(cell); iced_cells = count(ice_layers >= 1)"
+    notes: "Monotonically decreasing; each CELL_MODIFIED strips exactly 1 layer. Input to stage-goals obstacle goal. Stones not counted."
+    added: 2026-11-09
+    revised: ""
 # Example:
 #
 # formulas:
@@ -390,6 +406,8 @@ constants:
       - design/gdd/scoring.md
       - design/gdd/chain-preview.md
       - design/gdd/chain-presentation.md
+      - design/gdd/audio.md
+      - design/gdd/obstacles.md
     value: 6
     unit: waves
     added: 2026-11-07
@@ -435,6 +453,16 @@ constants:
     unit: seconds (max chain playback at speed 1.0)
     added: 2026-11-07
     revised: ""
+  - name: default_team_size
+    status: active
+    source: design/gdd/team-composition.md
+    referenced_by:
+      - design/gdd/team-composition.md
+      - design/gdd/tray-supply.md
+    value: 3
+    unit: crew per team (stage team_rule.team_size may set 1-3)
+    added: 2026-11-09
+    revised: ""
   - name: tray_size
     status: active
     source: design/gdd/tray-supply.md
@@ -445,6 +473,33 @@ constants:
     value: 3
     unit: slots
     added: 2026-11-07
+    revised: ""
+  - name: ice_max_layers
+    status: active
+    source: design/gdd/obstacles.md
+    referenced_by:
+      - design/gdd/obstacles.md
+    value: 2
+    unit: layers (max ice on a TILE; one stripped per wave)
+    added: 2026-11-09
+    revised: ""
+  - name: frozen_face_layers
+    status: active
+    source: design/gdd/obstacles.md
+    referenced_by:
+      - design/gdd/obstacles.md
+    value: 1
+    unit: layers (ice on a face cell; hits_to_fire = 2)
+    added: 2026-11-09
+    revised: ""
+  - name: max_stones_per_line
+    status: active
+    source: design/gdd/obstacles.md
+    referenced_by:
+      - design/gdd/obstacles.md
+    value: 3
+    unit: STONE cells per row/column (load-time validation)
+    added: 2026-11-09
     revised: ""
 # Example:
 #
