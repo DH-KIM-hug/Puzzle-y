@@ -30,6 +30,21 @@ static func piece(spec: Dictionary, shapes: Dictionary, instance_id: int) -> Pie
 	return PieceInstance.make(shapes[spec["shape"]], StringName(spec["crew"]), int(spec["face"]), instance_id)
 
 
+## Board of a case: row strings on the obstacle kind table (same flags as
+## [method BoardFixture.stone_table] for [code]S[/code]) plus the optional
+## [code]"ice"[/code] list of [code][row, col, layers][/code] (obstacles AC-O13).
+static func case_board(c: Dictionary) -> BoardState:
+	var b := BoardFixture.board(c["board"], ObstacleRules.kind_table())
+	for e: Array in c.get("ice", []):
+		ObstacleRules.set_ice(b, b.index_of(int(e[0]), int(e[1])), int(e[2]))
+	return b
+
+
+## Hooks of a case: the obstacle hooks when [code]"obstacles": true[/code], else defaults (null).
+static func case_hooks(c: Dictionary) -> ChainHooks:
+	return ObstacleRules.hooks() if bool(c.get("obstacles", false)) else null
+
+
 ## Chain rules with [param depth_cap].
 static func chain_rules(depth_cap: int) -> ChainRules:
 	var r := ChainRules.new()
@@ -52,12 +67,12 @@ static func legal_anchors(board: BoardState, p: PieceInstance) -> Array[Vector2i
 ## [r, c, board_hash, chain_depth, waves, cap_reached 0/1, total, model_digest];
 ## [code]mismatch[/code] = first differing field ("" = parity holds).
 static func run_anchor(board: BoardState, p: PieceInstance, anchor: Vector2i, stage_seed: int, placement_index: int,
-		rules: ChainRules, abilities: AbilityTable, scoring: ScoringRules) -> Dictionary:
+		rules: ChainRules, abilities: AbilityTable, scoring: ScoringRules, hooks: ChainHooks = null) -> Dictionary:
 	var settings := PreviewSettings.with_score(scoring)
-	var round_a := RoundCore.start(board, abilities, rules, scoring, stage_seed, placement_index)
+	var round_a := RoundCore.start(board, abilities, rules, scoring, stage_seed, placement_index, hooks)
 	var hash_before := round_a.board.board_hash()
 	var model_a := PreviewModel.preview(round_a.board, p, anchor, round_a.context_for_next_placement(), settings)
-	var round_b := RoundCore.start(board, abilities, rules, scoring, stage_seed, placement_index)
+	var round_b := RoundCore.start(board, abilities, rules, scoring, stage_seed, placement_index, hooks)
 	var commit_b := round_b.commit(p, anchor)
 	var res_a := model_a.result
 	var res_b := commit_b.result

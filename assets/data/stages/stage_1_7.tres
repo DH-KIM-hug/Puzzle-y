@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="StageDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/stage/goal_def.gd" id="1_nefbu"]
+[ext_resource type="Script" path="res://src/core/rules/stage/stage_def.gd" id="2_kebms"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_lock.gd" id="3_fht1v"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_rule.gd" id="4_awfo5"]
+
+[sub_resource type="Resource" id="Resource_tu2x3"]
+script = ExtResource("1_nefbu")
+type = 1
+required = 8
+
+[sub_resource type="Resource" id="Resource_skopd"]
+script = ExtResource("4_awfo5")
+
+[resource]
+script = ExtResource("2_kebms")
+id = &"1-7"
+name_key = "STAGE_1_7_NAME"
+board_rows = PackedStringArray("###..###", "........", "........", "..G.....", ".....N..", "........", "........", "##..####")
+cell_legend = {
+"#": {
+&"type": &"TILE"
+},
+"G": {
+&"crew_id": &"gomgom",
+&"is_face": true,
+&"type": &"TILE"
+},
+"N": {
+&"crew_id": &"nyangi",
+&"is_face": true,
+&"type": &"TILE"
+}
+}
+target_cells = Array[Vector2i]([Vector2i(0, 0), Vector2i(0, 1), Vector2i(0, 6), Vector2i(0, 7), Vector2i(7, 0), Vector2i(7, 1), Vector2i(7, 6), Vector2i(7, 7)])
+goals = Array[ExtResource("1_nefbu")]([SubResource("Resource_tu2x3")])
+piece_limit = 16
+star_points = PackedInt32Array(1700, 2400)
+team_rule = SubResource("Resource_skopd")
+recommended_team = Array[StringName]([&"nyangi", &"gomgom", &"piyak"])
+stage_seed = 1107

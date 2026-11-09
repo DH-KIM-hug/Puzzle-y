@@ -1,0 +1,48 @@
+[gd_resource type="Resource" script_class="StageDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/stage/goal_def.gd" id="1_cv330"]
+[ext_resource type="Script" path="res://src/core/rules/stage/stage_def.gd" id="2_aa1yb"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_lock.gd" id="3_pltid"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_rule.gd" id="4_8i0rg"]
+
+[sub_resource type="Resource" id="Resource_qgnr2"]
+script = ExtResource("1_cv330")
+type = 1
+required = 6
+
+[sub_resource type="Resource" id="Resource_h2s15"]
+script = ExtResource("1_cv330")
+type = 2
+required = 4
+keys = Array[StringName]([&"ice"])
+
+[sub_resource type="Resource" id="Resource_hil63"]
+script = ExtResource("4_8i0rg")
+
+[resource]
+script = ExtResource("2_aa1yb")
+id = &"1-10"
+name_key = "STAGE_1_10_NAME"
+board_rows = PackedStringArray("S......S", "........", "........", "#......#", "#......#", "..I##I..", ".I####I.", "S......S")
+cell_legend = {
+"#": {
+&"type": &"TILE"
+},
+"I": {
+&"modifiers": [{
+&"kind": &"ice",
+&"layers": 1
+}],
+&"type": &"TILE"
+},
+"S": {
+&"type": &"STONE"
+}
+}
+target_cells = Array[Vector2i]([Vector2i(0, 3), Vector2i(0, 4), Vector2i(3, 0), Vector2i(4, 0), Vector2i(3, 7), Vector2i(4, 7)])
+goals = Array[ExtResource("1_cv330")]([SubResource("Resource_qgnr2"), SubResource("Resource_h2s15")])
+piece_limit = 20
+star_points = PackedInt32Array(2400, 3300)
+team_rule = SubResource("Resource_hil63")
+recommended_team = Array[StringName]([&"nyangi", &"gomgom", &"piyak"])
+stage_seed = 1110

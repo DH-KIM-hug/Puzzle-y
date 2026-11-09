@@ -1,0 +1,39 @@
+[gd_resource type="Resource" script_class="StageDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/stage/goal_def.gd" id="1_cga05"]
+[ext_resource type="Script" path="res://src/core/rules/stage/stage_def.gd" id="2_yr701"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_lock.gd" id="3_kuh6x"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_rule.gd" id="4_n188f"]
+
+[sub_resource type="Resource" id="Resource_am672"]
+script = ExtResource("1_cga05")
+type = 2
+required = 6
+keys = Array[StringName]([&"ice"])
+
+[sub_resource type="Resource" id="Resource_u83j2"]
+script = ExtResource("4_n188f")
+
+[resource]
+script = ExtResource("2_yr701")
+id = &"1-8"
+name_key = "STAGE_1_8_NAME"
+board_rows = PackedStringArray("........", "........", "........", "........", "........", "#I##I#..", ".I##.#I#", "##I#I#..")
+cell_legend = {
+"#": {
+&"type": &"TILE"
+},
+"I": {
+&"modifiers": [{
+&"kind": &"ice",
+&"layers": 1
+}],
+&"type": &"TILE"
+}
+}
+goals = Array[ExtResource("1_cga05")]([SubResource("Resource_am672")])
+piece_limit = 16
+star_points = PackedInt32Array(1800, 2500)
+team_rule = SubResource("Resource_u83j2")
+recommended_team = Array[StringName]([&"nyangi", &"gomgom", &"piyak"])
+stage_seed = 1108

@@ -1,0 +1,45 @@
+[gd_resource type="Resource" script_class="StageDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/stage/goal_def.gd" id="1_xjghi"]
+[ext_resource type="Script" path="res://src/core/rules/stage/stage_def.gd" id="2_qjsye"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_lock.gd" id="3_nky1k"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_rule.gd" id="4_pr8r0"]
+
+[sub_resource type="Resource" id="Resource_lpms3"]
+script = ExtResource("1_xjghi")
+required = 1500
+
+[sub_resource type="Resource" id="Resource_ayjbd"]
+script = ExtResource("4_pr8r0")
+
+[resource]
+script = ExtResource("2_qjsye")
+id = &"1-5"
+name_key = "STAGE_1_5_NAME"
+board_rows = PackedStringArray("........", "........", "........", "#N#.##G#", "........", "##P##.##", "........", "........")
+cell_legend = {
+"#": {
+&"type": &"TILE"
+},
+"G": {
+&"crew_id": &"gomgom",
+&"is_face": true,
+&"type": &"TILE"
+},
+"N": {
+&"crew_id": &"nyangi",
+&"is_face": true,
+&"type": &"TILE"
+},
+"P": {
+&"crew_id": &"piyak",
+&"is_face": true,
+&"type": &"TILE"
+}
+}
+goals = Array[ExtResource("1_xjghi")]([SubResource("Resource_lpms3")])
+piece_limit = 18
+star_points = PackedInt32Array(2000, 2600)
+team_rule = SubResource("Resource_ayjbd")
+recommended_team = Array[StringName]([&"nyangi", &"gomgom", &"piyak"])
+stage_seed = 1105

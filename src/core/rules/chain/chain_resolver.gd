@@ -13,6 +13,9 @@
 ## [br]- Rule 19: an [code]ABILITY_EFFECT[/code] CLEAR lists every filled, filtered target
 ##   of that face even if an earlier face already targeted it; [code]source_order[/code]
 ##   in the next [code]CELLS_CLEARED[/code] names the earliest face.
+## [br]- Rule 19 / obstacles rule 14: [code]CELL_MODIFIED[/code] also carries
+##   [code]is_face[/code] (additive key) so the preview can tell a thawing frozen face
+##   from a cracking ice tile without re-reading the board.
 ## [br]- Rule 1 / rule 8 "assert": violations are [method @GlobalScope.push_error]ed
 ##   (catchable by gdUnit4 [code]is_push_error[/code]) and the call returns a result
 ##   with no events and [member ChainResult.error] set; the input board is untouched.
@@ -111,6 +114,7 @@ static func resolve(board: BoardState, piece: PieceInstance, anchor: Vector2i, c
 				kept.append(working.cell_of(idx))
 				elog.add(ChainEvent.Type.CELL_MODIFIED, k, {
 					ChainEvent.K_CELL: working.cell_of(idx),
+					ChainEvent.K_IS_FACE: working.is_face(idx),
 					ChainEvent.K_MODIFIERS_BEFORE: before.duplicate(),
 					ChainEvent.K_MODIFIERS_AFTER: after.duplicate(),
 				})

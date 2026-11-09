@@ -1,0 +1,9 @@
+[gd_resource type="Resource" script_class="ObstacleConfig" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/obstacles/obstacle_config.gd" id="1_obst"]
+
+[resource]
+script = ExtResource("1_obst")
+ice_max_layers = 2
+frozen_face_layers = 1
+max_stones_per_line = 3

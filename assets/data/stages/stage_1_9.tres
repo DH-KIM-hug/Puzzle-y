@@ -1,0 +1,80 @@
+[gd_resource type="Resource" script_class="StageDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/stage/goal_def.gd" id="1_pax8s"]
+[ext_resource type="Script" path="res://src/core/rules/stage/stage_def.gd" id="2_iesyi"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_lock.gd" id="3_5k167"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_rule.gd" id="4_c6d7f"]
+
+[sub_resource type="Resource" id="Resource_rgmef"]
+script = ExtResource("1_pax8s")
+type = 2
+required = 6
+keys = Array[StringName]([&"ice"])
+
+[sub_resource type="Resource" id="Resource_mk8fg"]
+script = ExtResource("1_pax8s")
+type = 3
+depth = 3
+
+[sub_resource type="Resource" id="Resource_f88dt"]
+script = ExtResource("4_c6d7f")
+
+[resource]
+script = ExtResource("2_iesyi")
+id = &"1-9"
+name_key = "STAGE_1_9_NAME"
+board_rows = PackedStringArray("........", "........", "..D##D..", "........", "....z...", "#.###y##", "........", "#x##w##.")
+cell_legend = {
+"#": {
+&"type": &"TILE"
+},
+"D": {
+&"modifiers": [{
+&"kind": &"ice",
+&"layers": 2
+}],
+&"type": &"TILE"
+},
+"w": {
+&"crew_id": &"gomgom",
+&"is_face": true,
+&"modifiers": [{
+&"kind": &"ice",
+&"layers": 1
+}],
+&"type": &"TILE"
+},
+"x": {
+&"crew_id": &"nyangi",
+&"is_face": true,
+&"modifiers": [{
+&"kind": &"ice",
+&"layers": 1
+}],
+&"type": &"TILE"
+},
+"y": {
+&"crew_id": &"piyak",
+&"is_face": true,
+&"modifiers": [{
+&"kind": &"ice",
+&"layers": 1
+}],
+&"type": &"TILE"
+},
+"z": {
+&"crew_id": &"gaegul",
+&"is_face": true,
+&"modifiers": [{
+&"kind": &"ice",
+&"layers": 1
+}],
+&"type": &"TILE"
+}
+}
+goals = Array[ExtResource("1_pax8s")]([SubResource("Resource_rgmef"), SubResource("Resource_mk8fg")])
+piece_limit = 18
+star_points = PackedInt32Array(2000, 2800)
+team_rule = SubResource("Resource_f88dt")
+recommended_team = Array[StringName]([&"nyangi", &"gomgom", &"piyak"])
+stage_seed = 1109

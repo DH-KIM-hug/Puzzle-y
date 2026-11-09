@@ -1,0 +1,51 @@
+[gd_resource type="Resource" script_class="StageDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/stage/goal_def.gd" id="1_gnk3k"]
+[ext_resource type="Script" path="res://src/core/rules/stage/stage_def.gd" id="2_qpdb7"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_lock.gd" id="3_1g0a0"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_rule.gd" id="4_m637r"]
+
+[sub_resource type="Resource" id="Resource_5irks"]
+script = ExtResource("1_gnk3k")
+type = 3
+required = 2
+depth = 1
+
+[sub_resource type="Resource" id="Resource_8rylc"]
+script = ExtResource("3_1g0a0")
+crew_id = &"nyangi"
+
+[sub_resource type="Resource" id="Resource_f2j77"]
+script = ExtResource("4_m637r")
+team_size = 1
+locked = Array[ExtResource("3_1g0a0")]([SubResource("Resource_8rylc")])
+
+[resource]
+script = ExtResource("2_qpdb7")
+id = &"1-2"
+name_key = "STAGE_1_2_NAME"
+board_rows = PackedStringArray("........", "...#....", "........", "...#....", "........", "...#....", "........", "#####...")
+cell_legend = {
+"#": {
+&"type": &"TILE"
+}
+}
+goals = Array[ExtResource("1_gnk3k")]([SubResource("Resource_5irks")])
+piece_limit = 8
+star_points = PackedInt32Array(700, 1000)
+team_rule = SubResource("Resource_f2j77")
+recommended_team = Array[StringName]([&"nyangi"])
+stage_seed = 1102
+tray_script = [[{
+&"crew": 0,
+&"face": 1,
+&"shape": &"I3_H"
+}, {
+&"crew": 0,
+&"face": -1,
+&"shape": &"*"
+}, {
+&"crew": 0,
+&"face": -1,
+&"shape": &"*"
+}]]

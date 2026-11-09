@@ -1,0 +1,52 @@
+[gd_resource type="Resource" script_class="StageDef" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/stage/goal_def.gd" id="1_mel5r"]
+[ext_resource type="Script" path="res://src/core/rules/stage/stage_def.gd" id="2_1638c"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_lock.gd" id="3_sdg61"]
+[ext_resource type="Script" path="res://src/core/rules/team/team_rule.gd" id="4_7221d"]
+
+[sub_resource type="Resource" id="Resource_af0ce"]
+script = ExtResource("1_mel5r")
+required = 160
+
+[sub_resource type="Resource" id="Resource_827gh"]
+script = ExtResource("3_sdg61")
+crew_id = &"nyangi"
+
+[sub_resource type="Resource" id="Resource_axvxi"]
+script = ExtResource("4_7221d")
+team_size = 1
+locked = Array[ExtResource("3_sdg61")]([SubResource("Resource_827gh")])
+
+[resource]
+script = ExtResource("2_1638c")
+id = &"1-1"
+name_key = "STAGE_1_1_NAME"
+board_rows = PackedStringArray("........", "........", "........", "........", "........", "........", "###..###", "#..#####")
+cell_legend = {
+"#": {
+&"type": &"TILE"
+}
+}
+goals = Array[ExtResource("1_mel5r")]([SubResource("Resource_af0ce")])
+piece_limit = 8
+star_points = PackedInt32Array(600, 750)
+team_rule = SubResource("Resource_axvxi")
+recommended_team = Array[StringName]([&"nyangi"])
+stage_seed = 1101
+tray_script = [[{
+&"crew": null,
+&"face": null,
+&"shape": &"I3_H"
+}, {
+&"crew": null,
+&"face": null,
+&"shape": &"D2_H"
+}, {
+&"crew": null,
+&"face": null,
+&"shape": &"D1"
+}]]
+after_script = 1
+allow_faceless_pieces = true
+show_predicted_score = true

@@ -11,6 +11,9 @@ extends RefCounted
 const EMPTY := 0
 ## Kind id of a piece / egg tile.
 const TILE := 1
+## Kind id of the obstacle stone (design/gdd/obstacles.md rule 1). Registered by
+## [method ObstacleRules.kind_table], not by [method default_table].
+const STONE := 2
 
 ## Flag: the cell blocks placement (it is occupied).
 const BLOCKS_PLACEMENT := 1

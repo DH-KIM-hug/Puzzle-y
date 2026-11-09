@@ -34,6 +34,14 @@ var badges: Array[Dictionary] = []
 var eggs: Array[Vector2i] = []
 ## Modified ("cracked") cells in event order.
 var modified: Array[Vector2i] = []
+## Obstacles (design/gdd/obstacles.md rule 14), all from [code]CELL_MODIFIED[/code]
+## payloads — never a second prediction path. Ice cracks but stays ("금"), in event order.
+var cracked: Array[Vector2i] = []
+## Plain ice tiles freed from their last layer, in event order.
+var freed: Array[Vector2i] = []
+## Frozen faces that thaw ("녹음"), in event order. A thawed face that fires in the
+## same chain also gets its STAGE badge from [code]FACE_ACTIVATED[/code].
+var thawed: Array[Vector2i] = []
 ## Banner tier (F3).
 var banner: Banner = Banner.NONE
 ## Banner number N (chain depth) for CHAIN / CHAIN_MAX, else 0.
@@ -86,7 +94,15 @@ static func build_preview_model(res: ChainResult, settings: PreviewSettings = nu
 			ChainEvent.Type.CELL_MODIFIED:
 				if first_only and e.wave > 0:
 					continue
-				m.modified.append(e.data[ChainEvent.K_CELL])
+				var mcell: Vector2i = e.data[ChainEvent.K_CELL]
+				m.modified.append(mcell)
+				if ObstacleRules.ice_in(e.data[ChainEvent.K_MODIFIERS_AFTER]) > 0:
+					m.cracked.append(mcell)
+				elif ObstacleRules.ice_in(e.data[ChainEvent.K_MODIFIERS_BEFORE]) > 0:
+					if bool(e.data.get(ChainEvent.K_IS_FACE, false)):
+						m.thawed.append(mcell)
+					else:
+						m.freed.append(mcell)
 			ChainEvent.Type.CHAIN_END:
 				depth = e.data[ChainEvent.K_CHAIN_DEPTH]
 				cap = e.data[ChainEvent.K_CAP_REACHED]
@@ -136,4 +152,8 @@ func to_dict() -> Dictionary:
 	}
 	if has_predicted_score:
 		d[&"predicted_score"] = predicted_score
+	# Present only when an obstacle effect is predicted, so obstacle-free models
+	# (and the committed parity digests) are unchanged.
+	if not (cracked.is_empty() and freed.is_empty() and thawed.is_empty()):
+		d[&"obstacles"] = {&"cracked": cracked, &"freed": freed, &"thawed": thawed}
 	return d

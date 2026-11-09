@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="StageCatalog" format=3]
+
+[ext_resource type="Script" path="res://src/core/rules/stage/stage_catalog.gd" id="1_00for"]
+[ext_resource type="Script" path="res://src/core/rules/stage/stage_def.gd" id="2_065ys"]
+[ext_resource type="Resource" path="res://assets/data/stages/stage_1_1.tres" id="3_bixmf"]
+[ext_resource type="Resource" path="res://assets/data/stages/stage_1_2.tres" id="4_hvolk"]
+[ext_resource type="Resource" path="res://assets/data/stages/stage_1_3.tres" id="5_a1t7t"]
+[ext_resource type="Resource" path="res://assets/data/stages/stage_1_4.tres" id="6_6hw5i"]
+[ext_resource type="Resource" path="res://assets/data/stages/stage_1_5.tres" id="7_dpc74"]
+[ext_resource type="Resource" path="res://assets/data/stages/stage_1_6.tres" id="8_ew6wi"]
+[ext_resource type="Resource" path="res://assets/data/stages/stage_1_7.tres" id="9_087wo"]
+[ext_resource type="Resource" path="res://assets/data/stages/stage_1_8.tres" id="10_bnbi5"]
+[ext_resource type="Resource" path="res://assets/data/stages/stage_1_9.tres" id="11_4gy0g"]
+[ext_resource type="Resource" path="res://assets/data/stages/stage_1_10.tres" id="12_nmmxp"]
+
+[resource]
+script = ExtResource("1_00for")
+stages = Array[ExtResource("2_065ys")]([ExtResource("3_bixmf"), ExtResource("4_hvolk"), ExtResource("5_a1t7t"), ExtResource("6_6hw5i"), ExtResource("7_dpc74"), ExtResource("8_ew6wi"), ExtResource("9_087wo"), ExtResource("10_bnbi5"), ExtResource("11_4gy0g"), ExtResource("12_nmmxp")])

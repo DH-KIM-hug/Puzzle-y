@@ -8,7 +8,11 @@ extends GdUnitTestSuite
 
 ## Named boundary fixtures the file must contain (AC-P02 (i)).
 const NAMED := ["no_line_empty_board", "domino_ng", "prototype_domino", "depth_cap_6", "depth_cap_0",
-		"row_three_faces", "row_new_crews", "row_col_cross"]
+		"row_three_faces", "row_new_crews", "row_col_cross",
+		"obst_stone_row", "obst_ice_cross", "obst_frozen_domino", "obst_ice_two_waves"]
+## Obstacle cases (obstacles AC-O13): at least this many, and their anchors must
+## predict CELL_MODIFIED somewhere.
+const MIN_OBSTACLE_CASES := 8
 const MIN_BOARDS := 20
 
 
@@ -33,7 +37,8 @@ func _run_all() -> Dictionary:
 	var crews := {}
 	for c: Dictionary in _cases:
 		var id: String = c["id"]
-		var board := BoardFixture.board(c["board"])
+		var board := ParityFixture.case_board(c)
+		var hooks := ParityFixture.case_hooks(c)
 		var rules := ParityFixture.chain_rules(int(c["depth_cap"]))
 		var per_piece := []
 		for i: int in (c["pieces"] as Array).size():
@@ -45,7 +50,7 @@ func _run_all() -> Dictionary:
 			var recs := []
 			for k: int in anchors.size():
 				var out := ParityFixture.run_anchor(board, p, anchors[k], int(c["stage_seed"]), int(c["placement_index"]),
-						rules, _registry.abilities(), _scoring)
+						rules, _registry.abilities(), _scoring, hooks)
 				var rec: Array = out[&"record"]
 				recs.append(rec)
 				for crew_id: String in out[&"activated"]:
@@ -93,6 +98,41 @@ func test_preview_equals_commit_equals_score_for_every_legal_anchor() -> void:
 	assert_array(failures.slice(0, 20)).override_failure_message("%d parity failures, first: %s" % [failures.size(), failures.slice(0, 5)]).is_empty()
 
 
+func test_obstacle_cases_predict_ice_effects_that_match_the_commit() -> void:
+	# obstacles AC-O13: obstacle boards, every legal anchor, preview == commit
+	# including CELL_MODIFIED; the preview model's obstacle lists equal the commit's.
+	var obstacle_cases := 0
+	var modified_anchors := 0
+	var thawed_anchors := 0
+	var mismatches: Array[String] = []
+	for c: Dictionary in _cases:
+		if not bool(c.get("obstacles", false)):
+			continue
+		obstacle_cases += 1
+		var board := ParityFixture.case_board(c)
+		var hooks := ParityFixture.case_hooks(c)
+		for i: int in (c["pieces"] as Array).size():
+			var p := ParityFixture.piece(c["pieces"][i], _shapes, i + 1)
+			for a: Vector2i in ParityFixture.legal_anchors(board, p):
+				var core := RoundCore.start(board, _registry.abilities(), ParityFixture.chain_rules(int(c["depth_cap"])), _scoring,
+						int(c["stage_seed"]), int(c["placement_index"]), hooks)
+				var model := PreviewModel.preview(core.board, p, a, core.context_for_next_placement())
+				var commit := core.commit(p, a)
+				var committed := PreviewModel.build_preview_model(commit.result)
+				if var_to_str(model.to_dict()) != var_to_str(committed.to_dict()):
+					mismatches.append("%s %s" % [c["id"], a])
+				if not commit.result.events_of(ChainEvent.Type.CELL_MODIFIED).is_empty():
+					modified_anchors += 1
+					if model.cracked.size() + model.freed.size() + model.thawed.size() != model.modified.size():
+						mismatches.append("%s %s: obstacle lists do not cover CELL_MODIFIED" % [c["id"], a])
+				if not model.thawed.is_empty():
+					thawed_anchors += 1
+	assert_int(obstacle_cases).is_greater_equal(MIN_OBSTACLE_CASES)
+	assert_int(modified_anchors).is_greater(20)
+	assert_int(thawed_anchors).is_greater(0)
+	assert_array(mismatches.slice(0, 10)).is_empty()
+
+
 func test_all_six_mvp_crews_activate_somewhere_in_the_cases() -> void:
 	# crew-definition AC-14 AND: each MVP crew's face activates at least once.
 	var crews: Dictionary = _run_all()[&"crews"]
@@ -114,7 +154,7 @@ func test_seed_mismatch_between_preview_and_commit_is_detected() -> void:
 	# observable: the placement id written into the placed tiles (no line clears
 	# them on the empty board).
 	var c: Dictionary = _cases[_cases.map(func(x: Dictionary) -> String: return x["id"]).find("no_line_empty_board")]
-	var board := BoardFixture.board(c["board"])
+	var board := ParityFixture.case_board(c)
 	var p := ParityFixture.piece(c["pieces"][0], _shapes, 1)
 	var round_b := RoundCore.start(board, _registry.abilities(), ParityFixture.chain_rules(6), _scoring, 1201)
 	var good := round_b.context_for_next_placement()
