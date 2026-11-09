@@ -101,7 +101,7 @@
 |---|---|---|---|
 | `DISARMED` | 풀·버스 준비됨, 모든 요청 버림 | 게임 시작 | 첫 사용자 입력(눌림) → `ARMED` |
 | `ARMED` | 정상 재생 | 첫 입력 | 앱이 백그라운드/일시정지 → `SUSPENDED` |
-| `SUSPENDED` | 새 요청 버림, 재생 중 소리 정지 | `NOTIFICATION_APPLICATION_PAUSED`/`FOCUS_OUT` | 다시 포커스 → `ARMED` |
+| `SUSPENDED` | 새 요청 버림, 재생 중 소리 정지 | `NOTIFICATION_APPLICATION_PAUSED` (모바일·웹은 `FOCUS_OUT`도; 데스크톱 창 포커스 이탈은 제외) | `RESUMED`/다시 포커스 → `ARMED` |
 
 음소거(`muted`)는 상태가 아니라 버스 설정이다 — 음소거 중에도 요청 처리·발음 제한 계산은 같아서 음소거 해제 직후 소리가 몰려 나오지 않는다.
 

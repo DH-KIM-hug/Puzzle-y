@@ -58,9 +58,9 @@ static func admit_fast(id: StringName, fast: bool, tuning: AudioTuning) -> bool:
 	return not fast or tuning.priority(id) >= tuning.ff_min_priority
 
 
-## F3 — same-sound repeat gap.
+## F3 — same-sound repeat gap (1 µs tolerance for float clocks).
 static func admit_repeat(now: float, last_play: float, gap: float) -> bool:
-	return now - last_play >= gap
+	return now - last_play >= gap - 0.000001
 
 
 ## F3 / rule 9 — which pool voice to use. [param busy], [param prios] and

@@ -162,10 +162,15 @@ Verification (3)이 `.tres` int 왕복을 확인했다 — `2.0`처럼 적힌 �
 
 **D. 팀 규칙**
 
-13. **`FREE`** — 플레이어가 팀 편성에서 보유 크루 중 3명을 고른다(`allowed_crew`가 있으면 그 안에서). **`FIXED`** — `fixed_team`이 그대로 팀이 되고 편성 화면은
-    잠긴다(튜토리얼). `FIXED` 팀의 크루는 **보유하지 않아도 된다** — 스테이지가 그 판에만 빌려준다(보유 상태는 바뀌지 않음; 보유 크루 GDD는 이를 보유로 세지
-    않는다). 팀 크기 1~2명은 `FIXED`에서만 가능하다. **기본 보유 보장** (crew-definition 규칙 10): `FREE` MVP 스테이지는 모두 기본 보유 3인(냥이·곰곰·삐약)만으로
-    별 1개 클리어가 가능해야 하며, 이는 자동 플레이 수용 기준(AC-SG20)으로 확인한다. 별 3개는 다른 팀이 더 쉬워도 된다(기둥 2 "팀이 경로를 바꾼다").
+13. **팀 규칙은 team-composition 규칙 5–8의 `team_rule`을 그대로 채택한다** (동시 작성된 제안과 필드 이름·의미 일치 — Decision Log D7). 이 문서는 필드를
+    `StageDef`에 두고 스테이지별 값을 정할 뿐, 의미(게스트·금지·기본 팀 해석)는 팀 편성 소관이다.
+    - **자유 편성** = `locked` 비어 있음 — 플레이어가 보유 크루 중 `team_size`(3)명을 고른다. **고정 팀** = `locked`가 모든 슬롯을 채움 — 편성 화면에서 바꿀
+      수 없다(튜토리얼). 일부 슬롯만 `locked` = "이 크루는 꼭 함께"(MVP 출시 스테이지는 쓰지 않음).
+    - `locked` 크루가 보유하지 않은 크루면 **게스트**다 — 그 판에만 빌려 쓰고 보유로 바뀌지 않는다(team-composition 규칙 7).
+    - 트레이 스크립트의 `crew_id` 직접 지정은 그 크루가 `locked`된 스테이지에서만 허용한다 (tray-supply 규칙 22의 "팀 고정" = `locked`; tray-supply Q7·
+      team-composition Q5 해소).
+    - **기본 보유 보장** (crew-definition 규칙 10): MVP 10스테이지는 모두 기본 보유 3인(냥이·곰곰·삐약)과 게스트만으로 별 1개 클리어가 가능해야 하며,
+      자동 플레이 수용 기준(AC-SG20)으로 확인한다. 별 3개는 다른 팀이 더 쉬워도 된다(기둥 2 "팀이 경로를 바꾼다").
 
 **E. 미리보기와 목표 표식 (chain-preview Q2 해소)**
 
@@ -185,29 +190,30 @@ Verification (3)이 `.tres` int 왕복을 확인했다 — `2.0`처럼 적힌 �
       보너스가 줄고 막힘·소진 실패 위험이 커진다. 조각 1개의 보너스(`leftover_piece_points` 100 ≈ 한 줄 지우기 85점)는 "연쇄를 만들 수 있을 때만 욕심이
       남는다"가 되도록 정했다.
     - **T3 아끼기** — `CHAIN` 목표는 얼굴을 모아 두는 수(줄을 당장 지우지 않음)를 요구하고, 제한 조각 수가 모으는 비용을 만든다 (chain-resolver Edge Cases).
-    - **T4 순서** — 방해물이 줄 완성을 막아(지워야 줄이 열림) 연쇄 경로보다 치우는 순서가 먼저인 판.
+    - **T4 순서** — 얼음 칸이 든 줄은 완성돼도 얼음 칸이 남아(겹만 벗겨짐) 다시 채워야 하고, 얼어붙은 얼굴은 한 번 녹여야 발동한다(obstacles 규칙 2·3).
+      돌은 줄을 적은 칸으로 완성시키지만 영영 남는다(obstacles 규칙 1). 그래서 "어느 줄을 먼저 깰까"가 연쇄 경로보다 앞서는 판을 만든다.
 
 **G. MVP 10스테이지 (제안 — 모든 수치는 플레이테스트 튜닝 목표 ‡)**
 
 16. 학습 곡선은 컨셉 Flow State Design을 따른다: 1-1 얼굴 없는 줄 지우기 → 1-2 얼굴 = 스위치 → 1-3 첫 2단 연쇄 → 1-5 3인 팀 → 1-8 방해물. 한 스테이지에 새
-    개념은 하나만 넣는다. 별 기준은 `cell_points_ref` = 10 기준 `final_score`이며 F9 절차(자동 플레이 분포)로 확정한다. 방해물 id `crate`·`frozen`은 **가칭**이다 —
-    칸 종류 & 방해물 GDD(미작성)가 MVP 방해물을 확정하면 바꾼다 (Q1).
+    개념은 하나만 넣는다. 별 기준은 `cell_points_ref` = 10 기준 `final_score`이며 F9 절차(자동 플레이 분포)로 확정한다. 방해물은 obstacles GDD의 MVP 세트 — **돌**(`STONE`,
+    지형)과 **얼음**(`ice` 1~2겹, 얼굴 위 1겹 = 얼어붙은 얼굴) — 만 쓴다. 팀 열의 "고정"은 `locked`가 모든 슬롯을 채운 팀(규칙 13), "자유"는 `locked` 없음.
 
-    | id | 가르치는 것 | 팀 (`team_mode`) | 트레이 | 시작 보드 요지 | 목표 ‡ | 조각 ‡ | ★2 / ★3 ‡ | 트레이드오프 |
+    | id | 가르치는 것 | 팀 (`team_rule`) | 트레이 | 시작 보드 요지 | 목표 ‡ | 조각 ‡ | ★2 / ★3 ‡ | 트레이드오프 |
     |---|---|---|---|---|---|---|---|---|
-    | 1-1 | 줄이 차면 지워진다 | `FIXED` [냥이] | `tray_script` 얼굴 없는 I3_H·D2_H·D1 (`LOOP`), `allow_faceless_pieces` | 6·7행에 6칸씩, 빈칸 위치가 서로 다름 | `SCORE` 160 (줄 2개) | 8 | 600 / 750 | T2 (적게 써서 끝내기) |
-    | 1-2 | 얼굴이 지워지면 능력! (미리보기 첫 등장) | `FIXED` [냥이] | `tray_script` 첫 트레이 얼굴 위치 고정, 이후 `GENERATE` | 7행 5칸 + 3열에 흩어진 칸 (십자가 지울 거리) | `CHAIN` depth 1 × 2 | 8 | 700 / 1000 | — (학습) |
-    | 1-3 | 첫 2단 연쇄 (냥이 → 곰곰) | `FIXED` [냥이, 곰곰] | `tray_script` 1트레이 + `GENERATE` | 위 예시: 곰곰 얼굴이 냥이 십자 열 위에 미리 깔림 | `CHAIN` depth 2 × 1 | 10 | 900 / 1300 | — (학습) |
-    | 1-4 | 목표 칸 | `FIXED` [냥이, 곰곰] | 생성, `FIXED` 시드 | 목표 칸 6개를 모서리 쪽 두 줄에 | `CLEAR_CELLS` 6/6 | 12 | 1200 / 1700 | T1 |
-    | 1-5 | 3인 팀 · 삐약 알 (첫 팀 편성) | `FREE` (추천 냥이·곰곰·삐약) | 생성, `FIXED` 시드 | 거의 빈 판, 7칸 찬 줄 2개 | `SCORE` 1500 | 18 | 2000 / 2600 | T2 |
-    | 1-6 | 알이 줄을 채워 다시 불붙인다 | `FREE` | 생성, `FIXED` 시드 | 7칸 찬 줄 여러 개 (알 재점화 자리) | `CHAIN` depth 3 × 1 | 15 | 1500 / 2100 | T3 |
-    | 1-7 | 목표 칸 vs 큰 연쇄 | `FREE` | 생성, `FIXED` 시드 | 목표 칸 8개를 네 모서리 주변에 | `CLEAR_CELLS` 8/8 | 16 | 1700 / 2400 | T1 · T2 |
-    | 1-8 | 첫 방해물 (`crate` 가칭: 칸을 막고 지우면 사라짐) | `FREE` | 생성, `FIXED` 시드 | 상자 6개가 줄 3개에 섞임 | `CLEAR_OBSTACLES` [`crate`] 6 | 16 | 1800 / 2500 | T4 |
-    | 1-9 | 얼어붙은 얼굴 (`frozen` 가칭 modifier) | `FREE` | 생성, `FIXED` 시드 | 얼어붙은 얼굴 4개(팀 밖 크루 포함 가능) | `CLEAR_OBSTACLES` [`frozen`] 4 + `CHAIN` depth 3 × 1 | 18 | 2000 / 2800 | T3 · T4 |
-    | 1-10 | 졸업 — 종합 | `FREE` | 생성, `FIXED` 시드 | 목표 칸 6 + 상자 4, 서로 다른 구역 | `CLEAR_CELLS` 6/6 + `CLEAR_OBSTACLES` [`crate`] 4 | 20 | 2400 / 3300 | T1 · T2 · T4 |
+    | 1-1 | 줄이 차면 지워진다 | 고정 [냥이] (`team_size` 1) | `tray_script` 얼굴 없는 I3_H·D2_H·D1 (`LOOP`), `allow_faceless_pieces` | 6·7행에 6칸씩, 빈칸 위치가 서로 다름 | `SCORE` 160 (줄 2개) | 8 | 600 / 750 | T2 (적게 써서 끝내기) |
+    | 1-2 | 얼굴이 지워지면 능력! (미리보기 첫 등장) | 고정 [냥이] (`team_size` 1) | `tray_script` 첫 트레이 얼굴 위치 고정, 이후 `GENERATE` | 7행 5칸 + 3열에 흩어진 칸 (십자가 지울 거리) | `CHAIN` depth 1 × 2 | 8 | 700 / 1000 | — (학습) |
+    | 1-3 | 첫 2단 연쇄 (냥이 → 곰곰) | 고정 [냥이, 곰곰] (`team_size` 2) | `tray_script` 1트레이 + `GENERATE` | 위 예시: 곰곰 얼굴이 냥이 십자 열 위에 미리 깔림 | `CHAIN` depth 2 × 1 | 10 | 900 / 1300 | — (학습) |
+    | 1-4 | 목표 칸 | 고정 [냥이, 곰곰] (`team_size` 2) | 생성, `FIXED` 시드 | 목표 칸 6개를 모서리 쪽 두 줄에 | `CLEAR_CELLS` 6/6 | 12 | 1200 / 1700 | T1 |
+    | 1-5 | 3인 팀 · 삐약 알 (첫 팀 편성) | 자유 (추천 냥이·곰곰·삐약) | 생성, `FIXED` 시드 | 거의 빈 판, 7칸 찬 줄 2개 | `SCORE` 1500 | 18 | 2000 / 2600 | T2 |
+    | 1-6 | 알이 줄을 채워 다시 불붙인다 | 자유 | 생성, `FIXED` 시드 | 7칸 찬 줄 여러 개 (알 재점화 자리) | `CHAIN` depth 3 × 1 | 15 | 1500 / 2100 | T3 |
+    | 1-7 | 목표 칸 vs 큰 연쇄 | 자유 | 생성, `FIXED` 시드 | 목표 칸 8개를 네 모서리 주변에 | `CLEAR_CELLS` 8/8 | 16 | 1700 / 2400 | T1 · T2 |
+    | 1-8 | 첫 방해물: 얼음 칸 (한 번 맞으면 깨짐) | 자유 | 생성, `FIXED` 시드 | 1겹 얼음 칸 6개가 줄 3개에 섞임 | `CLEAR_OBSTACLES` [`ice`] 6 | 16 | 1800 / 2500 | T4 |
+    | 1-9 | 얼어붙은 얼굴 (녹이고 → 터뜨리기) · 2겹 얼음 | 자유 | 생성, `FIXED` 시드 | 얼어붙은 얼굴 4개(팀 밖 크루 1명 포함) + 2겹 얼음 칸 2개 | `CLEAR_OBSTACLES` [`ice`] 6 + `CHAIN` depth 3 × 1 | 18 | 2000 / 2800 | T3 · T4 |
+    | 1-10 | 졸업 — 종합 (돌 첫 등장) | 자유 | 생성, `FIXED` 시드 | 돌 4개(지형) + 목표 칸 6 + 얼음 칸 4, 서로 다른 구역 | `CLEAR_CELLS` 6/6 + `CLEAR_OBSTACLES` [`ice`] 4 | 20 | 2400 / 3300 | T1 · T2 · T4 |
 
     - **공통 값**: `stage_seed` = 스테이지별 고유값(자동 플레이로 고른 뒤 고정 — 제안 시작값 `1100 + 번호`), `rescue_enabled = true`, `preview_detail = FULL`,
-      `show_predicted_score = false`(1-1만 `true` — 점수 목표를 처음 볼 때 "+N 예상" 한 줄로 단위를 익힘), `goal_markers = true`, `allowed_crew = []`.
+      `show_predicted_score = false`(1-1만 `true` — 점수 목표를 처음 볼 때 "+N 예상" 한 줄로 단위를 익힘), `goal_markers = true`, `team_rule.banned = []`.
     - **튜닝 목표 ‡ (T0 자동 플레이 + 외부 플레이테스트로 확정)**: 기본 보유 3인 기준 자동 플레이 봇의 별 1 클리어율 1-1~1-4 ≥ 95%, 1-5~1-10 ≥ 70%(AC-SG20);
       사람 테스터 첫 시도 별 1 클리어율 1-1~1-4 ≥ 90%, 1-5~1-10 50~80%; 별 3은 클리어한 판의 20~40%(F9의 S3 분위). 목표 수치·조각 수·별 기준은 이 목표에
       맞춰 움직인다 — 표의 값은 crew-definition F4a의 기본 팀 연쇄 근사와 scoring F5 예시(한 줄 ≈ 85, 연쇄 2단 ≈ 300~500)로 잡은 시작값이다.
@@ -226,18 +232,18 @@ Verification (3)이 `.tres` int 왕복을 확인했다 — `2.0`처럼 적힌 �
 
 ### States and Transitions
 
-목표 추적기의 상태는 **한 번의 스테이지 시도** 동안만 존재한다. 전이를 일으키는 쪽은 판 진행 흐름이며, 이 시스템은 `evaluate` 결과를 돌려줄 뿐이다.
+목표 추적기의 상태는 **한 번의 스테이지 시도** 동안만 존재한다. 전이를 일으키는 쪽은 판 진행 흐름이며, 이 시스템은 `is_met()`·`pieces_out()` 답을 돌려줄 뿐이다 (round-flow 규칙 9).
 
 | 상태 | 진입 | 들고 있는 것 | 다음 |
 |---|---|---|---|
-| `LOADED` | `StageDef` 로드·검증 통과 | 시작 보드, 목표 정의 | 팀 확정(`FREE`면 편성, `FIXED`면 즉시) → `IN_PROGRESS` |
-| `IN_PROGRESS` | 시도 시작 / 재시도 | `progress` (목표별 값, `done` 집합), `pieces_placed = 0` | 배치 커밋 → `apply_placement` + `evaluate` → `IN_PROGRESS` / `CLEARED` / `FAILED_OUT_OF_PIECES`; 판 흐름의 `no_moves` → `FAILED_BLOCKED`; 나가기 → `ABANDONED` |
+| `LOADED` | `StageDef` 로드·검증 통과 | 시작 보드, 목표 정의 | 팀 확정(자유 편성이면 팀 편성 화면, 고정 팀이면 즉시) → `GoalTracker.start` → `IN_PROGRESS` |
+| `IN_PROGRESS` | 시도 시작 / 재시도 | 목표별 진행, 목표 칸 `done` 집합, 얼음 장부 `ice_cells` | 배치 커밋 → `apply` → 판 흐름 종료 판정: `is_met()` → `CLEARED` / `pieces_out()` → `FAILED_OUT_OF_PIECES` / `no_moves` → `FAILED_BLOCKED` / 그 밖 → `IN_PROGRESS`; 나가기 → `ABANDONED` |
 | `CLEARED` | 모든 목표 달성 | `final_score`, 별 1~3, 남은 조각 수 | 결과 화면 → 재시도(`IN_PROGRESS`) / 다음 스테이지 / 나가기 |
 | `FAILED_OUT_OF_PIECES` | 조각 소진 + 목표 미달 | 진행도 (결과 화면 "조금만 더!" 표시용) | 재시도 / 나가기 |
 | `FAILED_BLOCKED` | 놓을 곳 없음 (board-rules) | 같음 | 재시도 / 나가기 |
 | `ABANDONED` | 판 도중 나가기 | — (기록 없음) | — |
 
-`CLEARED`·`FAILED_*`·`ABANDONED`는 종료 상태다. 종료 뒤에는 `apply_placement`를 부르지 않는다 (호출은 assert). 별·`final_score`의 최고 기록 저장은
+`CLEARED`·`FAILED_*`·`ABANDONED`는 종료 상태다. 종료 뒤에는 `apply`를 부르지 않는다 (호출은 assert). 별·`final_score`의 최고 기록 저장은
 스테이지 진행 & 해금 GDD 소관이며, 재화 보상은 재화 & 보상 GDD가 결과(별 수, 첫 클리어 여부)를 읽어 정한다.
 
 ### Interactions with Other Systems
@@ -245,44 +251,324 @@ Verification (3)이 `.tres` int 왕복을 확인했다 — `2.0`처럼 적힌 �
 | 시스템 | 방향 | 주고받는 것 | 인터페이스 소유 |
 |---|---|---|---|
 | 보드 & 조각 규칙 | 스테이지 → 보드 규칙 | 시작 보드(`validate_board`), `allow_faceless_pieces`; 칸 종류 플래그(`removable_by_clear`) 조회 | 보드 규칙 (함수) / 스테이지 (데이터) |
-| 연쇄 해석기 | 해석기 → 스테이지 | `CELLS_CLEARED.cells`(목표 칸·방해물), `CHAIN_END.chain_depth`(연쇄 N); 스테이지 → 해석기: 없음 (스테이지 상태는 해석기 입력이 아니다, chain-resolver 규칙 17) | 해석기 (이벤트 스키마) / 스테이지 (세는 법) |
+| 연쇄 해석기 | 해석기 → 스테이지 | `CELLS_CLEARED.cells`(목표 칸), `CELL_MODIFIED`(얼음 해제), `CHAIN_END.chain_depth`(연쇄 N); 스테이지 → 해석기: 없음 (스테이지 상태는 해석기 입력이 아니다, chain-resolver 규칙 17) | 해석기 (이벤트 스키마) / 스테이지 (세는 법) |
 | 점수 & 연쇄 배율 | 점수 → 스테이지 | 커밋 후 `stage_score` (점수 목표, `final_score`) | 점수 (누계) / 스테이지 (목표·별·보너스) |
 | 트레이 공급 | 스테이지 → 트레이 | `stage_seed`, `tray_seed_mode`, `stage_base_seed`, `tray_script`, `after_script`, `rescue_enabled`, `allow_faceless_pieces`, `faceless_share`, 고정 팀 여부; budget = `pieces_left`(판 흐름 경유) | 트레이 (필드 의미·검증) / 스테이지 (값) |
-| 칸 종류 & 방해물 (미작성) | 방해물 → 스테이지 | 등록된 칸 종류 id·modifier id (`CellSpec.type`, `keys`), 각 종류의 규칙 플래그 | 방해물 (종류) / 스테이지 (배치·목표 키) |
+| 칸 종류 & 방해물 (`obstacles.md`) | 방해물 → 스테이지 | 칸 종류 `STONE`·modifier `ice` 표기(`CellSpec`), `validate_obstacles`, `CELL_MODIFIED`로 얼음 해제 (F3 `iced_cells`) | 방해물 (종류) / 스테이지 (배치·목표 키) |
 | 크루 정의 & 능력 | 크루 → 스테이지 | 레지스트리 id 유효성, `starter_ids()` | 크루 정의 |
-| 판 진행 흐름 (미작성) | 판 흐름 → 스테이지 | 시도 시작·재시도, 배치 커밋마다 `apply_placement`·`evaluate` 호출, `no_moves` 실패 통지, budget 계산 | 판 진행 흐름 (타이밍) / 스테이지 (판정) |
-| 팀 편성 (미작성) | 스테이지 → 팀 편성 | `team_mode`, `fixed_team`, `allowed_crew`, `recommended_team` | 스테이지 (규칙) / 팀 편성 (화면·선택) |
+| 판 진행 흐름 (`round-flow.md`) | 판 흐름 → 스테이지 | 시도 시작·재시도(`GoalTracker.start`), 배치 커밋마다 `apply`, 종료 판정에서 `is_met`·`pieces_out`, 결과에 `stars`·`final_score`, budget = `pieces_left` | 판 진행 흐름 (타이밍) / 스테이지 (판정) |
+| 팀 편성 (`team-composition.md`) | 스테이지 → 팀 편성 | `team_rule` {`team_size`, `locked`, `banned`}, `recommended_team`, 목표 요약·제한 조각 수·별 기준(표시용) | 스테이지 (규칙) / 팀 편성 (화면·선택) |
 | 연쇄 미리보기 | 스테이지 → 미리보기 | `preview_detail`, `show_predicted_score`, `goal_markers`, `goal_preview` 훅 | 스테이지 (세는 법) / 미리보기 (표시) |
 | 플레이 HUD · 메타 화면 UI | 스테이지 → UI | 목표 정의·진행도, `pieces_left`, 별 기준, 결과(`final_score`, 별, 보너스) | 각 UI GDD (표시) |
 | 스테이지 진행 & 해금 · 재화 & 보상 | 스테이지 → 진행·보상 | 종료 상태, 별, `final_score`, 시도 중 최장 `chain_depth` | 각 GDD |
 
 ## Formulas
 
-[To be designed]
+> *Specialist note*: `systems-designer` not consulted — Section D는 lean에서도 spawn 대상이지만 이 실행에는 Agent 도구가 없어 생략.
+> Review manually before production. 모든 식은 정수 연산이다(scoring·chain-resolver와 같은 결정성 방침). 점수 단위의 값은 `cell_points_ref` = 10 기준으로
+> 데이터에 적고 F1로 환산한다.
+
+**F1. 점수 값 환산 (스케일 노브 연동)**
+
+The pts_eff formula is defined as:
+
+`pts_eff(x) = ⌊ x × cell_points / cell_points_ref ⌋`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| x | int | 1 – 20000 | data file (`StageDef.goals[SCORE].required`, `star_points`, `leftover_piece_points`) | 기준 스케일로 적은 점수 값 |
+| cell_points | int | 1 – 50 (시작 10) | data file (`ScoringRules`, scoring 소유) | 지워진 칸 하나의 기본 점수 |
+| cell_points_ref | int | 10 | constant (이 문서) | 스테이지 데이터를 적은 기준 스케일 |
+
+**Output Range:** 시작값(`cell_points` = 10)에서 `pts_eff(x) = x`. `cell_points`를 20으로 올리면 모든 목표·별 기준·보너스가 2배 — scoring Tuning Knobs의
+"`cell_points`를 바꾸면 별 기준도 같은 비율로"를 데이터 수정 없이 지킨다. **Example:** `star_points = [600, 750]`, `cell_points = 15` → 900, 1125.
+
+**F2. 남은 조각**
+
+The pieces_left formula is defined as:
+
+`pieces_left = piece_limit − pieces_placed`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| piece_limit | int | 3 – 40 (`−1` = 무제한, 자유 플레이 전용) | data file (`StageDef`) | 이 판에 공급되는 조각 총수 |
+| pieces_placed | int | 0 – piece_limit | calculated (커밋된 배치 수 = round-flow `placements_used`) | 놓은 조각 수 |
+
+**Output Range:** 0 ~ `piece_limit`. round-flow F1과 같은 식이다(그쪽이 표시·budget용으로 계산하고, 이 문서는 조각 소진 기준과 보너스에 쓴다). 무제한이면 `pieces_out`은
+언제나 거짓, 보너스 없음. **Example:** `piece_limit = 16`, 11번 놓고 클리어 → `pieces_left = 5`.
+
+**F3. 목표 진행 (유형별)**
+
+The goal_progress formula is defined as:
+
+`(a) P_score = stage_score`
+`(b) P_cells = | done |,  done ← done ∪ { (r, c) ∈ cells(e) : e ∈ CELLS_CLEARED } ∩ T`
+`(c) P_obst += | { e ∈ CELL_MODIFIED : ∃ m ∈ e.modifiers_before, m.kind ∈ keys ∧ ¬∃ m' ∈ e.modifiers_after, m'.kind = m.kind } |`
+`(d) P_chain += [ CHAIN_END.chain_depth ≥ depth ]`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| stage_score | int | 0 – (scoring F6 상한 × 조각 수) | calculated (scoring 규칙 11, 커밋 후 누계) | 판 누계 점수 |
+| T | 좌표 집합 | 1 – 64칸 | data file (`StageDef.target_cells`) | 목표 칸 |
+| done | 좌표 집합 | ⊆ T | calculated (추적기 상태) | 이미 지워진 목표 칸 |
+| cells(e) | 좌표 목록 | 0 – 64 | calculated (`CELLS_CLEARED.cells[]`의 (r, c); `kept[]` 제외) | 이번 배치에 실제로 지워진 칸 |
+| keys | kind 목록 | MVP `[ice]` | data file (`GoalDef.keys`) | 세는 방해물 종류 |
+| e.modifiers_before/after | modifier 목록 | — | calculated (`CELL_MODIFIED` 페이로드) | 훅 `pre_clear`가 바꾸기 전·후 수식자 |
+| depth | int | 1 – `depth_cap` (6) | data file (`GoalDef.depth`) | 연쇄 N 목표의 N |
+| CHAIN_END.chain_depth | int | 0 – 6 | calculated (chain-resolver F2) | 이번 배치의 연쇄 깊이 |
+
+**Output Range:** (a) 0 이상. (b) 0 ~ |T|. (c) 0 ~ 시작 보드의 얼음 칸 수(`iced_cells`, obstacles F3; 스테이지 권장 ≤ 20). (d) 0 ~ `piece_limit`. 모두 단조 증가.
+**Example:** 1-8에서 1겹 얼음 칸 2개가 든 줄을 완성 → `CELL_MODIFIED` 2개(각 `ice:1 → 없음`) → `P_obst` +2. 2겹 칸이면 첫 타격 `ice:2 → ice:1`(+0), 다음 타격 +1.
+1-6에서 연쇄 3 배치 → `P_chain` = 1 → 달성. 목표 칸 (0, 7)이 웨이브 2에서 알로 채워졌다가 웨이브 3에 지워져도 `done`에 들어간다.
+
+**F4. 클리어 조건**
+
+The stage_cleared formula is defined as:
+
+`is_met = ∀ g ∈ goals : P_g ≥ req_g`,  `req_g = pts_eff(required_g)` (SCORE) / `required_g` (그 밖)
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| goals | GoalDef 목록 | 1 – 2개 | data file | 스테이지 목표 |
+| P_g | int | F3 | calculated | 목표 g의 진행 |
+| required_g | int | ≥ 1 (유형별 상한은 규칙 2) | data file (`GoalDef.required`) | 목표 g의 달성 기준 |
+
+**Output Range:** bool. 목표가 없으면(자유 플레이) 언제나 거짓 — 자유 플레이는 `FAILED(NO_MOVES)`로만 끝난다 (round-flow Edge Cases).
+**Example:** 1-10 — `P_cells = 6 ≥ 6` 그리고 `P_obst = 3 < 4` → 거짓. 다음 배치에서 `P_obst = 4` → 참.
+
+**F5. 남은 조각 보너스**
+
+The leftover_bonus formula is defined as:
+
+`leftover_bonus = cleared ? pieces_left × pts_eff(leftover_piece_points) : 0`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| cleared | bool | — | calculated (F4 참으로 끝남) | 클리어 여부 |
+| pieces_left | int | 0 – 37 | calculated (F2) | 클리어 순간 남은 조각 (트레이에 남은 것 + 아직 안 나온 것) |
+| leftover_piece_points | int | 0 – 300 (시작 100) | data file (`StageRules`) | 남은 조각 1개의 보너스 (기준 스케일) |
+
+**Output Range:** 0 ~ 37 × 300 = 11,100 (이론); MVP 스테이지 시작값에서 대개 200 ~ 800. **Example:** 1-7(`piece_limit` 16)을 11개로 클리어 → 5 × 100 = **500**.
+
+**F6. 최종 점수**
+
+The final_score formula is defined as:
+
+`final_score = stage_score + leftover_bonus`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| stage_score | int | 0 이상 | calculated (scoring 규칙 11) | 판 누계 (보너스 미포함) |
+| leftover_bonus | int | F5 | calculated | 남은 조각 보너스 |
+
+**Output Range:** 실패면 `stage_score`와 같다(별 계산에는 쓰지 않음). 클리어 MVP 스테이지에서 대개 600 ~ 4,000. 6자리 HUD(scoring UI Requirements)에 들어간다.
+**Example:** `stage_score = 1,240`, 보너스 500 → **1,740**.
+
+**F7. 별 개수**
+
+The star_rating formula is defined as:
+
+`stars = cleared ? 1 + [ final_score ≥ pts_eff(S2) ] + [ final_score ≥ pts_eff(S3) ] : 0`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| cleared | bool | — | calculated (round-flow `outcome = CLEARED`) | 클리어 여부 |
+| final_score | int | F6 | calculated | 최종 점수 |
+| S2, S3 | int | 0 < S2 < S3 ≤ 20000 | data file (`StageDef.star_points`) | 별 2·3개 기준 (기준 스케일) |
+
+**Output Range:** 0 ~ 3. `S2 < S3`(규칙 2)이므로 별 3이면 별 2 조건도 참 — 결과가 단조롭다. 클리어하면 최소 1개(목표 달성이 곧 별 1).
+**Example:** 1-7, `star_points = [1700, 2400]`, `final_score = 1,740` → 1 + 1 + 0 = **★★**. 같은 판을 9개로 클리어(보너스 700)했다면 1,940 → 여전히 ★★;
+연쇄 3을 한 번 더 넣어 `stage_score`를 1,900으로 올리고 10개로 끝냈다면 2,500 → **★★★** — 탐욕(T2)이 보상받은 경우.
+
+**F8. 제한 조각 수 설계 안내 (설계 시점 — 런타임 아님)**
+
+The piece_limit_guide formula is defined as:
+
+`piece_limit ≈ ⌈ P_med × slack ⌉`
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| P_med | int | 1 – 40 | calculated (T0 자동 플레이: 기본 보유 3인, 고정 시드, 클리어한 판의 사용 조각 수 중앙값) | 목표를 이루는 데 보통 드는 조각 수 |
+| slack | float | 1.2 – 1.8 (시작 1.4) | data file (레벨 설계 노트 — 런타임 값 아님) | 여유 배율. 튜토리얼 1-1~1-4는 1.6~1.8, 1-5 이후 1.3~1.5 |
+
+**Output Range:** `piece_limit_min`(3) ~ `piece_limit_max`(40)로 자른다. 밖이면 린트 경고(규칙 2). **Example:** 1-7 자동 플레이 `P_med` = 11 → ⌈11 × 1.4⌉ = **16**.
+설계 시점 계산이라 부동소수를 써도 결정성 문제가 없다(결과는 정수로 데이터에 적힌다).
+
+**F9. 별 기준 설계 안내 (설계 시점 — 런타임 아님)**
+
+The star_threshold_guide formula is defined as:
+
+`S2 ≈ Q50( final_score | cleared )`,  `S3 ≈ Q75( final_score | cleared )` — 100 단위로 반올림
+
+**Variables:**
+| Variable | Type | Range | Source | Description |
+|----------|------|-------|--------|-------------|
+| Q50, Q75 | 분위수 | — | calculated (T0 자동 플레이 ≥ 200판: 추천 팀 3종(crew-definition 규칙 17) × 고정 시드, 클리어한 판의 `final_score` 분포) | 별 기준 후보 |
+
+**Output Range:** 봇 기준 별 2 ≈ 클리어의 절반, 별 3 ≈ 상위 25%. 사람 첫 시도 별 3 목표 20~40%(규칙 G)를 플레이테스트로 보고 ±15% 조정한다.
+**Example:** 1-5 봇 클리어 `final_score` 분포 Q50 = 1,960, Q75 = 2,580 → `star_points = [2000, 2600]` (규칙 G 표의 시작값과 같은 방식).
 
 ## Edge Cases
 
-[To be designed]
+> *Specialist note*: `systems-designer` not consulted — Lean mode (Section E는 lean에서 생략) 및 Agent 도구 없음. Review manually before production.
+
+**판정 경계**
+
+- **If 마지막 조각으로 목표를 달성하고 동시에 놓을 곳도 없으면**: `CLEARED` (규칙 9 우선순위). `pieces_left = 0`이므로 보너스 0, 별은 `stage_score`만으로 계산.
+- **If 마지막 조각을 놓고도 목표 미달이면**: `FAILED(OUT_OF_PIECES)` — 같은 순간 `no_moves`가 참이어도 실패 사유는 조각 소진으로 표시한다(플레이어가 이해하기 쉬운
+  쪽; round-flow 규칙 9 순서와 같음).
+- **If 조각이 남았는데 막혔으면**: `FAILED(NO_MOVES)`. 남은 조각 수는 결과 화면에 "조금만 더!" 문맥으로만 보이고 보너스는 없다.
+- **If 목표 2개 중 하나만 달성한 채 끝나면**: 실패. 달성한 목표는 결과 화면에 ✓로 남는다(진행 스냅샷) — 별·기록에는 반영하지 않는다.
+- **If 한 배치가 두 목표를 동시에 달성하면**: 그 배치에서 `CLEARED`. 어느 것이 먼저인지는 의미가 없다(배치 단위 판정).
+- **If 목표가 연쇄 도중(예: 웨이브 1)에 달성되면**: 연쇄는 끝까지 풀리고 그 배치의 점수 전부가 `stage_score`에 들어간 뒤 클리어 판정 (round-flow 규칙 10).
+  HUD의 ✓는 연출 박자상 그 웨이브에 띄워도 되지만 판정 시점은 커밋이다 (Game Feel).
+
+**목표 세기**
+
+- **If 목표 칸이 줄과 능력으로 같은 웨이브에 함께 지워지면**: 1번 센다 (`CELLS_CLEARED.by = BOTH`, 좌표 1개).
+- **If 목표 칸이 지워진 뒤 알이나 새 조각으로 다시 채워지면**: 이미 `done`이다. 다시 세지 않고 표식도 돌아오지 않는다 (단조 증가).
+- **If 목표 칸이 얼음 칸이면**: 얼음이 벗겨지는 타격(`CELL_MODIFIED`)은 목표 칸 진행이 아니다. 얼음이 다 벗겨진 뒤 그 칸이 **지워져야** 끝난다 — 한 칸에 두 목표
+  (`CLEAR_OBSTACLES`·`CLEAR_CELLS`)를 겹치면 둘 다 진행한다(얼음 해제 +1, 이후 지움 +1). 레벨 설계 시 의도해서만 쓴다.
+- **If 목표 칸이 빈칸으로 시작하면**: 정상 — 조각을 놓아 채운 뒤 지워야 한다. 놓는 것만으로는 진행이 없다.
+- **If 목표 칸에 돌이 있으면**: 로드 오류 (돌은 지워지지 않는다, 규칙 2).
+- **If 얼어붙은 얼굴이 첫 타격으로 녹은 같은 연쇄에서 다시 맞아 발동하면**: `P_obst` +1(녹을 때), 그 얼굴 발동은 `chain_depth`에도 기여한다(obstacles 규칙 3) —
+  1-9가 노리는 "녹이고 터뜨리기"의 정상 경로다.
+- **If `KEEP`된 칸이 `CELLS_CLEARED.kept[]`에만 나오면**: 목표 칸·방해물 어느 쪽도 세지 않는다 (obstacles Q4의 `kept` 이름 정리와 무관하게 이 규칙은 같다:
+  목표 칸은 `cells[]`만, 방해물은 `CELL_MODIFIED`만 본다).
+- **If 연쇄가 깊이 상한(6)에 닿으면**: `chain_depth = 6`(상한 웨이브는 세지 않음, chain-resolver F2) — `depth ≤ 6`인 연쇄 목표는 달성 가능하다. `depth`가 `depth_cap`보다
+  크면 로드 오류다. `depth_cap`을 낮추는 데이터 변경은 모든 스테이지 재검증을 요구한다(규칙 2가 로드 시 잡는다).
+
+**점수·별**
+
+- **If `SCORE` 목표 판에서 한 배치가 목표를 크게 넘기면**: 넘친 점수도 `final_score`에 그대로 들어간다(자르지 않음) — 큰 마지막 한 방은 별로 보상된다.
+- **If 클리어했는데 `final_score < pts_eff(S2)`이면**: 별 1. 별 1은 클리어 자체의 보상이다.
+- **If `cell_points`가 바뀌면**: 목표·별·보너스가 F1로 같이 움직인다. 스테이지 데이터는 고치지 않는다. 단 `place_points_per_cell`·`activation_points_base`처럼
+  `cell_points`와 따로 움직이는 노브를 바꾸면 별 기준을 F9로 다시 잰다.
+- **If 재시도하면**: 진행·`stage_score`·`pieces_placed` 0. 이전 시도의 별은 스테이지 진행의 최고 기록에만 남는다(최고값 유지는 그쪽 소관).
+- **If 판 도중 나가면(포기)**: 별 0, 기록 없음, 페널티 없음.
+
+**데이터·팀**
+
+- **If 고정 팀에 보유하지 않은 크루가 있으면**: 게스트로 쓴다 (team-composition 규칙 7). 보유 상태·가챠 천장에는 영향이 없다.
+- **If 자유 편성 스테이지에서 플레이어가 기본 보유 3인을 다른 크루로 바꿨으면**: 정상. 별 1 보장은 "기본 보유 3인으로 *가능*"이지 "어떤 팀으로도 가능"이 아니다.
+- **If 시작 보드가 이미 목표를 달성한 상태면**(예: `CLEAR_OBSTACLES`인데 얼음 칸 0): 로드 오류 — `required ≤` 시작 얼음 칸 수 검사가 막는다. `SCORE`는 시작 점수가
+  언제나 0이라 해당 없음.
+- **If 시작 보드에서 트레이 첫 조각이 하나도 안 들어가면**: 데이터 오류 — 로드 단계의 자동 재생 검증(AC-SG19)이 막고, 런타임에 일어나면 round-flow Edge Cases의
+  `FAILED(NO_MOVES)` 경로로 앱은 멈추지 않는다.
+- **If 스크립트 스테이지의 해법이 별 1도 못 만드는 데이터면**: 레벨 데이터 버그 — AC-SG19의 커밋된 해법 재생이 잡는다.
+
+**퇴화 전략 (의도 / 비의도)**
+
+- **"목표 하나만 남기고 점수 모으기" (의도)**: 남은 조각 보너스를 포기하고 연쇄로 점수를 모은 뒤 마지막에 목표를 끝내는 플레이. 조각 1개 = 보너스 100(F5)이므로
+  한 수에 100점 넘게 못 버는 수는 손해이고, 남은 조각이 줄수록 막힘·소진 실패 위험이 커진다 — T2 "탐욕 vs 안전"의 정상 범위다. 봇 분포(F9)에서 이 전략이
+  모든 판의 별 3을 독점하면 `leftover_piece_points`를 올린다.
+- **"빨리 끝내기만" (의도, 단 지배하면 안 됨)**: 목표를 최소 조각으로 끝내 보너스만 받는 플레이. 별 3이 연쇄 없이 매번 나오면 별 기준(F9)이 너무 낮거나 보너스가
+  너무 크다 — AC-SG21 플레이테스트 관찰 대상.
+- **"점수 목표 판에서 아무 데나 놓기" (비의도)**: 배치 점수(칸당 1)만으로는 목표에 못 닿는다 — 1-5의 1500은 줄·연쇄 없이 18조각 × 최대 6 = 108점. 문제없음.
 
 ## Dependencies
 
-[To be designed]
+**Upstream (이 시스템이 의존)**
+
+| 시스템 | 종류 | 쓰는 것 | 상태 |
+|---|---|---|---|
+| 보드 & 조각 규칙 (`board-rules.md`) | Hard | `validate_board`(규칙 16), 칸 종류 플래그(`removable_by_clear`), `allow_faceless_pieces` 의미(규칙 5), "놓을 곳 없음" 판정은 그쪽 소유(D12) | Designed |
+| 연쇄 해석기 (`chain-resolver.md`) | Hard | 이벤트 스키마(규칙 19: `CELLS_CLEARED`, `CELL_MODIFIED`, `CHAIN_END.chain_depth`), `depth_cap`, 로드 검증(규칙 18 — 얼굴 `crew_id`) | Designed |
+| 점수 & 연쇄 배율 (`scoring.md`) | Hard | 커밋 후 `stage_score`(규칙 11), `cell_points`(F1 환산) | Designed |
+| 트레이 공급 (`tray-supply.md`) | Hard | 트레이 필드의 의미·검증(규칙 18–22) — 이 문서는 값을 담는다; F7(크루별 조각 수)을 목표 설계 근거로 사용 | Designed |
+| 칸 종류 & 방해물 (`obstacles.md`) | Hard (방해물 목표·보드) | `STONE`·`ice` 표기와 `validate_obstacles`, F3 `iced_cells` 정의, `CELL_MODIFIED` 의미 | Designed (동시 작성) |
+| 크루 정의 & 능력 (`crew-definition.md`) | Soft | 레지스트리 id 유효성, `starter_ids()`, 기본 3인 별 1 보장(규칙 10)을 수용 기준으로 받음 | Designed |
+
+**Downstream (이 시스템에 의존)**
+
+| 시스템 | 종류 | 쓰는 것 | 이 문서에 기대하는 것 |
+|---|---|---|---|
+| 판 진행 흐름 (`round-flow.md`) | Hard | `StageDef`, `GoalTracker`(`start`·`apply`·`is_met`·`pieces_out`·`snapshot`), `stars`, `final_score` | 이름은 round-flow Q3 그대로 — 이 문서가 확정 (`pieces_out`은 round-flow가 말한 "제한 조각 소진 질의") |
+| 팀 편성 (`team-composition.md`) | Soft | `team_rule`, `recommended_team`, 목표 요약 | 필드 이름·의미는 team-composition 규칙 5–8 그대로 채택 |
+| 연쇄 미리보기 (`chain-preview.md`) | Soft | `preview_detail`, `show_predicted_score`, `goal_markers`, `GoalTracker.preview` | 표식은 사실만 — 비교·추천 없음 (chain-preview Q2 해소) |
+| 스테이지 진행 & 해금 (`stage-progression.md`, 미작성) | Hard | `StageCatalog` 순서, 결과(별, `final_score`, 최장 연쇄) | 최고 기록·해금 규칙은 그쪽 |
+| 재화 & 보상 (`currency-rewards.md`, 미작성) | Hard | 종료 결과(별 수, 첫 클리어 여부) | 보상량은 그쪽; 필요하면 `StageDef`에 보상 프로필 필드 추가 요청 |
+| 플레이 HUD (`gameplay-hud.md`, 미작성) | Hard | 목표 정의·`snapshot()`, `pieces_left`, 별 기준 | 표시 형식 (UI Requirements) |
+| 메타 화면 UI (`meta-screens-ui.md`, 미작성) | Soft | 결과 화면 값, 스테이지 선택 요약 | — |
+| 튜토리얼 & 힌트 (VS) | Soft | 1-1~1-3의 스크립트·고정 팀 | — |
+
+**양방향성**: board-rules·chain-resolver·scoring·tray-supply·obstacles·crew-definition의 Dependencies 표는 모두 스테이지 & 목표를 downstream으로 적어 일치한다.
+round-flow·team-composition은 이 문서를 upstream(데이터)으로 적어 일치한다. **systems-index 불일치 1건 (이 실행에서 반영)**: #10 Depends On에 "연쇄 해석기"가
+없다(chain-resolver Q6) — 이벤트를 직접 읽으므로 추가한다. 크루 정의는 Soft(레지스트리 검증)라 Depends On에는 넣지 않고 이 표에만 적는다. team-composition이
+제안한 "#14 팀 편성 Depends On += 스테이지 & 목표 (soft)"는 그쪽 소관으로 남긴다.
 
 ## Visual/Audio Requirements
 
-[To be designed]
+> *Specialist note*: `art-director` not consulted — Lean mode(이 시스템의 시각 피드백은 목표 표식·결과 별 정도로 연쇄 연출만큼 중심이 아님) 및 Agent 도구 없음.
+> Review manually before production. 스티커북 톤·색약 규칙은 art-bible을 따른다.
+
+| 이벤트 / 요소 | 시각 | 소리 | 기둥 |
+|---|---|---|---|
+| 목표 칸 표식 | 판 종이 위 점선 동그라미 스티커 자리(칸 내용과 독립된 겹 — 칸이 차도 테두리가 보임). 색이 아니라 **모양**(점선 원)으로 구분 — 색약 대응 | — | 3 |
+| 목표 칸 완료 | 그 칸이 지워지는 웨이브 박자에 동그라미가 "콕" 도장으로 바뀌며 사라짐, HUD 카운터로 작은 별가루가 날아감 | 짧은 도장 "톡" (웨이브 SFX 위에 얹히는 고음, 볼륨 낮게) | 1 |
+| 얼음 해제 (방해물 목표 +1) | obstacles 연출(얼음 깨짐) 뒤 HUD 얼음 아이콘으로 조각이 날아감 | obstacles·audio GDD 소관 | 1 |
+| 연쇄 N 목표 달성 | 연쇄 배너(chain-presentation)에 ✓ 스티커가 붙음 | 배너 SFX에 작은 "딩" | 1·3 |
+| 미리보기 목표 표식 | 지워질 목표 칸의 동그라미가 진하게 맥동, 풀려날 얼음에 "금 + 반짝" (obstacles 규칙 14의 금 표시와 겹치지 않게 반짝만 추가), `completes_stage`면 배너 끝에 "클리어!" 작은 스티커 | 없음 (드래그 중 소리 없음 — chain-preview) | 3 |
+| 클리어 | 마지막 연출이 끝나면 판 위 남은 트레이 조각이 하나씩 "보너스 +100" 스티커로 접혀 점수로 날아감 (1개당 ≈ 0.15 s, 최대 1.2 s로 압축) → 별 1~3이 스티커처럼 찍힘 | 조각마다 오르는 음계, 별마다 "뽁" | 1·4 |
+| 실패 (조각 소진 / 막힘) | 스티커북 페이지가 "꽉 찼다"/"조각이 다 떨어졌다"는 귀여운 크루 반응(크루가 머쓱해하는 표정) — 비난 문구 없음 | 부드러운 "뿌우" | 5 |
+
+📌 **Asset Spec** — Visual/Audio requirements are defined. After the art bible is approved, run `/asset-spec system:stage-goals` to produce per-asset visual descriptions,
+dimensions, and generation prompts from this section.
 
 ## Game Feel
 
-[To be designed]
+이 시스템이 만드는 감정은 **"한 수 남았다"의 긴장과 "해냈다"의 도장**이다. 판정은 즉시, 보여 주기는 연출 박자에 맞춘다.
+
+| 목표 | 기준 | 소유 |
+|---|---|---|
+| 판정 즉시 확정 | 목표 진행·클리어·실패는 배치 커밋 프레임에 확정 (연출 전). 건너뛰기·빨리 감기는 결과를 바꾸지 않는다 | 이 문서 · round-flow 규칙 7 |
+| 진행 표시 박자 | HUD 목표 카운터는 그 칸이 지워지는(또는 얼음이 깨지는) **웨이브 재생 박자에 맞춰** 1씩 오른다 — 연출이 끝났을 때 정확히 `snapshot()` 값 | HUD · chain-presentation |
+| 클리어 → 결과 | 마지막 연출 끝 → 보너스 접기(≤ 1.2 s) → 결과 패널. 클리어 후 결과까지 총 ≤ 2.5 s (round-flow `result_reveal_delay_s` 포함) — "한 판 더" 템포 | round-flow F4 · 메타 화면 UI |
+| 남은 조각 경고 | `pieces_left ≤ 3`이면 HUD 숫자가 살짝 통통 튐(색 변화 없음, 시간 압박 연출 없음 — 안티 기둥 "시간 압박") | HUD |
+| 실패의 결 | 실패 화면의 첫 요소는 "한 판 더" 큰 버튼, 다음이 진행 스냅샷("목표 칸 5/6 — 하나 남았어요!"). 아까운 실패가 재도전 동기가 되게 (기둥 4) | 메타 화면 UI |
+| 탐욕의 손맛 | 목표를 일부러 미룬 끝에 큰 연쇄로 클리어하면 별 3이 찍히는 순간이 연쇄 연출과 이어져 하나의 보상으로 읽혀야 함 (T2) | 연출 · 이 문서 |
 
 ## UI Requirements
 
-[To be designed]
+| 화면 / 요소 | 요구 | 정보 출처 |
+|---|---|---|
+| 플레이 HUD — 목표 패널 | 목표 1~2개를 아이콘 + 진행으로 한 줄에: 점수 `현재 / 목표`, 목표 칸 `◌ 남은 수`, 얼음 `❄ 남은 수`(obstacles UI Requirements의 택일 → **`iced_cells` 기준 남은 칸 수**), 연쇄 `연쇄 N ✓/✗ (k/required)`. 달성한 목표는 ✓ 스티커 | `snapshot()`, `StageDef.goals` |
+| 플레이 HUD — 남은 조각 | `남은 조각 n` (F2). 무제한(자유 플레이)이면 숨김 (round-flow UI) | F2 |
+| 플레이 HUD — 별 기준 | 점수 바 위에 별 2·3 눈금 (`final_score`가 아니라 `stage_score` 기준임을 혼동하지 않도록, 눈금 옆에 "+ 남은 조각 보너스" 작은 표기) | `star_points`, F1 |
+| 결과 화면 (클리어) | `stage_score`, 남은 조각 보너스(n × 100), `final_score`, 별 1~3, 최장 연쇄, 버튼: "한 판 더"(가장 큼) / "다음" / "팀 바꾸기" | F5–F7, round-flow `RoundResult` |
+| 결과 화면 (실패) | 사유(조각 소진 / 놓을 곳 없음), 목표별 진행 스냅샷, "한 판 더"(가장 큼) / "팀 바꾸기" / 나가기 | `snapshot()` |
+| 스테이지 선택 / 팀 편성 요약 | 스테이지 이름, 목표 요약(아이콘), 제한 조각 수, 별 기준, 내 최고 별 | `StageDef`, 스테이지 진행 |
+| 스테이지 시작 카드 | 판 시작 시 0.8 s 목표 카드("목표 칸 6개를 지워요 · 조각 12개") — 탭으로 즉시 닫힘. 튜토리얼 문구는 VS(튜토리얼 GDD) | `StageDef` |
+
+텍스트는 모두 로컬라이즈 키. 목표 아이콘은 색만으로 구분하지 않는다(모양 + 숫자).
+
+> **📌 UX Flag — 스테이지 & 목표**: This system has UI requirements. In Phase 4 (Pre-Production), run `/ux-design` to create a UX spec for each screen or HUD
+> element this system contributes to **before** writing epics — 플레이 HUD 목표 패널·남은 조각(`design/ux/hud.md`), 결과 화면·스테이지 시작 카드
+> (`design/ux/result-screen.md`). Stories that reference UI should cite `design/ux/[screen].md`, not the GDD directly.
 
 ## Cross-References
 
-[To be designed]
+| 참조하는 내용 | 원천 문서 | 관계 | 상태 |
+|---|---|---|---|
+| 스테이지 = 제한 조각 수 + 목표(점수/특정 칸/방해물/연쇄 N), 별 1~3, MVP 10스테이지, 학습 곡선, "최고 숫자 찾기" 위험, 안티 기둥 시간 압박 없음 | `design/gdd/game-concept.md` § Core Mechanics 5, Flow State Design, Design Risks, Anti-Pillars | 규칙 출처 | 일치 — 컨셉 Open Question "목표 기본형"은 4형 모두 MVP, 플레이테스트로 선호 측정(Q4) |
+| 제한 조각 소진 실패 소유, `validate_board`, `allow_faceless_pieces`, 클리어 우선(AC-17) | `design/gdd/board-rules.md` 규칙 5·15·16, D12, AC-17 | 상위 계약 | 일치 |
+| 이벤트 스키마, `chain_depth`, `depth_cap` 6, 스테이지 → 해석기 의존 추가(Q6) | `design/gdd/chain-resolver.md` 규칙 7·19, F2, Q6 | 상위 계약 | 일치 — Q6은 이 실행에서 index에 반영 |
+| `stage_score`, `cell_points` 스케일, 남은 조각 보너스(Q7) | `design/gdd/scoring.md` 규칙 11·13, Tuning Knobs, Q7 | 상위 계약 | Q7 해소: 보너스는 별도 항, 누계 불변 |
+| 트레이 필드, `FIXED` 시드, `tray_script`, 팀 고정 질문(Q7) | `design/gdd/tray-supply.md` 규칙 18–22, Q7 | 상위 계약 | Q7 해소: 팀 고정 = `team_rule.locked` |
+| 돌·얼음 표기, `iced_cells`/`ice_remaining` 택일 | `design/gdd/obstacles.md` 규칙 1–3·6·16, F3, UI Requirements | 상위 계약 | `iced_cells` 택함 (D5) |
+| 기본 보유 3인 별 1 보장, 추천 팀, 연쇄 N ≥ 3 권장 | `design/gdd/crew-definition.md` 규칙 10·17, F4a | 수용 기준 | 일치 (AC-SG20) |
+| `goal_markers` 훅, `preview_detail`·`show_predicted_score` | `design/gdd/chain-preview.md` 규칙 13·16·17, Q2 | 하위 계약 | Q2 해소: 표식 채택(사실만) |
+| `GoalTracker`·`stars`·제한 조각 질의 이름, 남은 조각 처리(Q1) | `design/gdd/round-flow.md` 규칙 4–12, Q1·Q3 | 하위 계약 | Q1·Q3 해소 |
+| `team_rule` {team_size, locked, banned}, 게스트 | `design/gdd/team-composition.md` 규칙 5–8, Q5 | 하위 계약 | 그대로 채택, Q5 해소 |
+| `StageDef` = 데이터 전용 Custom Resource, `stage_seed` 범위 | `docs/architecture/adr-0001-pure-deterministic-rules-core.md` 결정 8, Ordering Note | 구현 방침 | 일치 |
 
 ## Acceptance Criteria
 

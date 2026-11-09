@@ -95,6 +95,8 @@ func _run() -> void:
 		await _frames(30)
 		print("AUTOPLAY retry: attempt=%d score=%d result=%s" % [screen.flow.attempt + 1, screen.flow.stage_score(), screen.is_result_visible()])
 		await _shot("t0-05-retry")
+	if screen.audio != null:
+		print("AUTOPLAY audio: state=%s voices_started=%d" % [SfxPlayer.State.keys()[screen.audio.sfx.state], screen.audio.sfx.started_count])
 	get_tree().quit(0 if screen.flow.attempt >= 1 else 1)
 
 

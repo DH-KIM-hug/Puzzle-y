@@ -53,6 +53,8 @@ var shown_score: int = 0
 var placements: int = 0
 ## Real-time effects layer.
 var fx: ChainFx
+## SFX (design/gdd/audio.md); listens only.
+var audio: GameAudio
 ## Effective reduced-motion flag.
 var reduced: bool = false
 ## Score value currently rendered by the HUD (rolls toward [member shown_score]).
@@ -134,6 +136,9 @@ func _ready() -> void:
 	player.wave_presented.connect(_on_wave_presented)
 	player.playback_finished.connect(_on_playback_finished)
 	player.redraw_requested.connect(_redraw)
+	audio = GameAudio.create(load(GameAudio.TUNING_PATH), tuning)
+	add_child(audio)
+	audio.attach(player)
 	_build_layers()
 	_build_hud()
 	drag.set_enabled(true)
@@ -167,6 +172,8 @@ func _process(delta: float) -> void:
 # --- input (placement-input rules 3, 5, 16, 18, 19; chain-presentation rule 22) ---
 
 func _input(event: InputEvent) -> void:
+	if audio != null:
+		audio.on_input(event)
 	if flow == null or _result.visible:
 		return
 	if event is InputEventScreenTouch:
@@ -174,6 +181,7 @@ func _input(event: InputEvent) -> void:
 		if t.pressed:
 			if player.is_playing():
 				player.tap()
+				audio.ui_tap()
 				return
 			var slot := layout.slot_at(t.position)
 			var p := flow.piece_at(slot)
@@ -182,6 +190,7 @@ func _input(event: InputEvent) -> void:
 			_ret = {}
 			if drag.press(slot, Vector2i(p.shape.width(), p.shape.height()), t.position, t.index):
 				_lift_t = 0.0 if input_tuning.lift_anim_s > 0.0 else 1.0
+				audio.pick_up()
 		else:
 			drag.release(t.index)
 	elif event is InputEventScreenDrag:
@@ -234,6 +243,7 @@ func _on_drag_ended(slot: int, reason: DragController.EndReason, on_board: bool)
 	if p == null:
 		return
 	# Return to the tray slot (rule 16), wiggle when the invalid drop was over the board.
+	audio.invalid_return(on_board)
 	_ret = {&"slot": slot, &"from": _last_drag_pos, &"t": 0.0,
 			&"dur": input_tuning.return_anim_s + (input_tuning.invalid_wiggle_s if on_board else 0.0),
 			&"wiggle": input_tuning.invalid_wiggle_s if on_board else 0.0}
@@ -274,6 +284,7 @@ func _on_playback_finished(_was_skipped: bool) -> void:
 
 ## "한 판 더" (one tap): next attempt, fresh board and tray.
 func retry() -> void:
+	audio.ui_tap()
 	flow.retry()
 	shown_score = 0
 	placements = 0
@@ -392,6 +403,10 @@ func _tick_score(delta: float) -> void:
 		var k := 1.0 - exp(-delta / maxf(tuning.score_roll_s * 0.3, 0.01))
 		score_rolled = minf(target, score_rolled + maxf((target - score_rolled) * k, 1.0))
 		var after := int(roundf(score_rolled))
+		if after != before:
+			audio.score_tick()
+		if score_rolled >= target:
+			audio.score_roll_done()
 		var m := maxi(tuning.score_milestone, 1)
 		if after / m > before / m:
 			_score_gold = 1.0
@@ -412,6 +427,7 @@ func _show_result() -> void:
 	_result_best.text = tr("UI_RESULT_BEST") % flow.best_placement()
 	_result_count.text = tr("UI_RESULT_PLACEMENTS") % placements
 	_result.visible = true
+	audio.result()
 
 
 ## Retry button (autoplay presses it with a real touch).
