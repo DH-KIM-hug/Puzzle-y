@@ -137,6 +137,12 @@ extends Resource
 @export var tray_bob_px: float = 4.0
 @export var tray_bob_period_s: float = 2.2
 
+@export_group("Round result (round-flow F3, UI Requirements)")
+## Delay between the last playback and the result card (round-flow F3).
+@export_range(0.0, 2.0) var result_reveal_delay_s: float = 0.6
+## Result buttons ignore input this long after the card opens (round-flow UI).
+@export_range(0.0, 1.0) var result_input_guard_s: float = 0.3
+
 @export_group("Chain preview (chain-preview F1, F4)")
 ## F1 badge diameter / cell.
 @export var badge_scale: float = 0.40

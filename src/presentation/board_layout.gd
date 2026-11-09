@@ -32,17 +32,18 @@ const BANNER_H := 96.0
 const TRAY_GAP := 34.0
 
 
-## Layout for [param p_canvas].
-static func make(p_canvas: Vector2, rows: int, cols: int, p_slots: int) -> BoardLayout:
+## Layout for [param p_canvas]. [param hud_h] = HUD strip height (stage play uses a
+## taller strip for the goal panel and the star bar).
+static func make(p_canvas: Vector2, rows: int, cols: int, p_slots: int, hud_h: float = HUD_H) -> BoardLayout:
 	var l := BoardLayout.new()
 	l.canvas = p_canvas
 	l.cells = Vector2i(rows, cols)
 	l.slots = p_slots
 	l.s = floorf((p_canvas.x - SIDE * 2.0) / cols)
 	var board_w := l.s * cols
-	l.hud_rect = Rect2(0, 0, p_canvas.x, HUD_H)
-	l.banner_rect = Rect2(SIDE, HUD_H, p_canvas.x - SIDE * 2.0, BANNER_H)
-	l.board_origin = Vector2((p_canvas.x - board_w) * 0.5, HUD_H + BANNER_H + 8.0)
+	l.hud_rect = Rect2(0, 0, p_canvas.x, hud_h)
+	l.banner_rect = Rect2(SIDE, hud_h, p_canvas.x - SIDE * 2.0, BANNER_H)
+	l.board_origin = Vector2((p_canvas.x - board_w) * 0.5, hud_h + BANNER_H + 8.0)
 	var tray_top := l.board_origin.y + l.s * rows + TRAY_GAP
 	l.tray_rect = Rect2(SIDE, tray_top, p_canvas.x - SIDE * 2.0, p_canvas.y - tray_top - SIDE)
 	return l

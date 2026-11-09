@@ -21,6 +21,8 @@ var layout: BoardLayout
 var tuning: PresentationTuning
 ## Font.
 var font: Font
+## Goal markers for the shown placement (stage-goals rule 14); null = none.
+var goals: GoalPreview
 
 
 ## Shows [param m] (replaces the previous one in the same frame, rule 10).
@@ -32,6 +34,7 @@ func show_model(m: PreviewModel) -> void:
 ## Clears immediately (rule 11).
 func clear() -> void:
 	model = null
+	goals = null
 
 
 ## Advances the pulse clock.
@@ -67,9 +70,30 @@ func draw_outlines(ci: CanvasItem) -> void:
 		StickerPainter.dashed_rect(ci, raised, Palette.INK, 3.0, 7.0)
 		for extra: int in range(1, waves.size()):
 			StickerPainter.dashed_rect(ci, raised.grow(-6.0 * extra), Palette.INK, 2.0, 5.0)
-	for cell: Vector2i in model.modified:
+	# Obstacles (obstacles UI Requirements): ice that cracks but stays → "금";
+	# freed ice → "금" + sparkle; frozen face that thaws → "금" + water drop.
+	var marked := {}
+	for cell: Vector2i in model.cracked:
+		ObstaclePainter.crack(ci, layout.cell_rect(cell))
+		marked[cell] = true
+	for cell: Vector2i in model.freed:
 		var r := layout.cell_rect(cell)
-		ci.draw_line(r.position + Vector2(s * 0.3, s * 0.2), r.get_center(), Palette.INK, 2.0, true)
+		ObstaclePainter.crack(ci, r)
+		ObstaclePainter.sparkle(ci, r.position + Vector2(s * 0.22, s * 0.24), s * 0.16)
+		marked[cell] = true
+	for cell: Vector2i in model.thawed:
+		var r := layout.cell_rect(cell)
+		ObstaclePainter.crack(ci, r)
+		ObstaclePainter.drop(ci, r.position + Vector2(s * 0.2, s * 0.8), s * 0.32)
+		marked[cell] = true
+	for cell: Vector2i in model.modified:
+		if not marked.has(cell):
+			ObstaclePainter.crack(ci, layout.cell_rect(cell))
+	# Goal markers (stage-goals rule 14): target rings this placement clears pulse bold.
+	if goals != null:
+		var pulse := 0.5 + 0.5 * sin(t * TAU / maxf(tuning.wave_pulse_period_s, 0.05))
+		for cell: Vector2i in goals.target_cells_hit:
+			ObstaclePainter.target_ring(ci, layout.cell_rect(cell), pulse, true)
 
 
 ## Predicted eggs and badges (above the dragged piece, rule 18).
@@ -117,6 +141,8 @@ func draw_banner(ci: CanvasItem) -> void:
 			text = ci.tr("UI_PREVIEW_CHAIN_MAX") % model.banner_n
 	if model.has_predicted_score:
 		text += ("  " if text != "" else "") + "+%d" % model.predicted_score
+	if goals != null and goals.completes_stage:
+		text += ("  " if text != "" else "") + ci.tr("UI_PREVIEW_CLEAR")
 	if text == "":
 		return
 	var c := layout.banner_rect.get_center()

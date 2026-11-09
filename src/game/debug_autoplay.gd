@@ -1,155 +1,209 @@
 ## Debug-only scripted play for run-and-observe (.claude/docs/run-and-observe.md).
-## Attached by [GameScreen] when launched with [code]-- --autoplay[/code].
-## Drives the REAL input path with synthetic touch events
-## ([method Input.parse_input_event]) and captures screenshots of: start state,
-## a drag with the chain preview visible, a chain mid-playback, the result
-## panel, and the board after one-tap "한 판 더". Move choice reads the preview
-## model (Rules Core) — it is a test bot, not game logic.
-## Options: [code]--shots=<res:// or abs dir>[/code], [code]--seed=N[/code],
-## [code]--min-depth=N[/code] (hunt a chain of at least N before the chain shots, default 2),
-## [code]--burst[/code] (also save a frame series t0-03-burst-NN through the whole chain).
+## Attached by [App] when launched with [code]-- --autoplay[/code]. Drives the REAL
+## input path with synthetic touch events ([method Input.parse_input_event]) through
+## the whole T1 loop and captures screenshots. Moves come from the committed stage
+## solutions ([code]tests/fixtures/stages/solutions.json[/code], the same list the
+## stage tests replay) — it is a test bot, not game logic.
+## Scenarios ([code]--scenario=[/code]):
+## [br]- [code]main[/code] (default; use with [code]--fresh-save[/code]): stage select → team
+##   select 1-1 → play 1-1 to clear (tray-held-during-chain shot) → result → 다음 스테이지
+##   → team select 1-2 → play → result → 한 판 더 → pause → 스테이지 선택 → 연습.
+## [br]- [code]obstacles[/code] (use with [code]--fresh-save --unlock-all[/code]): team select 1-10
+##   (slot edit) → play 1-10 (stones, ice, target cells, obstacle preview) → result →
+##   1-9 start (frozen faces) + preview.
+## Options: [code]--shots=<res:// or abs dir>[/code].
 class_name DebugAutoplay
 extends Node
 
-const DEFAULT_SHOTS := "res://production/qa/evidence/t0-greybox"
-const MAX_PLACEMENTS := 120
+const DEFAULT_SHOTS := "res://production/qa/evidence/t1-stages"
+const SOLUTIONS_PATH := "res://tests/fixtures/stages/solutions.json"
 const DRAG_STEPS := 14
 
-## Screen under test.
-var screen: GameScreen
+## App under test.
+var app: App
 
 var _dir: String
 var _settled: bool = false
-var _min_depth: int = 2
-var _burst: bool = false
+var _solutions: Dictionary = {}
+var _fails: PackedStringArray = PackedStringArray()
+var _last_pos: Vector2 = Vector2.ZERO
 
 
 func _ready() -> void:
 	_dir = DEFAULT_SHOTS
+	var scenario := "main"
 	for a: String in OS.get_cmdline_user_args():
 		if a.begins_with("--shots="):
 			_dir = a.get_slice("=", 1)
-		elif a.begins_with("--min-depth="):
-			_min_depth = int(a.get_slice("=", 1))
-		elif a == "--burst":
-			_burst = true
+		elif a.begins_with("--scenario="):
+			scenario = a.get_slice("=", 1)
 	if _dir.begins_with("res://"):
 		_dir = ProjectSettings.globalize_path(_dir)
 	DirAccess.make_dir_recursive_absolute(_dir)
-	screen.placement_settled.connect(func(_p: RoundFlow.Phase) -> void: _settled = true)
-	_run.call_deferred()
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string(SOLUTIONS_PATH))
+	if data is Dictionary:
+		for s: Dictionary in data["stages"]:
+			_solutions[s["id"]] = s["moves"]
+	if scenario == "obstacles":
+		_obstacles.call_deferred()
+	else:
+		_main.call_deferred()
 
 
-func _run() -> void:
-	await _frames(45)
-	await _shot("t0-01-start")
+# --- scenarios -----------------------------------------------------------------
+
+func _main() -> void:
+	await _frames(40)
+	await _shot("01-stage-select-fresh")
+	_check(app.is_unlocked(0) and not app.is_unlocked(1), "fresh save: only 1-1 open")
+	await _tap_node(_select().tiles[0])
+	await _wait_screen(TeamSelectScreen)
+	await _frames(20)
+	await _shot("02-team-select-1-1")
+	await _tap_node((app.current as TeamSelectScreen).start_button)
+	await _wait_screen(GameScreen)
+	await _frames(30)
+	await _shot("03-play-1-1-start")
+	await _play_solution("1-1", "04-play-1-1")
+	await _wait_result()
+	await _shot("06-result-1-1-clear")
+	_check(_game().last_result != null and _game().last_result.outcome == RoundResult.Outcome.CLEARED, "1-1 cleared")
+	_check(app.progress.stars_of(&"1-1") >= 1 and app.is_unlocked(1), "1-1 stars saved, 1-2 unlocked")
+	await _tap_node(_game().result_button("NextButton"))
+	await _wait_screen(TeamSelectScreen)
+	await _frames(20)
+	await _shot("07-team-select-1-2")
+	await _tap_node((app.current as TeamSelectScreen).start_button)
+	await _wait_screen(GameScreen)
+	await _frames(20)
+	await _play_solution("1-2", "08-play-1-2")
+	await _wait_result()
+	await _shot("09-result-1-2-clear")
+	_check(app.progress.stars_of(&"1-2") >= 1, "1-2 stars saved")
+	var before_attempt := _game().flow.attempt
+	await _tap_node(_game().result_button("RetryButton"))
+	await _frames(30)
+	_check(_game().flow.attempt == before_attempt + 1 and _game().team.size() == 1 and _game().team[0] == &"nyangi", "한 판 더: same team, next attempt")
+	await _shot("10-retry-1-2")
+	await _tap_node(_game().find_child("PauseButton", true, false))
+	await _frames(15)
+	await _shot("11-pause")
+	await _tap_node(_game().find_child("PauseExitButton", true, false))
+	await _wait_screen(StageSelectScreen)
+	await _frames(20)
+	await _shot("12-stage-select-progress")
+	_check(app.is_unlocked(2) and not app.is_unlocked(3), "after 1-2: 1-3 open, 1-4 locked")
+	await _tap_node(_select().practice_button)
+	await _wait_screen(GameScreen)
+	await _frames(30)
+	await _shot("13-practice")
+	_finish()
+
+
+func _obstacles() -> void:
+	await _frames(40)
+	await _shot("20-stage-select-unlocked")
+	await _tap_node(_select().tiles[9])
+	await _wait_screen(TeamSelectScreen)
+	await _frames(20)
+	await _shot("21-team-select-1-10")
+	var ts := app.current as TeamSelectScreen
+	await _tap_node(ts.slots[2])
+	await _frames(10)
+	await _shot("22-team-select-slot-emptied")
+	_check(ts.start_button.disabled, "empty slot disables start")
+	await _tap_node(ts.cards[2])
+	await _frames(10)
+	_check(not ts.start_button.disabled and ",".join(ts.draft) == "nyangi,gomgom,piyak", "card refills the slot")
+	await _tap_node(ts.start_button)
+	await _wait_screen(GameScreen)
+	await _frames(30)
+	await _shot("23-play-1-10-start")
+	await _play_solution("1-10", "24-play-1-10")
+	await _wait_result()
+	await _shot("26-result-1-10")
+	await _tap_node(_game().result_button("StagesButton"))
+	await _wait_screen(StageSelectScreen)
+	await _frames(10)
+	await _tap_node(_select().tiles[8])
+	await _wait_screen(TeamSelectScreen)
+	await _frames(10)
+	await _tap_node((app.current as TeamSelectScreen).start_button)
+	await _wait_screen(GameScreen)
+	await _frames(30)
+	await _shot("27-play-1-9-frozen-faces")
+	var moves: Array = _solutions.get("1-9", [])
+	if not moves.is_empty():
+		var m: Array = moves[0]
+		await _drag_to(int(m[0]), Vector2i(int(m[1]), int(m[2])))
+		await _frames(20)
+		await _shot("28-play-1-9-preview")
+	_finish()
+
+
+# --- play ----------------------------------------------------------------------
+
+## Replays a committed solution with real drags. Shots: one drag preview (the first
+## move with obstacle / goal markers, else the first move), the tray while a chain
+## plays right after a tray-emptying commit, and the refilled tray after it.
+func _play_solution(id: String, prefix: String) -> void:
+	var moves: Array = _solutions.get(id, [])
+	_check(not moves.is_empty(), "solution for %s" % id)
 	var preview_done := false
-	var chain_done := false
-	var n := 0
-	while not screen.is_result_visible() and n < MAX_PLACEMENTS:
-		var move := _choose(not chain_done)
-		if move.is_empty():
+	var held_done := false
+	for i: int in moves.size():
+		var g := _game()
+		if g.is_result_visible() or g.flow.is_ended():
 			break
-		var depth: int = move[&"depth"]
-		var want_shots := not chain_done and (depth >= _min_depth or (n >= 40 and depth >= 1))
-		await _drag_to(move[&"slot"], move[&"anchor"], want_shots and not preview_done)
-		if want_shots:
+		var m: Array = moves[i]
+		var slot := int(m[0])
+		var anchor := Vector2i(int(m[1]), int(m[2]))
+		if not g.flow.can_place(slot, anchor):
+			_fails.append("%s move %d not placeable" % [id, i])
+			break
+		var pieces_before := 0
+		for k: int in g.flow.slot_count():
+			if g.flow.piece_at(k) != null:
+				pieces_before += 1
+		await _drag_to(slot, anchor)
+		var pm := g.preview.model
+		var interesting := pm != null and (not pm.cracked.is_empty() or not pm.freed.is_empty() or not pm.thawed.is_empty()
+				or (g.preview.goals != null and not g.preview.goals.target_cells_hit.is_empty()) or pm.banner != PreviewModel.Banner.NONE)
+		if not preview_done and (interesting or i == moves.size() - 1 or (id == "1-1" and i == 0)):
+			await _frames(16)
+			await _shot("%s-preview" % prefix)
 			preview_done = true
 		_settled = false
-		_touch(Vector2.ZERO, false, true)
-		if want_shots and _burst:
-			var k := 0
-			while not screen.player.is_playing():
+		g.placement_settled.connect(_on_settled, CONNECT_ONE_SHOT)
+		_touch(_last_pos, false)
+		if not held_done and pieces_before == 1 and i < moves.size() - 1:
+			await get_tree().process_frame
+			_check(g._tray_hold and g.player.is_playing(), "%s: tray display held during playback" % id)
+			await _shot("%s-tray-held-during-chain" % prefix)
+			while not _settled:
 				await get_tree().process_frame
-			while screen.player.is_playing() and k < 40:
-				await _frames(3)
-				await _shot("t0-03-burst-%02d" % k)
-				print("AUTOPLAY burst %02d clock=%.2f" % [k, screen.player.clock])
-				k += 1
-			chain_done = true
-			print("AUTOPLAY chain shot: depth=%d placement=%d" % [depth, n + 1])
-		elif want_shots:
-			await _wait_mid_chain()
-			await _shot("t0-03-chain-midplay")
-			chain_done = true
-			print("AUTOPLAY chain shot: depth=%d placement=%d" % [depth, n + 1])
-		elif chain_done:
-			# Exercise fast-forward + skip (chain-presentation rule 22) after the shots.
-			await _frames(12)
-			if screen.player.is_playing():
-				_tap_board()
-				await _frames(2)
-				_tap_board()
+			await _frames(6)
+			await _shot("%s-tray-refilled-after-chain" % prefix)
+			held_done = true
 		while not _settled:
 			await get_tree().process_frame
-		n += 1
-	print("AUTOPLAY placements=%d score=%d best=%d result=%s" % [n, screen.flow.stage_score(), screen.flow.best_placement(), screen.is_result_visible()])
-	if screen.is_result_visible():
-		await _frames(30)
-		await _shot("t0-04-result")
-		var btn := screen.retry_button()
-		var c := btn.get_global_rect().get_center()
-		_touch(c, true, false)
-		await _frames(3)
-		_touch(c, false, false)
-		await _frames(30)
-		print("AUTOPLAY retry: attempt=%d score=%d result=%s" % [screen.flow.attempt + 1, screen.flow.stage_score(), screen.is_result_visible()])
-		await _shot("t0-05-retry")
-	if screen.audio != null:
-		print("AUTOPLAY audio: state=%s voices_started=%d" % [SfxPlayer.State.keys()[screen.audio.sfx.state], screen.audio.sfx.started_count])
-	get_tree().quit(0 if screen.flow.attempt >= 1 else 1)
+	print("AUTOPLAY %s placements=%d score=%d ended=%s" % [id, _game().flow.placements_used, _game().flow.stage_score(), _game().flow.is_ended()])
 
 
-## Best (greedy) move while hunting a chain; afterwards the move that clears least,
-## so the board jams and the result panel is reached.
-func _choose(hunt: bool) -> Dictionary:
-	var flow := screen.flow
-	var best := {}
-	var best_score := -INF
-	for slot: int in flow.slot_count():
-		var p := flow.piece_at(slot)
-		if p == null:
-			continue
-		for r: int in flow.board().height:
-			for c: int in flow.board().width:
-				var a := Vector2i(r, c)
-				if not flow.can_place(slot, a):
-					continue
-				var m := PreviewModel.preview(flow.board(), p, a, flow.context_for_next_placement())
-				var depth: int = m.result.summary[ChainEvent.K_CHAIN_DEPTH]
-				var cleared := m.clear_waves.size()
-				var v: float
-				if hunt:
-					v = depth * 1000.0 + cleared * 10.0 + _neighbours(p, a) - r * 0.01
-				else:
-					v = -cleared * 100.0 - _neighbours(p, a) * 3.0 + float((r * 7 + c * 3 + slot) % 5)
-				if v > best_score:
-					best_score = v
-					best = {&"slot": slot, &"anchor": a, &"depth": depth}
-	return best
+func _on_settled(_p: RoundFlow.Phase) -> void:
+	_settled = true
 
 
-func _neighbours(p: PieceInstance, a: Vector2i) -> float:
-	var b := screen.flow.board()
-	var n := 0.0
-	for o: Vector2i in p.shape.offsets:
-		var cell := a + o
-		for d: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-			var q := cell + d
-			if not b.in_bounds(q.x, q.y) or b.blocks_placement(b.index_of_cell(q)):
-				n += 1.0
-	return n
-
-
-## Press the slot, drag the finger so the F1/F2 anchor lands on [param anchor].
-func _drag_to(slot: int, anchor: Vector2i, shot: bool) -> void:
-	var lay := screen.layout
-	var p := screen.flow.piece_at(slot)
+## Press the slot, drag so the F1/F2 anchor lands on [param anchor] (finger stays down).
+func _drag_to(slot: int, anchor: Vector2i) -> void:
+	var g := _game()
+	var lay := g.layout
+	var p := g.flow.piece_at(slot)
 	var size := Vector2(p.shape.width(), p.shape.height())
 	var start := lay.slot_rect(slot).get_center()
 	var tl := lay.board_origin + Vector2(anchor.y, anchor.x) * lay.s
-	var target := Vector2(tl.x + size.x * lay.s * 0.5, tl.y + size.y * lay.s + screen.input_tuning.lift_offset_cells * lay.s)
-	_touch(start, true, false)
+	var target := Vector2(tl.x + size.x * lay.s * 0.5, tl.y + size.y * lay.s + g.input_tuning.lift_offset_cells * lay.s)
+	_touch(start, true)
 	await _frames(3)
 	var prev := start
 	for i: int in range(1, DRAG_STEPS + 1):
@@ -159,48 +213,52 @@ func _drag_to(slot: int, anchor: Vector2i, shot: bool) -> void:
 		prev = pos
 		await get_tree().process_frame
 	await _frames(4)
-	if shot:
-		await _frames(16)
-		await _shot("t0-02-drag-preview")
-		print("AUTOPLAY preview shot: banner=%d n=%d anchor=%s" % [screen.preview.model.banner if screen.preview.model else -1,
-				screen.preview.model.banner_n if screen.preview.model else -1, anchor])
 	_last_pos = target
 
 
-var _last_pos: Vector2 = Vector2.ZERO
+# --- helpers -------------------------------------------------------------------
+
+func _game() -> GameScreen:
+	return app.current as GameScreen
 
 
-func _wait_mid_chain() -> void:
-	var player := screen.player
-	while not player.is_playing():
+func _select() -> StageSelectScreen:
+	return app.current as StageSelectScreen
+
+
+func _wait_screen(type: Variant) -> void:
+	var n := 0
+	while not is_instance_of(app.current, type) and n < 300:
 		await get_tree().process_frame
-	# Aim at the stage-2 cut-in (wave 1) if any, else the first peel, mid-lift.
-	var target := player.timeline.total * 0.4
-	var first_peel := -1.0
-	for c: Dictionary in player.timeline.cues:
-		var kind := int(c[ChainTimeline.K_KIND])
-		if kind == ChainTimeline.Kind.BANNER:
-			target = float(c[ChainTimeline.K_T]) + 0.12
-			first_peel = -2.0
-			break
-		if kind == ChainTimeline.Kind.PEEL and first_peel == -1.0:
-			first_peel = float(c[ChainTimeline.K_T])
-	if first_peel >= 0.0:
-		target = first_peel + 0.1
-	while player.is_playing() and player.clock < target:
+		n += 1
+	_check(is_instance_of(app.current, type), "screen switch")
+	await _frames(2)
+
+
+func _wait_result() -> void:
+	var n := 0
+	while not _game().is_result_visible() and n < 600:
 		await get_tree().process_frame
+		n += 1
+	_check(_game().is_result_visible(), "result visible")
+	await _frames(40)
 
 
-func _tap_board() -> void:
-	var c := screen.layout.board_rect().get_center()
-	_touch(c, true, false)
-	_touch(c, false, false)
+func _tap_node(c: Control) -> void:
+	if c == null:
+		_fails.append("missing control to tap")
+		return
+	var pos := c.get_global_rect().get_center()
+	_touch(pos, true)
+	await _frames(3)
+	_touch(pos, false)
+	await _frames(3)
 
 
-func _touch(pos: Vector2, pressed: bool, use_last: bool) -> void:
+func _touch(pos: Vector2, pressed: bool) -> void:
 	var e := InputEventScreenTouch.new()
 	e.index = 0
-	e.position = _last_pos if use_last else pos
+	e.position = pos
 	e.pressed = pressed
 	Input.parse_input_event(e)
 
@@ -218,9 +276,20 @@ func _frames(n: int) -> void:
 		await get_tree().process_frame
 
 
-func _shot(name: String) -> void:
+func _check(ok: bool, what: String) -> void:
+	print("AUTOPLAY check %s: %s" % ["OK" if ok else "FAIL", what])
+	if not ok:
+		_fails.append(what)
+
+
+func _finish() -> void:
+	print("AUTOPLAY done fails=%d %s" % [_fails.size(), ", ".join(_fails)])
+	get_tree().quit(0 if _fails.is_empty() else 1)
+
+
+func _shot(shot_name: String) -> void:
 	await RenderingServer.frame_post_draw
 	var img := get_viewport().get_texture().get_image()
-	var path := _dir.path_join(name + ".png")
+	var path := _dir.path_join(shot_name + ".png")
 	var err := img.save_png(path)
-	print("AUTOPLAY shot %s -> %s (%s)" % [name, path, error_string(err)])
+	print("AUTOPLAY shot %s -> %s (%s)" % [shot_name, path, error_string(err)])

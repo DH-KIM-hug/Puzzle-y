@@ -1,0 +1,14 @@
+Reviewed-Content-Hash: src/game/app.gd 3bb8de651e3c018f6df33286ecec694dcc011722
+Reviewed-Content-Hash: src/game/game_screen.gd 8d5ddec4ed3ad3cd6a7a2dc382525caa196aaf3f
+Reviewed-Content-Hash: src/game/stage_select_screen.gd 7eb8d6e7843b2748f000e3d1cfddb4e2d27a2085
+Reviewed-Content-Hash: src/game/team_select_screen.gd 04494d382071b5c99818f93543640541c2ee548c
+Reviewed-Content-Hash: src/game/debug_autoplay.gd b4eb48ece45664ae053550846121636ac985fd9b
+Reviewed-Content-Hash: src/game/ui/ui_kit.gd 5f7c4ae52ab8b0bb4a91f333a2e7746b2d0d8b0a
+Reviewed-Content-Hash: src/game/ui/paint_button.gd e851a27066e4b96d0ee2a84bc0bcc5ad0c9845c5
+Reviewed-Content-Hash: src/game/ui/crew_card_painter.gd 8db338898ef71df6c1da40b890b84cdfe2598b69
+Reviewed-Content-Hash: src/presentation/obstacle_painter.gd b0cf350ac849c22844d88b14cd2bdefe78cb4fba
+Reviewed-Content-Hash: src/presentation/preview_view.gd c990429880fea4a5b2badc92e115f187075a0c0c
+Reviewed-Content-Hash: src/presentation/board_layout.gd 321b37324cad767c0d95793e1581a2c6b8c43f2a
+Reviewed-Content-Hash: src/presentation/palette.gd a9bcac40500d87dc0fe98ed0cb40dcb499ea4e7c
+Reviewed-Content-Hash: src/meta/player_progress.gd 02d0650cd1550e4133921e6b1248cdbce7376c8f
+Reviewed-Content-Hash: assets/locale/strings.csv 4ee43d925c8590eae2e9d7e38148c1725fa773d9

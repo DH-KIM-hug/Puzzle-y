@@ -29,3 +29,77 @@ CREW_KKANGCHONG_ABILITY_NAME,두 칸 깡총
 CREW_MONGSIL_ABILITY_NAME,털뭉치 쿠션
 UI_CHAIN_FINISH,대연쇄!!
 UI_LINES_N,%d줄 동시!
+UI_PREVIEW_CLEAR,클리어!
+UI_GAME_TITLE,말랑 크루
+UI_STAGE_SELECT,스테이지 선택
+UI_STAGE_SELECT_SUB,스티커를 붙여 별을 모아요
+UI_PRACTICE,연습 (끝없이)
+UI_LOCKED,잠김
+UI_TEAM_TITLE,팀 편성
+UI_START,시작!
+UI_BACK,뒤로
+UI_STAGE_GOALS,목표
+UI_STAGE_PIECES,조각 %d개
+UI_STAR_LINE,★2 %d · ★3 %d
+UI_TEAM_LIMIT_FIXED,이 스테이지는 팀이 정해져 있어요
+UI_TEAM_SLOT_EMPTY,빈 자리
+UI_TEAM_LOCKED,고정
+UI_TEAM_GUEST,게스트
+UI_TEAM_FREQ_OFTEN,자주
+UI_TEAM_FREQ_SOMETIMES,가끔
+UI_TEAM_NOT_OWNED,스티커 팩에서 만날 수 있어요
+UI_TEAM_BANNED,이 스테이지에서는 쉬어요
+UI_TEAM_IN_TEAM,팀에 있어요
+UI_TEAM_HINT_PICK,크루를 눌러 빈 자리에 넣어요
+UI_TEAM_HINT_FULL,팀 자리를 눌러 비운 뒤 바꿔요
+UI_TEAM_READY,이 팀으로 바로 시작할 수 있어요
+UI_TEAM_REASON_INCOMPLETE,빈 자리가 하나 있어요
+UI_TEAM_REASON_DUPLICATE,같은 크루가 두 번 있어요
+UI_TEAM_REASON_NOT_OWNED,아직 만나지 못한 크루예요
+UI_TEAM_REASON_BANNED,이 스테이지에서 쉬는 크루가 있어요
+UI_TEAM_REASON_LOCK,고정 자리가 바뀌었어요
+UI_TEAM_REASON_COLOUR,색이 겹치는 크루가 있어요
+UI_TEAM_REASON_OTHER,팀을 다시 확인해 주세요
+UI_LINK_NOTE_TITLE,궁합 노트
+UI_LINK_NOTE_STUB,아직 기록된 연결이 없어요 — 연쇄를 일으키면 여기에 적혀요
+UI_GOAL_SCORE,점수 %d / %d
+UI_GOAL_CELLS,남은 칸 %d
+UI_GOAL_ICE,남은 얼음 %d
+UI_GOAL_CHAIN,연쇄 %d · %d/%d
+UI_GOAL_SCORE_SHORT,점수 %d
+UI_GOAL_CELLS_SHORT,목표 칸 %d개
+UI_GOAL_ICE_SHORT,얼음 %d개
+UI_GOAL_CHAIN_SHORT,연쇄 %d × %d번
+UI_PIECES_LEFT,남은 조각 %d
+UI_STAR_BONUS_NOTE,+ 남은 조각 보너스
+UI_RESULT_CLEAR,클리어!
+UI_RESULT_FAIL_NO_MOVES,놓을 곳이 없어졌어!
+UI_RESULT_FAIL_OUT,조각을 다 썼어!
+UI_RESULT_STAGE_SCORE,점수 %d
+UI_RESULT_BONUS,남은 조각 %d개 보너스 +%d
+UI_RESULT_FINAL,최종 %d
+UI_RESULT_EXTRA,최고 한 수 +%d · 최장 연쇄 %d
+UI_RESULT_NEW_BEST,새 기록!
+UI_NEXT_STAGE,다음 스테이지
+UI_CHANGE_TEAM,팀 바꾸기
+UI_TO_STAGES,스테이지 선택
+UI_PAUSE_TITLE,잠깐 쉬어요
+UI_PAUSE_RESUME,계속
+UI_PAUSE_RETRY,다시 하기
+UI_PRACTICE_TITLE,연습
+STAGE_1_1_NAME,줄이 차면 지워져요
+STAGE_1_2_NAME,얼굴은 스위치
+STAGE_1_3_NAME,첫 2단 연쇄
+STAGE_1_4_NAME,목표 칸
+STAGE_1_5_NAME,셋이 한 팀
+STAGE_1_6_NAME,알이 다시 불붙여요
+STAGE_1_7_NAME,목표 칸이냐 큰 연쇄냐
+STAGE_1_8_NAME,첫 얼음
+STAGE_1_9_NAME,얼어붙은 얼굴
+STAGE_1_10_NAME,졸업 시험
+CREW_NYANGI_ABILITY_DESC,얼굴의 가로·세로 줄을 모두 지워요
+CREW_GOMGOM_ABILITY_DESC,얼굴 둘레 3×3을 꼭 안아 지워요
+CREW_PIYAK_ABILITY_DESC,얼굴이 있던 줄 빈칸에 알 3개를 낳아요
+CREW_GAEGUL_ABILITY_DESC,얼굴에서 대각선 네 방향을 지워요
+CREW_KKANGCHONG_ABILITY_DESC,두 칸 건너 여덟 곳을 지워요
+CREW_MONGSIL_ABILITY_DESC,얼굴 둘레 십자에 털뭉치를 깔아요

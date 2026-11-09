@@ -14,6 +14,9 @@ const FACE_CREAM := Color("#fbf1d6")
 const GOLD := Color("#ffe278")
 const BEAK := Color("#e8873a")
 const GREY_TONE := Color("#b9b2a8")
+## Obstacles (art-bible §4 "방해물"): cold grey ice facets, grey-brown stone.
+const ICE := Color("#b9c3c9")
+const STONE := Color("#9a8c7e")
 
 ## colour_slot (1-based, crew-definition) → [base, shade] (art-bible crew table).
 const CREW_SLOTS := {
