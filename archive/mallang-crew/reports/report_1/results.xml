@@ -1,0 +1,695 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites id="2026-11-21" name="report_1" tests="303" failures="0" skipped="0" flaky="0" time="0.000">
+	<testsuite id="0" name="round_flow_stage_test" package="tests/integration/round_flow" timestamp="2026-11-21T02:06:49" hostname="localhost" tests="16" failures="0" errors="0" skipped="0" flaky="0" time="0.173">
+		<testcase name="test_setup_reaches_ready_with_a_full_tray" classname="round_flow_stage_test" time="0.004">
+		</testcase>
+		<testcase name="test_commit_pipeline_order_and_counters" classname="round_flow_stage_test" time="0.003">
+		</testcase>
+		<testcase name="test_preview_context_equals_commit" classname="round_flow_stage_test" time="0.003">
+		</testcase>
+		<testcase name="test_out_of_pieces_after_limit_with_partial_refill" classname="round_flow_stage_test" time="0.004">
+		</testcase>
+		<testcase name="test_clear_on_the_last_piece_beats_out_of_pieces" classname="round_flow_stage_test" time="0.006">
+		</testcase>
+		<testcase name="test_clear_is_immediate_and_bonus_is_separate" classname="round_flow_stage_test" time="0.004">
+		</testcase>
+		<testcase name="test_free_play_ends_only_by_no_moves" classname="round_flow_stage_test" time="0.074">
+		</testcase>
+		<testcase name="test_result_is_fixed_at_commit_before_playback" classname="round_flow_stage_test" time="0.004">
+		</testcase>
+		<testcase name="test_fixed_seed_retry_keeps_team_and_first_tray" classname="round_flow_stage_test" time="0.005">
+		</testcase>
+		<testcase name="test_same_moves_are_deterministic" classname="round_flow_stage_test" time="0.007">
+		</testcase>
+		<testcase name="test_commit_during_presenting_is_ignored" classname="round_flow_stage_test" time="0.002">
+		</testcase>
+		<testcase name="test_pause_and_resume_change_no_rule_state" classname="round_flow_stage_test" time="0.002">
+		</testcase>
+		<testcase name="test_retry_mid_round_records_abandoned_once" classname="round_flow_stage_test" time="0.004">
+		</testcase>
+		<testcase name="test_background_cancels_drag_without_auto_pause" classname="round_flow_stage_test" time="0.002">
+		</testcase>
+		<testcase name="test_round_has_no_undo" classname="round_flow_stage_test" time="0.002">
+		</testcase>
+		<testcase name="test_invalid_team_or_stage_keeps_flow_idle" classname="round_flow_stage_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="1" name="round_flow_test" package="tests/integration/round_flow" timestamp="2026-11-21T02:06:49" hostname="localhost" tests="5" failures="0" errors="0" skipped="0" flaky="0" time="0.092">
+		<testcase name="test_start_deals_one_piece_per_team_crew" classname="round_flow_test" time="0.009">
+		</testcase>
+		<testcase name="test_commit_matches_preview_and_consumes_slot" classname="round_flow_test" time="0.009">
+		</testcase>
+		<testcase name="test_illegal_commit_is_refused_without_change" classname="round_flow_test" time="0.008">
+		</testcase>
+		<testcase name="test_play_until_no_moves_then_retry_resets" classname="round_flow_test" time="0.035">
+		</testcase>
+		<testcase name="test_same_seed_same_attempt_is_deterministic" classname="round_flow_test" time="0.012">
+		</testcase>
+	</testsuite>
+	<testsuite id="2" name="preview_parity_test" package="tests/integration/preview_parity" timestamp="2026-11-21T02:06:49" hostname="localhost" tests="6" failures="0" errors="0" skipped="0" flaky="0" time="4.249">
+		<testcase name="test_committed_cases_cover_named_fixtures_and_enough_boards" classname="preview_parity_test" time="0.002">
+		</testcase>
+		<testcase name="test_preview_equals_commit_equals_score_for_every_legal_anchor" classname="preview_parity_test" time="0.980">
+		</testcase>
+		<testcase name="test_obstacle_cases_predict_ice_effects_that_match_the_commit" classname="preview_parity_test" time="0.212">
+		</testcase>
+		<testcase name="test_all_six_mvp_crews_activate_somewhere_in_the_cases" classname="preview_parity_test" time="0.969">
+		</testcase>
+		<testcase name="test_two_full_runs_give_identical_records" classname="preview_parity_test" time="2.054">
+		</testcase>
+		<testcase name="test_seed_mismatch_between_preview_and_commit_is_detected" classname="preview_parity_test" time="0.003">
+		</testcase>
+	</testsuite>
+	<testsuite id="3" name="stage_goals_catalog_test" package="tests/integration/stage_goals" timestamp="2026-11-21T02:06:53" hostname="localhost" tests="4" failures="0" errors="0" skipped="0" flaky="0" time="0.108">
+		<testcase name="test_mvp_catalog_loads_without_errors_or_lint" classname="stage_goals_catalog_test" time="0.006">
+		</testcase>
+		<testcase name="test_catalog_uses_the_gdd_obstacles_and_teams" classname="stage_goals_catalog_test" time="0.004">
+		</testcase>
+		<testcase name="test_every_stage_is_cleared_by_its_committed_solution" classname="stage_goals_catalog_test" time="0.066">
+		</testcase>
+		<testcase name="test_out_of_team_frozen_face_and_guest_free_starters" classname="stage_goals_catalog_test" time="0.003">
+		</testcase>
+	</testsuite>
+	<testsuite id="4" name="chain_timeline_test" package="tests/unit/presentation" timestamp="2026-11-21T02:06:54" hostname="localhost" tests="4" failures="0" errors="0" skipped="0" flaky="0" time="0.651">
+		<testcase name="test_replay_of_every_cue_reproduces_final_board" classname="chain_timeline_test" time="0.306">
+		</testcase>
+		<testcase name="test_event_start_times_follow_event_order_and_total_within_budget" classname="chain_timeline_test" time="0.307">
+		</testcase>
+		<testcase name="test_build_twice_gives_identical_cues" classname="chain_timeline_test" time="0.003">
+		</testcase>
+		<testcase name="test_no_line_placement_is_landing_only" classname="chain_timeline_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="5" name="obstacles_resolve_test" package="tests/unit/obstacles" timestamp="2026-11-21T02:06:54" hostname="localhost" tests="13" failures="0" errors="0" skipped="0" flaky="0" time="1.106">
+		<testcase name="test_stone_blocks_placement" classname="obstacles_resolve_test" time="0.003">
+		</testcase>
+		<testcase name="test_stone_row_completes_with_fewer_cells_and_stays" classname="obstacles_resolve_test" time="0.003">
+		</testcase>
+		<testcase name="test_ability_skips_stones" classname="obstacles_resolve_test" time="0.003">
+		</testcase>
+		<testcase name="test_two_layer_ice_loses_one_layer_and_is_kept" classname="obstacles_resolve_test" time="0.003">
+		</testcase>
+		<testcase name="test_ice_at_row_column_crossing_loses_only_one_layer_per_wave" classname="obstacles_resolve_test" time="0.004">
+		</testcase>
+		<testcase name="test_ice_hit_in_two_waves_clears_in_the_second" classname="obstacles_resolve_test" time="0.003">
+		</testcase>
+		<testcase name="test_frozen_face_first_hit_thaws_without_activation" classname="obstacles_resolve_test" time="0.003">
+		</testcase>
+		<testcase name="test_frozen_face_thaws_and_fires_in_the_same_chain" classname="obstacles_resolve_test" time="0.004">
+		</testcase>
+		<testcase name="test_thawed_face_fires_on_a_later_placement" classname="obstacles_resolve_test" time="0.004">
+		</testcase>
+		<testcase name="test_no_complete_line_survives_and_ice_count_drops_by_cell_modified" classname="obstacles_resolve_test" time="1.019">
+		</testcase>
+		<testcase name="test_ice_remaining_counts_layers_and_cells" classname="obstacles_resolve_test" time="0.002">
+		</testcase>
+		<testcase name="test_eggs_prefer_the_stone_row_and_never_land_on_obstacles" classname="obstacles_resolve_test" time="0.003">
+		</testcase>
+		<testcase name="test_hooks_do_not_change_obstacle_free_results" classname="obstacles_resolve_test" time="0.004">
+		</testcase>
+	</testsuite>
+	<testsuite id="6" name="obstacles_preview_test" package="tests/unit/obstacles" timestamp="2026-11-21T02:06:55" hostname="localhost" tests="4" failures="0" errors="0" skipped="0" flaky="0" time="0.026">
+		<testcase name="test_two_layer_ice_is_predicted_as_cracked" classname="obstacles_preview_test" time="0.003">
+		</testcase>
+		<testcase name="test_frozen_face_is_predicted_as_thawed_and_badged_when_it_fires" classname="obstacles_preview_test" time="0.003">
+		</testcase>
+		<testcase name="test_plain_ice_freed_then_cleared_in_the_next_wave" classname="obstacles_preview_test" time="0.002">
+		</testcase>
+		<testcase name="test_obstacle_free_model_has_no_obstacle_key" classname="obstacles_preview_test" time="0.003">
+		</testcase>
+	</testsuite>
+	<testsuite id="7" name="obstacles_validation_test" package="tests/unit/obstacles" timestamp="2026-11-21T02:06:55" hostname="localhost" tests="10" failures="0" errors="0" skipped="0" flaky="0" time="0.036">
+		<testcase name="test_valid_obstacle_board_passes" classname="obstacles_validation_test" time="0.003">
+		</testcase>
+		<testcase name="test_four_stones_in_a_row_is_v1" classname="obstacles_validation_test" time="0.002">
+		</testcase>
+		<testcase name="test_ice_on_stone_is_v2" classname="obstacles_validation_test" time="0.002">
+		</testcase>
+		<testcase name="test_three_layer_ice_is_v3" classname="obstacles_validation_test" time="0.001">
+		</testcase>
+		<testcase name="test_two_layer_frozen_face_is_v3" classname="obstacles_validation_test" time="0.001">
+		</testcase>
+		<testcase name="test_ice_on_egg_is_v4" classname="obstacles_validation_test" time="0.001">
+		</testcase>
+		<testcase name="test_frozen_face_of_unregistered_crew_is_v5" classname="obstacles_validation_test" time="0.001">
+		</testcase>
+		<testcase name="test_unknown_or_duplicate_modifier_is_rule_6" classname="obstacles_validation_test" time="0.002">
+		</testcase>
+		<testcase name="test_pre_clear_hook_strips_one_layer_and_target_filter_skips_stones" classname="obstacles_validation_test" time="0.002">
+		</testcase>
+		<testcase name="test_config_resource_has_gdd_start_values" classname="obstacles_validation_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="8" name="team_composition_test" package="tests/unit/team" timestamp="2026-11-21T02:06:55" hostname="localhost" tests="10" failures="0" errors="0" skipped="0" flaky="0" time="0.047">
+		<testcase name="test_starter_provider_owns_three_and_debug_owns_six" classname="team_composition_test" time="0.002">
+		</testcase>
+		<testcase name="test_f1_reasons_in_priority_order" classname="team_composition_test" time="0.001">
+		</testcase>
+		<testcase name="test_mvp_colours_never_clash_but_a_shared_slot_does" classname="team_composition_test" time="0.002">
+		</testcase>
+		<testcase name="test_locked_guest_is_valid_and_reported_as_guest" classname="team_composition_test" time="0.002">
+		</testcase>
+		<testcase name="test_new_player_default_team_is_starters_in_registry_order" classname="team_composition_test" time="0.001">
+		</testcase>
+		<testcase name="test_f2_example_global_memory_with_ban" classname="team_composition_test" time="0.001">
+		</testcase>
+		<testcase name="test_stage_memory_beats_global_memory" classname="team_composition_test" time="0.001">
+		</testcase>
+		<testcase name="test_remember_keeps_guest_teams_out_of_global_memory" classname="team_composition_test" time="0.001">
+		</testcase>
+		<testcase name="test_retry_team_is_the_last_team_unchanged" classname="team_composition_test" time="0.002">
+		</testcase>
+		<testcase name="test_rule_validation_errors" classname="team_composition_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="9" name="sfx_rules_test" package="tests/unit/audio" timestamp="2026-11-21T02:06:55" hostname="localhost" tests="15" failures="0" errors="0" skipped="0" flaky="0" time="0.059">
+		<testcase name="test_chain_pitch_rises_whole_tone_per_depth_and_caps_at_6" classname="sfx_rules_test" time="0.003">
+		</testcase>
+		<testcase name="test_cascade_pitch_line_order_rises_and_caps" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_line_flash_three_lines_pitch_and_delay_follow_cascade" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_shake_uses_wave_depth_for_chain_hit" classname="sfx_rules_test" time="0.001">
+		</testcase>
+		<testcase name="test_effect_maps_each_species_and_unknown_falls_back" classname="sfx_rules_test" time="0.001">
+		</testcase>
+		<testcase name="test_peel_sticker_sound_only_on_first_peel_of_wave" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_finisher_plays_fanfare_and_confetti" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_silent_cues_request_nothing" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_fast_forward_drops_low_priority_and_attenuates" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_repeat_gap_blocks_same_frame_and_allows_after_gap" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_pick_voice_prefers_free_then_oldest_lowest_priority" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_pick_voice_drops_when_pool_holds_only_higher_priority" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_tick_pitch_rises_half_semitone_and_caps" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_jitter_stays_within_cents" classname="sfx_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_bus_db_half_volume_is_minus_6_and_zero_mutes" classname="sfx_rules_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="10" name="sfx_player_test" package="tests/unit/audio" timestamp="2026-11-21T02:06:55" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.065">
+		<testcase name="test_requests_before_first_press_are_dropped" classname="sfx_player_test" time="0.008">
+		</testcase>
+		<testcase name="test_suspended_drops_requests_until_resume" classname="sfx_player_test" time="0.004">
+		</testcase>
+		<testcase name="test_same_sound_same_frame_plays_once_then_after_gap" classname="sfx_player_test" time="0.005">
+		</testcase>
+		<testcase name="test_unknown_sound_is_ignored" classname="sfx_player_test" time="0.007">
+		</testcase>
+		<testcase name="test_is_press_accepts_touch_click_key_presses_only" classname="sfx_player_test" time="0.002">
+		</testcase>
+		<testcase name="test_every_listed_sound_has_small_mono_wav" classname="sfx_player_test" time="0.006">
+		</testcase>
+		<testcase name="test_species_map_covers_all_mvp_species" classname="sfx_player_test" time="0.001">
+		</testcase>
+		<testcase name="test_settings_round_trip_and_clamp_through_config" classname="sfx_player_test" time="0.001">
+		</testcase>
+		<testcase name="test_settings_apply_sets_sfx_bus_and_mute" classname="sfx_player_test" time="0.001">
+		</testcase>
+	</testsuite>
+	<testsuite id="11" name="board_rules_shape_test" package="tests/unit/rules/board" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="5" failures="0" errors="0" skipped="0" flaky="0" time="0.028">
+		<testcase name="test_invalid_shapes_are_all_rejected_with_id_and_reason" classname="board_rules_shape_test" time="0.003">
+		</testcase>
+		<testcase name="test_valid_shape_has_no_errors" classname="board_rules_shape_test" time="0.002">
+		</testcase>
+		<testcase name="test_horizontal_piece_does_not_fit_vertical_gap" classname="board_rules_shape_test" time="0.001">
+		</testcase>
+		<testcase name="test_faceless_piece_validity_depends_on_stage_flag" classname="board_rules_shape_test" time="0.001">
+		</testcase>
+		<testcase name="test_face_index_equal_to_cell_count_is_rejected_in_both_modes" classname="board_rules_shape_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="12" name="board_rules_placement_test" package="tests/unit/rules/board" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.041">
+		<testcase name="test_empty_board_from_config_is_all_empty" classname="board_rules_placement_test" time="0.003">
+		</testcase>
+		<testcase name="test_board_size_changes_with_data_only" classname="board_rules_placement_test" time="0.001">
+		</testcase>
+		<testcase name="test_can_place_l_shape_boundaries" classname="board_rules_placement_test" time="0.001">
+		</testcase>
+		<testcase name="test_can_place_false_when_target_cell_occupied" classname="board_rules_placement_test" time="0.002">
+		</testcase>
+		<testcase name="test_place_marks_only_face_offset_and_leaves_input_unchanged" classname="board_rules_placement_test" time="0.003">
+		</testcase>
+		<testcase name="test_place_on_invalid_anchor_reports_error_and_keeps_board" classname="board_rules_placement_test" time="0.002">
+		</testcase>
+		<testcase name="test_anchor_count_two_by_three_is_42" classname="board_rules_placement_test" time="0.002">
+		</testcase>
+		<testcase name="test_copy_does_not_share_modifiers" classname="board_rules_placement_test" time="0.002">
+		</testcase>
+		<testcase name="test_public_functions_repeat_identically" classname="board_rules_placement_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="13" name="board_rules_stage_load_test" package="tests/unit/rules/board" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="4" failures="0" errors="0" skipped="0" flaky="0" time="0.020">
+		<testcase name="test_initial_board_with_full_row_zero_is_rejected" classname="board_rules_stage_load_test" time="0.003">
+		</testcase>
+		<testcase name="test_initial_board_with_full_column_five_is_rejected" classname="board_rules_stage_load_test" time="0.002">
+		</testcase>
+		<testcase name="test_valid_initial_board_passes" classname="board_rules_stage_load_test" time="0.002">
+		</testcase>
+		<testcase name="test_size_mismatch_is_rejected" classname="board_rules_stage_load_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="14" name="board_rules_no_moves_test" package="tests/unit/rules/board" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="6" failures="0" errors="0" skipped="0" flaky="0" time="0.030">
+		<testcase name="test_checkerboard_with_domino_and_square_is_stuck" classname="board_rules_no_moves_test" time="0.003">
+		</testcase>
+		<testcase name="test_adding_single_cell_piece_unblocks" classname="board_rules_no_moves_test" time="0.002">
+		</testcase>
+		<testcase name="test_empty_piece_list_is_not_stuck" classname="board_rules_no_moves_test" time="0.001">
+		</testcase>
+		<testcase name="test_full_board_with_single_piece_is_stuck" classname="board_rules_no_moves_test" time="0.001">
+		</testcase>
+		<testcase name="test_refill_boundary_cases" classname="board_rules_no_moves_test" time="0.002">
+		</testcase>
+		<testcase name="test_no_moves_does_not_modify_board" classname="board_rules_no_moves_test" time="0.003">
+		</testcase>
+	</testsuite>
+	<testsuite id="15" name="board_rules_lines_test" package="tests/unit/rules/board" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="8" failures="0" errors="0" skipped="0" flaky="0" time="0.041">
+		<testcase name="test_full_lines_rows_first_and_union_counted_once" classname="board_rules_lines_test" time="0.003">
+		</testcase>
+		<testcase name="test_clear_full_row_reports_single_face" classname="board_rules_lines_test" time="0.002">
+		</testcase>
+		<testcase name="test_clear_row_and_column_intersection_face_listed_once" classname="board_rules_lines_test" time="0.002">
+		</testcase>
+		<testcase name="test_clear_range_with_empty_cells_skips_them" classname="board_rules_lines_test" time="0.002">
+		</testcase>
+		<testcase name="test_fill_eggs_completes_row" classname="board_rules_lines_test" time="0.002">
+		</testcase>
+		<testcase name="test_fill_occupied_cell_reports_error_and_changes_nothing" classname="board_rules_lines_test" time="0.003">
+		</testcase>
+		<testcase name="test_data_only_stone_kind_survives_line_clear" classname="board_rules_lines_test" time="0.002">
+		</testcase>
+		<testcase name="test_formula_values_line_cell_count_and_fill_count" classname="board_rules_lines_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="16" name="chain_resolver_domino_test" package="tests/unit/rules/chain" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="2" failures="0" errors="0" skipped="0" flaky="0" time="0.026">
+		<testcase name="test_prototype_domino_with_test_ability_table_reaches_depth_three" classname="chain_resolver_domino_test" time="0.003">
+		</testcase>
+		<testcase name="test_prototype_domino_with_real_starter_crew_data_reaches_depth_three" classname="chain_resolver_domino_test" time="0.009">
+		</testcase>
+	</testsuite>
+	<testsuite id="17" name="chain_resolver_primitives_test" package="tests/unit/rules/chain" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.041">
+		<testcase name="test_target_sizes_on_empty_board_at_three_five" classname="chain_resolver_primitives_test" time="0.003">
+		</testcase>
+		<testcase name="test_every_primitive_at_corner_stays_on_board" classname="chain_resolver_primitives_test" time="0.002">
+		</testcase>
+		<testcase name="test_limited_reach_cross_and_column_line" classname="chain_resolver_primitives_test" time="0.002">
+		</testcase>
+		<testcase name="test_mongsil_pattern_lays_in_offset_order_and_drops_off_board" classname="chain_resolver_primitives_test" time="0.001">
+		</testcase>
+		<testcase name="test_starter_crew_filled_targets_around_open_center" classname="chain_resolver_primitives_test" time="0.002">
+		</testcase>
+		<testcase name="test_validation_rejects_bad_steps" classname="chain_resolver_primitives_test" time="0.002">
+		</testcase>
+		<testcase name="test_validation_rejects_float_where_int_required" classname="chain_resolver_primitives_test" time="0.001">
+		</testcase>
+		<testcase name="test_validation_accepts_string_keys_and_valid_params" classname="chain_resolver_primitives_test" time="0.002">
+		</testcase>
+		<testcase name="test_kind_of_classifies_vocabulary" classname="chain_resolver_primitives_test" time="0.001">
+		</testcase>
+	</testsuite>
+	<testsuite id="18" name="chain_resolver_order_test" package="tests/unit/rules/chain" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="5" failures="0" errors="0" skipped="0" flaky="0" time="0.031">
+		<testcase name="test_three_faces_in_one_row_activate_row_major_same_stage" classname="chain_resolver_order_test" time="0.003">
+		</testcase>
+		<testcase name="test_face_ability_effects_follow_activation_order" classname="chain_resolver_order_test" time="0.003">
+		</testcase>
+		<testcase name="test_intersection_face_of_row_and_column_activates_once" classname="chain_resolver_order_test" time="0.002">
+		</testcase>
+		<testcase name="test_face_in_line_and_ability_range_is_both_and_activates_once" classname="chain_resolver_order_test" time="0.002">
+		</testcase>
+		<testcase name="test_overlapping_targets_cleared_once_with_earliest_source" classname="chain_resolver_order_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="19" name="chain_resolver_fill_test" package="tests/unit/rules/chain" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="6" failures="0" errors="0" skipped="0" flaky="0" time="0.033">
+		<testcase name="test_egg_laid_in_same_wave_cross_range_is_not_cleared_next_wave" classname="chain_resolver_fill_test" time="0.004">
+		</testcase>
+		<testcase name="test_two_piyaks_lay_sequentially_without_overlap" classname="chain_resolver_fill_test" time="0.003">
+		</testcase>
+		<testcase name="test_eggs_completing_row_reignite_next_wave" classname="chain_resolver_fill_test" time="0.002">
+		</testcase>
+		<testcase name="test_lay_eggs_picks_fuller_line_nearest_first" classname="chain_resolver_fill_test" time="0.002">
+		</testcase>
+		<testcase name="test_lay_eggs_tie_prefers_row" classname="chain_resolver_fill_test" time="0.001">
+		</testcase>
+		<testcase name="test_lay_eggs_falls_back_to_other_line_when_chosen_is_full" classname="chain_resolver_fill_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="20" name="chain_resolver_depth_cap_test" package="tests/unit/rules/chain" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="7" failures="0" errors="0" skipped="0" flaky="0" time="0.058">
+		<testcase name="test_cap_six_fizzles_wave_six_and_stops" classname="chain_resolver_depth_cap_test" time="0.004">
+		</testcase>
+		<testcase name="test_depth_cap_reached_is_last_wave_event" classname="chain_resolver_depth_cap_test" time="0.003">
+		</testcase>
+		<testcase name="test_cap_seven_is_one_past_the_chain_and_not_reached" classname="chain_resolver_depth_cap_test" time="0.004">
+		</testcase>
+		<testcase name="test_cap_three_from_data_only" classname="chain_resolver_depth_cap_test" time="0.003">
+		</testcase>
+		<testcase name="test_cap_zero_fizzles_every_wave_zero_face" classname="chain_resolver_depth_cap_test" time="0.002">
+		</testcase>
+		<testcase name="test_all_stages_equal_wave_plus_one" classname="chain_resolver_depth_cap_test" time="0.004">
+		</testcase>
+		<testcase name="test_wave_count_bounded_by_faces_and_cap_over_named_fixtures" classname="chain_resolver_depth_cap_test" time="0.016">
+		</testcase>
+	</testsuite>
+	<testsuite id="21" name="chain_resolver_rng_test" package="tests/unit/rules/chain" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="3" failures="0" errors="0" skipped="0" flaky="0" time="0.054">
+		<testcase name="test_result_identical_for_seeds_zero_one_and_max" classname="chain_resolver_rng_test" time="0.006">
+		</testcase>
+		<testcase name="test_resolver_sources_have_no_global_random_calls" classname="chain_resolver_rng_test" time="0.031">
+		</testcase>
+		<testcase name="test_seed_for_matches_between_preview_and_commit" classname="chain_resolver_rng_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="22" name="chain_resolver_events_test" package="tests/unit/rules/chain" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="10" failures="0" errors="0" skipped="0" flaky="0" time="0.088">
+		<testcase name="test_seq_is_gap_free_and_wave_internal_order_follows_rule_19" classname="chain_resolver_events_test" time="0.009">
+		</testcase>
+		<testcase name="test_cleared_cells_row_major_and_never_twice" classname="chain_resolver_events_test" time="0.008">
+		</testcase>
+		<testcase name="test_domino_never_clears_a_cell_twice_across_waves" classname="chain_resolver_events_test" time="0.003">
+		</testcase>
+		<testcase name="test_cells_cleared_wave_matches_preceding_wave_begin_and_no_score_fields" classname="chain_resolver_events_test" time="0.015">
+		</testcase>
+		<testcase name="test_result_events_and_payloads_are_read_only" classname="chain_resolver_events_test" time="0.004">
+		</testcase>
+		<testcase name="test_consumers_cannot_change_result_hash" classname="chain_resolver_events_test" time="0.003">
+		</testcase>
+		<testcase name="test_can_activate_hook_suppresses_marked_face" classname="chain_resolver_events_test" time="0.002">
+		</testcase>
+		<testcase name="test_default_hooks_match_unhooked_golden" classname="chain_resolver_events_test" time="0.004">
+		</testcase>
+		<testcase name="test_pre_clear_keep_emits_cell_modified_and_keeps_cell" classname="chain_resolver_events_test" time="0.002">
+		</testcase>
+		<testcase name="test_target_filter_hook_excludes_cells_from_ability" classname="chain_resolver_events_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="23" name="chain_resolver_basic_test" package="tests/unit/rules/chain" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="6" failures="0" errors="0" skipped="0" flaky="0" time="0.047">
+		<testcase name="test_placement_without_lines_emits_placed_and_chain_end_only" classname="chain_resolver_basic_test" time="0.003">
+		</testcase>
+		<testcase name="test_resolve_does_not_mutate_input_and_repeats_identically" classname="chain_resolver_basic_test" time="0.004">
+		</testcase>
+		<testcase name="test_domino_nyangi_then_gomgom_gives_depth_two_three_waves" classname="chain_resolver_basic_test" time="0.004">
+		</testcase>
+		<testcase name="test_domino_golden_event_sequence" classname="chain_resolver_basic_test" time="0.003">
+		</testcase>
+		<testcase name="test_invalid_placement_overlap_reports_error_and_keeps_board" classname="chain_resolver_basic_test" time="0.003">
+		</testcase>
+		<testcase name="test_invalid_placement_off_board_reports_error" classname="chain_resolver_basic_test" time="0.003">
+		</testcase>
+	</testsuite>
+	<testsuite id="24" name="scoring_rules_test" package="tests/unit/rules/scoring" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.064">
+		<testcase name="test_score_is_pure_and_repeatable" classname="scoring_rules_test" time="0.005">
+		</testcase>
+		<testcase name="test_scoring_sources_contain_no_fractional_arithmetic" classname="scoring_rules_test" time="0.006">
+		</testcase>
+		<testcase name="test_kept_cells_are_not_scored" classname="scoring_rules_test" time="0.003">
+		</testcase>
+		<testcase name="test_stage_tally_accumulates_and_resets" classname="scoring_rules_test" time="0.003">
+		</testcase>
+		<testcase name="test_crew_identity_does_not_change_score" classname="scoring_rules_test" time="0.003">
+		</testcase>
+		<testcase name="test_invalid_rules_rejected_with_knob_name_and_value" classname="scoring_rules_test" time="0.002">
+		</testcase>
+		<testcase name="test_real_scoring_rules_file_loads_start_values" classname="scoring_rules_test" time="0.003">
+		</testcase>
+		<testcase name="test_schema_violation_scores_placement_only" classname="scoring_rules_test" time="0.003">
+		</testcase>
+		<testcase name="test_resolver_domino_events_score_end_to_end" classname="scoring_rules_test" time="0.004">
+		</testcase>
+	</testsuite>
+	<testsuite id="25" name="scoring_formula_test" package="tests/unit/rules/scoring" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="11" failures="0" errors="0" skipped="0" flaky="0" time="0.058">
+		<testcase name="test_domino_golden_total_is_356" classname="scoring_formula_test" time="0.004">
+		</testcase>
+		<testcase name="test_depth_step_from_data_changes_golden_to_461" classname="scoring_formula_test" time="0.002">
+		</testcase>
+		<testcase name="test_placement_without_lines_scores_cells_only" classname="scoring_formula_test" time="0.003">
+		</testcase>
+		<testcase name="test_line_ability_and_both_cells_are_split" classname="scoring_formula_test" time="0.001">
+		</testcase>
+		<testcase name="test_activation_and_fizzle_points" classname="scoring_formula_test" time="0.002">
+		</testcase>
+		<testcase name="test_simultaneous_activations_each_scored" classname="scoring_formula_test" time="0.002">
+		</testcase>
+		<testcase name="test_formula_tables_f1_f2_f3" classname="scoring_formula_test" time="0.001">
+		</testcase>
+		<testcase name="test_prototype_parity_values" classname="scoring_formula_test" time="0.002">
+		</testcase>
+		<testcase name="test_floor_happens_once_per_wave" classname="scoring_formula_test" time="0.001">
+		</testcase>
+		<testcase name="test_cap_reaching_placement" classname="scoring_formula_test" time="0.002">
+		</testcase>
+		<testcase name="test_upper_bound_wave_has_no_overflow" classname="scoring_formula_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="26" name="rules_core_purity_test" package="tests/unit/rules/purity" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="2" failures="0" errors="0" skipped="0" flaky="0" time="0.028">
+		<testcase name="test_rules_core_has_no_forbidden_tokens" classname="rules_core_purity_test" time="0.010">
+		</testcase>
+		<testcase name="test_rules_core_scripts_extend_refcounted_or_resource_only" classname="rules_core_purity_test" time="0.004">
+		</testcase>
+	</testsuite>
+	<testsuite id="27" name="tray_supply_rescue_test" package="tests/unit/rules/tray" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="4" failures="0" errors="0" skipped="0" flaky="0" time="0.058">
+		<testcase name="test_f5_board_rescues_exactly_one_nyangi_or_piyak_slot" classname="tray_supply_rescue_test" time="0.011">
+		</testcase>
+		<testcase name="test_no_team_shape_fits_means_no_rescue_and_no_moves" classname="tray_supply_rescue_test" time="0.010">
+		</testcase>
+		<testcase name="test_rescue_on_third_refill_leaves_later_refills_unchanged" classname="tray_supply_rescue_test" time="0.011">
+		</testcase>
+		<testcase name="test_rescue_disabled_keeps_unplaceable_candidates" classname="tray_supply_rescue_test" time="0.007">
+		</testcase>
+	</testsuite>
+	<testsuite id="28" name="tray_supply_structure_test" package="tests/unit/rules/tray" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="6" failures="0" errors="0" skipped="0" flaky="0" time="0.067">
+		<testcase name="test_consume_empties_only_that_slot_and_keeps_other_instances" classname="tray_supply_structure_test" time="0.009">
+		</testcase>
+		<testcase name="test_refill_on_non_empty_tray_is_refused_and_keeps_snapshot" classname="tray_supply_structure_test" time="0.008">
+		</testcase>
+		<testcase name="test_refill_on_empty_tray_with_budget_three_fills_all_slots" classname="tray_supply_structure_test" time="0.007">
+		</testcase>
+		<testcase name="test_budget_two_gives_partial_and_budget_zero_gives_exhausted" classname="tray_supply_structure_test" time="0.008">
+		</testcase>
+		<testcase name="test_shown_pieces_never_change_until_consumed" classname="tray_supply_structure_test" time="0.008">
+		</testcase>
+		<testcase name="test_consume_of_empty_slot_is_refused" classname="tray_supply_structure_test" time="0.007">
+		</testcase>
+	</testsuite>
+	<testsuite id="29" name="tray_supply_determinism_test" package="tests/unit/rules/tray" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="4" failures="0" errors="0" skipped="0" flaky="0" time="0.102">
+		<testcase name="test_same_inputs_replay_identically_and_resolver_seed_is_separate" classname="tray_supply_determinism_test" time="0.047">
+		</testcase>
+		<testcase name="test_fixed_restarts_repeat_first_tray_and_slot_order_keeps_shapes" classname="tray_supply_determinism_test" time="0.033">
+		</testcase>
+		<testcase name="test_per_attempt_seeds_differ_between_attempts_and_repeat_per_attempt" classname="tray_supply_determinism_test" time="0.002">
+		</testcase>
+		<testcase name="test_tray_sources_use_no_global_randomness" classname="tray_supply_determinism_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="30" name="tray_supply_generation_test" package="tests/unit/rules/tray" timestamp="2026-11-21T02:06:56" hostname="localhost" tests="7" failures="0" errors="0" skipped="0" flaky="0" time="0.436">
+		<testcase name="test_every_tray_holds_each_team_crew_exactly_once" classname="tray_supply_generation_test" time="0.021">
+		</testcase>
+		<testcase name="test_two_copies_per_bag_keep_counts_and_bound_gaps" classname="tray_supply_generation_test" time="0.022">
+		</testcase>
+		<testcase name="test_solo_nyangi_shape_bag_keeps_exact_weights_per_cycle" classname="tray_supply_generation_test" time="0.012">
+		</testcase>
+		<testcase name="test_face_cell_is_uniform_or_fixed" classname="tray_supply_generation_test" time="0.317">
+		</testcase>
+		<testcase name="test_faceless_share_ignored_unless_stage_allows_it" classname="tray_supply_generation_test" time="0.014">
+		</testcase>
+		<testcase name="test_twenty_piece_limit_gives_six_or_seven_per_crew" classname="tray_supply_generation_test" time="0.010">
+		</testcase>
+		<testcase name="test_generated_sequences_match_committed_goldens" classname="tray_supply_generation_test" time="0.015">
+		</testcase>
+	</testsuite>
+	<testsuite id="31" name="tray_supply_script_test" package="tests/unit/rules/tray" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="5" failures="0" errors="0" skipped="0" flaky="0" time="0.083">
+		<testcase name="test_script_entry_fills_as_written_without_rescue" classname="tray_supply_script_test" time="0.010">
+		</testcase>
+		<testcase name="test_tutorial_script_then_generation_from_crew_bag_zero" classname="tray_supply_script_test" time="0.009">
+		</testcase>
+		<testcase name="test_loop_after_script_repeats_the_script" classname="tray_supply_script_test" time="0.009">
+		</testcase>
+		<testcase name="test_invalid_script_specs_are_load_errors" classname="tray_supply_script_test" time="0.023">
+		</testcase>
+		<testcase name="test_team_slot_shape_outside_crew_pool_is_a_lint_warning" classname="tray_supply_script_test" time="0.008">
+		</testcase>
+	</testsuite>
+	<testsuite id="32" name="chain_preview_model_test" package="tests/unit/rules/preview" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="5" failures="0" errors="0" skipped="0" flaky="0" time="0.039">
+		<testcase name="test_domino_badges_show_stage_and_banner_chain_two" classname="chain_preview_model_test" time="0.004">
+		</testcase>
+		<testcase name="test_banner_tiers_follow_f3" classname="chain_preview_model_test" time="0.003">
+		</testcase>
+		<testcase name="test_depth_cap_face_gets_sleep_badge_and_max_number_is_six" classname="chain_preview_model_test" time="0.003">
+		</testcase>
+		<testcase name="test_default_settings_carry_no_score" classname="chain_preview_model_test" time="0.004">
+		</testcase>
+		<testcase name="test_first_stage_only_hides_later_stages_and_says_so" classname="chain_preview_model_test" time="0.003">
+		</testcase>
+	</testsuite>
+	<testsuite id="33" name="seed_hash_vectors_test" package="tests/unit/rules/rng" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.044">
+		<testcase name="test_hash32_single_zero_matches_adr_reference_vector" classname="seed_hash_vectors_test" time="0.003">
+		</testcase>
+		<testcase name="test_hash32_public_murmur3_vectors_match" classname="seed_hash_vectors_test" time="0.002">
+		</testcase>
+		<testcase name="test_hash32_multi_part_vectors_match_reference" classname="seed_hash_vectors_test" time="0.001">
+		</testcase>
+		<testcase name="test_hash32_result_is_always_unsigned_32_bit" classname="seed_hash_vectors_test" time="0.005">
+		</testcase>
+		<testcase name="test_mul32_matches_masked_product_at_boundaries" classname="seed_hash_vectors_test" time="0.002">
+		</testcase>
+		<testcase name="test_rotl32_wraps_high_bits" classname="seed_hash_vectors_test" time="0.002">
+		</testcase>
+		<testcase name="test_str32_matches_fnv1a_vectors" classname="seed_hash_vectors_test" time="0.002">
+		</testcase>
+		<testcase name="test_resolver_seed_same_inputs_give_same_value" classname="seed_hash_vectors_test" time="0.001">
+		</testcase>
+		<testcase name="test_resolver_seed_hundred_placement_indices_are_distinct" classname="seed_hash_vectors_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="34" name="det_rng_test" package="tests/unit/rules/rng" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="7" failures="0" errors="0" skipped="0" flaky="0" time="0.037">
+		<testcase name="test_next_u32_equals_hash_of_seed_and_counter" classname="det_rng_test" time="0.003">
+		</testcase>
+		<testcase name="test_same_seed_gives_same_sequence" classname="det_rng_test" time="0.002">
+		</testcase>
+		<testcase name="test_negative_seed_is_masked_to_32_bits" classname="det_rng_test" time="0.002">
+		</testcase>
+		<testcase name="test_below_stays_in_range" classname="det_rng_test" time="0.003">
+		</testcase>
+		<testcase name="test_below_maximum_bound_does_not_overflow" classname="det_rng_test" time="0.002">
+		</testcase>
+		<testcase name="test_shuffle_is_deterministic_and_leaves_input_untouched" classname="det_rng_test" time="0.002">
+		</testcase>
+		<testcase name="test_shuffle_different_seeds_give_different_orders" classname="det_rng_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="35" name="example_sanity_test" package="tests/unit/example" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="1" failures="0" errors="0" skipped="0" flaky="0" time="0.015">
+		<testcase name="test_addition_returns_expected_sum" classname="example_sanity_test" time="0.003">
+		</testcase>
+	</testsuite>
+	<testsuite id="36" name="player_progress_save_test" package="tests/unit/meta" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="8" failures="0" errors="0" skipped="0" flaky="0" time="0.049">
+		<testcase name="test_fresh_save_owns_starters_and_unlocks_only_first_stage" classname="player_progress_save_test" time="0.003">
+		</testcase>
+		<testcase name="test_clearing_a_stage_unlocks_the_next_only" classname="player_progress_save_test" time="0.002">
+		</testcase>
+		<testcase name="test_record_result_keeps_best_stars_and_score_independently" classname="player_progress_save_test" time="0.001">
+		</testcase>
+		<testcase name="test_failed_result_records_nothing" classname="player_progress_save_test" time="0.002">
+		</testcase>
+		<testcase name="test_json_round_trip_preserves_progress_and_team_memory" classname="player_progress_save_test" time="0.002">
+		</testcase>
+		<testcase name="test_corrupt_text_returns_null" classname="player_progress_save_test" time="0.002">
+		</testcase>
+		<testcase name="test_wrong_version_returns_null" classname="player_progress_save_test" time="0.002">
+		</testcase>
+		<testcase name="test_bad_values_are_clamped_and_unknown_crews_dropped" classname="player_progress_save_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="37" name="crew_definition_data_test" package="tests/unit/data/crew" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="13" failures="0" errors="0" skipped="0" flaky="0" time="0.135">
+		<testcase name="test_mvp_registry_loads_without_errors_or_warnings" classname="crew_definition_data_test" time="0.009">
+		</testcase>
+		<testcase name="test_starter_abilities_match_gdd_table" classname="crew_definition_data_test" time="0.008">
+		</testcase>
+		<testcase name="test_tres_integer_params_load_as_int" classname="crew_definition_data_test" time="0.007">
+		</testcase>
+		<testcase name="test_expected_piece_size_and_shape_probability" classname="crew_definition_data_test" time="0.008">
+		</testcase>
+		<testcase name="test_all_mvp_shapes_pass_board_rules_and_faces_are_tray_chosen" classname="crew_definition_data_test" time="0.008">
+		</testcase>
+		<testcase name="test_crew_resources_unchanged_after_resolving" classname="crew_definition_data_test" time="0.009">
+		</testcase>
+		<testcase name="test_rule_resources_load_with_gdd_start_values" classname="crew_definition_data_test" time="0.003">
+		</testcase>
+		<testcase name="test_gaegul_matches_rule_14_row" classname="crew_definition_data_test" time="0.008">
+		</testcase>
+		<testcase name="test_kkangchong_matches_rule_14_row" classname="crew_definition_data_test" time="0.008">
+		</testcase>
+		<testcase name="test_mongsil_matches_rule_14_row" classname="crew_definition_data_test" time="0.008">
+		</testcase>
+		<testcase name="test_new_catalog_shapes_match_gdd_offsets" classname="crew_definition_data_test" time="0.003">
+		</testcase>
+		<testcase name="test_clear_targets_on_full_board_match_ac_11" classname="crew_definition_data_test" time="0.008">
+		</testcase>
+		<testcase name="test_mongsil_corner_wool_lays_in_offset_order" classname="crew_definition_data_test" time="0.008">
+		</testcase>
+	</testsuite>
+	<testsuite id="38" name="crew_definition_schema_test" package="tests/unit/data/crew" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="10" failures="0" errors="0" skipped="0" flaky="0" time="0.052">
+		<testcase name="test_valid_two_crew_registry_loads_clean" classname="crew_definition_schema_test" time="0.004">
+		</testcase>
+		<testcase name="test_unknown_primitive_names_crew_and_field" classname="crew_definition_schema_test" time="0.002">
+		</testcase>
+		<testcase name="test_bad_shapes_are_load_errors" classname="crew_definition_schema_test" time="0.003">
+		</testcase>
+		<testcase name="test_duplicate_shape_zero_weight_and_face_cell_bounds" classname="crew_definition_schema_test" time="0.003">
+		</testcase>
+		<testcase name="test_each_duplicated_identity_field_is_a_load_error" classname="crew_definition_schema_test" time="0.002">
+		</testcase>
+		<testcase name="test_fill_step_requires_fill_visual" classname="crew_definition_schema_test" time="0.002">
+		</testcase>
+		<testcase name="test_size_only_difference_across_rarity_is_error_same_rarity_is_one_warning" classname="crew_definition_schema_test" time="0.002">
+		</testcase>
+		<testcase name="test_single_signature_shape_is_lint_warning" classname="crew_definition_schema_test" time="0.002">
+		</testcase>
+		<testcase name="test_ability_table_covers_whole_registry" classname="crew_definition_schema_test" time="0.002">
+		</testcase>
+		<testcase name="test_invalid_registry_exposes_no_ability_table" classname="crew_definition_schema_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="39" name="drag_controller_test" package="tests/unit/gameplay" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.045">
+		<testcase name="test_f1_f2_worked_example_gives_anchor_2_1" classname="drag_controller_test" time="0.003">
+		</testcase>
+		<testcase name="test_f3_hysteresis_examples_hold_and_switch" classname="drag_controller_test" time="0.002">
+		</testcase>
+		<testcase name="test_f2_half_rounds_up_including_negative" classname="drag_controller_test" time="0.002">
+		</testcase>
+		<testcase name="test_f4_slop_on_720_canvas_keeps_pressed_until_13_3" classname="drag_controller_test" time="0.002">
+		</testcase>
+		<testcase name="test_tap_inside_slop_returns_without_request" classname="drag_controller_test" time="0.002">
+		</testcase>
+		<testcase name="test_valid_release_requests_last_shown_anchor_and_locks" classname="drag_controller_test" time="0.002">
+		</testcase>
+		<testcase name="test_anchor_changed_only_on_valid_anchor_changes" classname="drag_controller_test" time="0.002">
+		</testcase>
+		<testcase name="test_second_pointer_is_ignored" classname="drag_controller_test" time="0.001">
+		</testcase>
+		<testcase name="test_disable_mid_drag_cancels_and_locks" classname="drag_controller_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="40" name="stage_goals_load_test" package="tests/unit/stage_goals" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="5" failures="0" errors="0" skipped="0" flaky="0" time="0.043">
+		<testcase name="test_gdd_example_board_loads" classname="stage_goals_load_test" time="0.004">
+		</testcase>
+		<testcase name="test_each_rule_violation_is_a_load_error_naming_the_field" classname="stage_goals_load_test" time="0.005">
+		</testcase>
+		<testcase name="test_obstacle_violation_is_a_stage_load_error" classname="stage_goals_load_test" time="0.003">
+		</testcase>
+		<testcase name="test_s2_at_or_below_score_goal_is_a_lint_warning" classname="stage_goals_load_test" time="0.003">
+		</testcase>
+		<testcase name="test_free_play_stage_loads_without_goals" classname="stage_goals_load_test" time="0.003">
+		</testcase>
+	</testsuite>
+	<testsuite id="41" name="stage_goals_goals_test" package="tests/unit/stage_goals" timestamp="2026-11-21T02:06:57" hostname="localhost" tests="9" failures="0" errors="0" skipped="0" flaky="0" time="0.051">
+		<testcase name="test_score_goal_uses_f1_scaled_threshold" classname="stage_goals_goals_test" time="0.004">
+		</testcase>
+		<testcase name="test_target_cells_count_cleared_cells_once_and_ignore_kept" classname="stage_goals_goals_test" time="0.002">
+		</testcase>
+		<testcase name="test_obstacle_goal_counts_freed_cells_not_layers" classname="stage_goals_goals_test" time="0.002">
+		</testcase>
+		<testcase name="test_chain_goal_counts_placements_at_or_above_depth" classname="stage_goals_goals_test" time="0.002">
+		</testcase>
+		<testcase name="test_two_goals_are_met_only_together" classname="stage_goals_goals_test" time="0.002">
+		</testcase>
+		<testcase name="test_same_events_give_same_monotonic_snapshots" classname="stage_goals_goals_test" time="0.002">
+		</testcase>
+		<testcase name="test_preview_marks_targets_without_changing_state" classname="stage_goals_goals_test" time="0.002">
+		</testcase>
+		<testcase name="test_preview_completes_stage_and_hides_score_goal" classname="stage_goals_goals_test" time="0.003">
+		</testcase>
+		<testcase name="test_pieces_out_only_when_zero_left_and_unmet" classname="stage_goals_goals_test" time="0.002">
+		</testcase>
+	</testsuite>
+	<testsuite id="42" name="stage_goals_stars_test" package="tests/unit/stage_goals" timestamp="2026-11-21T02:06:58" hostname="localhost" tests="3" failures="0" errors="0" skipped="0" flaky="0" time="0.022">
+		<testcase name="test_final_score_and_stars_table" classname="stage_goals_stars_test" time="0.003">
+		</testcase>
+		<testcase name="test_pts_eff_scales_with_cell_points" classname="stage_goals_stars_test" time="0.002">
+		</testcase>
+		<testcase name="test_pieces_left_and_unlimited" classname="stage_goals_stars_test" time="0.002">
+		</testcase>
+	</testsuite>
+</testsuites>

@@ -54,7 +54,7 @@
 #   in any other shape is reported as unsupported layout, with its number.
 
 version: 1
-last_updated: "2026-11-09"
+last_updated: ""
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -65,88 +65,7 @@ last_updated: "2026-11-09"
 # Attribute fields: any key stats that could appear in another GDD
 #   (health, damage, drops, faction, etc.)
 
-entities:
-  - name: nyangi
-    status: active
-    source: design/gdd/crew-definition.md
-    referenced_by:
-      - design/gdd/crew-definition.md
-      - design/gdd/team-composition.md
-    display_name: "냥이"
-    colour_slot: 1
-    rarity: COMMON
-    starter: true
-    ability: "clear_cross{reach:-1}"
-    shapes: "I3_H 3, I3_V 3, I4_H 2, L3_A 2, L4_A 1, J4_A 1"
-    added: 2026-11-07
-    revised: ""
-  - name: gomgom
-    status: active
-    source: design/gdd/crew-definition.md
-    referenced_by:
-      - design/gdd/crew-definition.md
-      - design/gdd/team-composition.md
-    display_name: "곰곰"
-    colour_slot: 2
-    rarity: COMMON
-    starter: true
-    ability: "clear_area{radius:1}"
-    shapes: "O4 3, R6_H 2, T4_D 2, R6_V 1"
-    added: 2026-11-07
-    revised: ""
-  - name: piyak
-    status: active
-    source: design/gdd/crew-definition.md
-    referenced_by:
-      - design/gdd/crew-definition.md
-      - design/gdd/team-composition.md
-    display_name: "삐약"
-    colour_slot: 3
-    rarity: COMMON
-    starter: true
-    ability: "lay_eggs_in_own_line{count:3,prefer:fuller,order:nearest}"
-    shapes: "D1 2, D2_H 2, D2_V 2, L3_B 1, L3_C 1"
-    added: 2026-11-07
-    revised: ""
-  - name: gaegul
-    status: active
-    source: design/gdd/crew-definition.md
-    referenced_by:
-      - design/gdd/crew-definition.md
-    display_name: "개굴"
-    colour_slot: 4
-    rarity: RARE
-    starter: false
-    ability: "clear_diagonals{reach:-1}"
-    shapes: "S4_H 2, Z4_H 2, L3_D 2, S4_V 1, Z4_V 1"
-    added: 2026-11-07
-    revised: ""
-  - name: kkangchong
-    status: active
-    source: design/gdd/crew-definition.md
-    referenced_by:
-      - design/gdd/crew-definition.md
-    display_name: "깡총"
-    colour_slot: 5
-    rarity: SPECIAL
-    starter: false
-    ability: "clear_pattern{offsets:8 cells at Chebyshev distance 2 (orth+diag)}"
-    shapes: "I4_V 2, T4_U 2, U5 1, I3_V 1"
-    added: 2026-11-07
-    revised: ""
-  - name: mongsil
-    status: active
-    source: design/gdd/crew-definition.md
-    referenced_by:
-      - design/gdd/crew-definition.md
-    display_name: "몽실"
-    colour_slot: 6
-    rarity: RARE
-    starter: false
-    ability: "lay_eggs_pattern{offsets:plus 5 incl face}"
-    shapes: "X5 1, P5_A 1, L3_B 2, I3_H 2, D2_H 2"
-    added: 2026-11-07
-    revised: ""
+entities: []
 
 # Example (remove when first real entry is added):
 #
@@ -204,134 +123,8 @@ items: []
 #   output_range[min, max], added
 # Optional: expression (the actual formula), notes
 
-formulas:
-  - name: line_cell_count
-    status: active
-    source: design/gdd/board-rules.md
-    referenced_by:
-      - design/gdd/board-rules.md
-      - design/gdd/chain-resolver.md
-      - design/gdd/scoring.md
-      - design/gdd/obstacles.md
-    variables:
-      - board_width
-      - board_height
-      - completed_rows
-      - completed_cols
-    output_range: [0, 64]
-    expression: "W * R + H * C - R * C"
-    notes: "Cells covered by completed lines (intersections once). Input to scoring via chain-resolver events."
-    added: 2026-11-07
-    revised: ""
-  - name: chain_depth
-    status: active
-    source: design/gdd/chain-resolver.md
-    referenced_by:
-      - design/gdd/chain-resolver.md
-      - design/gdd/chain-preview.md
-      - design/gdd/round-flow.md
-      - design/gdd/stage-goals.md
-    variables:
-      - activated_faces_per_wave
-      - depth_cap
-      - faces_on_board
-    output_range: [0, 6]
-    expression: "count of waves k with A_k > 0; <= min(depth_cap, F_board)"
-    notes: "Player-facing chain N. Read by stage goals (chain N), HUD, records. Upper bound follows depth_cap."
-    added: 2026-11-07
-    revised: ""
+formulas: []
 
-  - name: depth_mult_pct
-    status: active
-    source: design/gdd/scoring.md
-    referenced_by:
-      - design/gdd/scoring.md
-      - design/gdd/chain-resolver.md
-      - design/gdd/chain-presentation.md
-    variables:
-      - wave_depth
-      - depth_step_pct
-      - depth_mult_max_pct
-    output_range: [100, 400]
-    expression: "min(100 + depth_step_pct * k, depth_mult_max_pct)"
-    notes: "Integer percent. Owns chain-resolver F6 (reference copy there named depth_step_bonus=0.5)."
-    added: 2026-11-07
-    revised: ""
-  - name: placement_total
-    status: active
-    source: design/gdd/scoring.md
-    referenced_by:
-      - design/gdd/scoring.md
-      - design/gdd/chain-preview.md
-    variables:
-      - placement_points
-      - clear_points_per_wave
-      - activation_points_per_wave
-      - fizzle_points
-    output_range: [1, 87046]
-    expression: "n_placed*place_points_per_cell + sum_k(floor((N_line*line_mult_pct(L)+N_ab*100)*cell_points*depth_mult_pct(k)/10000) + activations_k*floor(activation_points_base*depth_mult_pct(k)/100)) + fizzle_points*n_fizzled"
-    notes: "Per-placement score, added to stage_score at commit. Read by stage goals (score goal, star thresholds), HUD, preview. Upper bound is a conservative overflow/HUD-digit bound, not a play value."
-    added: 2026-11-07
-    revised: ""
-  - name: expected_piece_cells
-    status: active
-    source: design/gdd/crew-definition.md
-    referenced_by:
-      - design/gdd/crew-definition.md
-      - design/gdd/tray-supply.md
-    variables:
-      - shape_weight
-      - shape_cells
-    output_range: [1, 6]
-    expression: "E_c = sum(w_s*|s|)/sum(w_s); team E_T = sum(share_c*E_c)"
-    notes: "Per-crew balance metric; lint range 2.0-5.0. MVP values 2.00 (piyak) to 4.75 (gomgom). Tray supply provides share_c."
-    added: 2026-11-07
-    revised: ""
-  - name: crew_share
-    status: active
-    source: design/gdd/tray-supply.md
-    referenced_by:
-      - design/gdd/tray-supply.md
-      - design/gdd/crew-definition.md
-    variables:
-      - team_size
-      - crew_bag_copies
-    output_range: [0.333, 1]
-    expression: "share_c = k/(n*k) = 1/n; p(c,s) = share_c * p(s|c)"
-    notes: "Crew bag: each refill draws crew tokens without replacement; n=3, k=1, full refills -> every tray has exactly one piece per team crew. Confirms crew-definition F2 share_c = 1/3."
-    added: 2026-11-07
-    revised: ""
-  - name: chain_playback_time
-    status: active
-    source: design/gdd/chain-presentation.md
-    referenced_by:
-      - design/gdd/chain-presentation.md
-      - design/gdd/round-flow.md
-    variables:
-      - waves
-      - tempo
-      - n_activated_faces
-      - cap_reached
-      - chain_playback_budget_s
-      - speed_pref
-    output_range: [0.12, 4.0]
-    expression: "T_raw = place_dur + sum_k beat(k) + cap_hold? + settle_dur; T = T_raw * max(c_min, min(1, T_budget/T_raw)) / speed_pref"
-    notes: "Seconds at speed 1.0. beat(k)=(0.24+0.30)*tempo(k)+stagger; tempo 1.0 -> 0.6 floor. Depth-6 capped 3.51 s, worst 4.00 s. Read by round-flow (input wait), audio, HUD."
-    added: 2026-11-07
-    revised: ""
-  - name: ice_remaining
-    status: active
-    source: design/gdd/obstacles.md
-    referenced_by:
-      - design/gdd/obstacles.md
-      - design/gdd/stage-goals.md
-    variables:
-      - ice_layers
-    output_range: [0, 128]
-    expression: "sum over cells of ice_layers(cell); iced_cells = count(ice_layers >= 1)"
-    notes: "Monotonically decreasing; each CELL_MODIFIED strips exactly 1 layer. Input to stage-goals obstacle goal. Stones not counted."
-    added: 2026-11-09
-    revised: ""
 # Example:
 #
 # formulas:
@@ -353,37 +146,6 @@ formulas:
 #       damage_cap in combat.md clamps at 999."
 #     added: 2026-03-26
 #     revised: ""
-  - name: pieces_left
-    status: active
-    source: design/gdd/round-flow.md
-    referenced_by:
-      - design/gdd/round-flow.md
-      - design/gdd/stage-goals.md
-    variables:
-      - piece_limit
-      - placements_used
-    output_range: [0, piece_limit]
-    expression: "pieces_left = piece_limit - placements_used (inf if piece_limit unset); refill_budget = piece_limit - pieces_dealt"
-    notes: "piece_limit comes from StageDef (stage-goals). Tray never deals beyond piece_limit. Read by HUD, stage-goals (out-of-pieces, stars), tray-supply (refill budget)."
-    added: 2026-11-09
-    revised: ""
-  - name: star_rating
-    status: active
-    source: design/gdd/stage-goals.md
-    referenced_by:
-      - design/gdd/stage-goals.md
-      - design/gdd/round-flow.md
-    variables:
-      - cleared
-      - final_score
-      - star_points_S2
-      - star_points_S3
-      - cell_points
-    output_range: [0, 3]
-    expression: "cleared ? 1 + [final_score >= floor(S2*cell_points/10)] + [final_score >= floor(S3*cell_points/10)] : 0; final_score = stage_score + pieces_left*floor(leftover_piece_points*cell_points/10)"
-    notes: "Fills RoundResult.stars. Leftover bonus is a separate term, never added to scoring's stage_score. S2 < S3 enforced at load. Thresholds are written at cell_points_ref=10."
-    added: 2026-11-09
-    revised: ""
 
 
 # ─── CONSTANTS ───────────────────────────────────────────────────────────────
@@ -394,153 +156,8 @@ formulas:
 #
 # Required fields: name, status, source, referenced_by, value, unit, added
 
-constants:
-  - name: board_width
-    status: active
-    source: design/gdd/board-rules.md
-    referenced_by:
-      - design/gdd/board-rules.md
-      - design/gdd/chain-resolver.md
-      - design/gdd/placement-input.md
-      - design/gdd/chain-preview.md
-      - design/gdd/stage-goals.md
-    value: 8
-    unit: cells
-    added: 2026-11-07
-    revised: ""
-  - name: board_height
-    status: active
-    source: design/gdd/board-rules.md
-    referenced_by:
-      - design/gdd/board-rules.md
-      - design/gdd/chain-resolver.md
-      - design/gdd/placement-input.md
-      - design/gdd/chain-preview.md
-      - design/gdd/stage-goals.md
-    value: 8
-    unit: cells
-    added: 2026-11-07
-    revised: ""
-  - name: max_piece_cells
-    status: active
-    source: design/gdd/board-rules.md
-    referenced_by:
-      - design/gdd/board-rules.md
-      - design/gdd/scoring.md
-      - design/gdd/placement-input.md
-      - design/gdd/crew-definition.md
-      - design/gdd/tray-supply.md
-    value: 6
-    unit: cells
-    added: 2026-11-07
-    revised: ""
-  - name: depth_cap
-    status: active
-    source: design/gdd/chain-resolver.md
-    referenced_by:
-      - design/gdd/chain-resolver.md
-      - design/gdd/game-concept.md
-      - design/gdd/scoring.md
-      - design/gdd/chain-preview.md
-      - design/gdd/chain-presentation.md
-      - design/gdd/audio.md
-      - design/gdd/obstacles.md
-      - design/gdd/stage-goals.md
-    value: 6
-    unit: waves
-    added: 2026-11-07
-    revised: ""
-  - name: lift_offset_cells
-    status: active
-    source: design/gdd/placement-input.md
-    referenced_by:
-      - design/gdd/placement-input.md
-      - design/gdd/board-rules.md
-    value: 0.6
-    unit: cells
-    added: 2026-11-07
-    revised: ""
+constants: []
 
-  - name: depth_step_pct
-    status: active
-    source: design/gdd/scoring.md
-    referenced_by:
-      - design/gdd/scoring.md
-      - design/gdd/chain-resolver.md
-      - design/gdd/game-concept.md
-    value: 50
-    unit: percent per wave
-    added: 2026-11-07
-    revised: ""
-  - name: cell_points
-    status: active
-    source: design/gdd/scoring.md
-    referenced_by:
-      - design/gdd/scoring.md
-      - design/gdd/stage-goals.md
-    value: 10
-    unit: points per cleared cell
-    added: 2026-11-07
-    revised: ""
-  - name: chain_playback_budget_s
-    status: active
-    source: design/gdd/chain-presentation.md
-    referenced_by:
-      - design/gdd/chain-presentation.md
-      - design/gdd/chain-resolver.md
-    value: 4.0
-    unit: seconds (max chain playback at speed 1.0)
-    added: 2026-11-07
-    revised: ""
-  - name: default_team_size
-    status: active
-    source: design/gdd/team-composition.md
-    referenced_by:
-      - design/gdd/team-composition.md
-      - design/gdd/tray-supply.md
-    value: 3
-    unit: crew per team (stage team_rule.team_size may set 1-3)
-    added: 2026-11-09
-    revised: ""
-  - name: tray_size
-    status: active
-    source: design/gdd/tray-supply.md
-    referenced_by:
-      - design/gdd/tray-supply.md
-      - design/gdd/board-rules.md
-      - design/gdd/placement-input.md
-      - design/gdd/round-flow.md
-    value: 3
-    unit: slots
-    added: 2026-11-07
-    revised: ""
-  - name: ice_max_layers
-    status: active
-    source: design/gdd/obstacles.md
-    referenced_by:
-      - design/gdd/obstacles.md
-    value: 2
-    unit: layers (max ice on a TILE; one stripped per wave)
-    added: 2026-11-09
-    revised: ""
-  - name: frozen_face_layers
-    status: active
-    source: design/gdd/obstacles.md
-    referenced_by:
-      - design/gdd/obstacles.md
-    value: 1
-    unit: layers (ice on a face cell; hits_to_fire = 2)
-    added: 2026-11-09
-    revised: ""
-  - name: max_stones_per_line
-    status: active
-    source: design/gdd/obstacles.md
-    referenced_by:
-      - design/gdd/obstacles.md
-    value: 3
-    unit: STONE cells per row/column (load-time validation)
-    added: 2026-11-09
-    revised: ""
 # Example:
 #
 # constants:
@@ -566,21 +183,3 @@ constants:
 #     unit: slots
 #     added: 2026-03-26
 #     revised: ""
-  - name: retry_budget_s
-    status: active
-    source: design/gdd/round-flow.md
-    referenced_by:
-      - design/gdd/round-flow.md
-    value: 0.5
-    unit: seconds (result-screen retry tap to first piece draggable, low-end Android)
-    added: 2026-11-09
-    revised: ""
-  - name: leftover_piece_points
-    status: active
-    source: design/gdd/stage-goals.md
-    referenced_by:
-      - design/gdd/stage-goals.md
-    value: 100
-    unit: points per unused piece at clear (at cell_points_ref 10)
-    added: 2026-11-09
-    revised: ""
