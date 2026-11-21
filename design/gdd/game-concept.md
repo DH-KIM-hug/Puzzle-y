@@ -4,6 +4,9 @@
 *Status: Draft*
 *Previous project "말랑 크루" archived in `archive/mallang-crew/`.*
 
+> **2026-11-21 개정**: 핵심 규칙을 "무리 크기 = 자원 수치"에서 **"무리 크기 = 일꾼 행동 횟수(선택이 있는 반복 행동) + 길목 보너스 연쇄"**로 바꿨다(사용자 결정: 행동 5종 — 배 항해·길 놓기·수확·양떼 몰기·주민 파견, 건물 4종). 최신 규칙은 `design/tiny-isle-design-doc.md`가 우선한다. 아래 Core Mechanics·Core Loop의 자원 트랙 서술은 v1 기준.
+
+
 ---
 
 ## Elevator Pitch
