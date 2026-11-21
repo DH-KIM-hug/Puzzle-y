@@ -30,7 +30,7 @@ html,body{margin:0;height:100%;overflow:hidden;color:var(--ink);font-family:var(
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 button{font-family:var(--fontH);cursor:pointer}
 #app{display:grid;height:100vh;height:100dvh;width:100vw;padding:8px;gap:8px;
-  grid-template-columns:minmax(200px,250px) 1fr minmax(210px,270px);
+  grid-template-columns:minmax(200px,250px) minmax(0,1fr) minmax(210px,270px);
   grid-template-rows:auto 1fr auto;
   grid-template-areas:"top top top" "tracks stage side" "tracks hand side"}
 .panel{background:var(--paper);border:3px solid var(--rim);border-radius:14px;
@@ -76,19 +76,19 @@ button{font-family:var(--fontH);cursor:pointer}
 .banner .dp{display:inline-block;background:var(--rim);color:#fff3d6;border-radius:8px;padding:0 6px;margin-right:6px;font-size:.7em;vertical-align:middle}
 @keyframes bIn{0%{transform:scale(.2) translateY(-20px);opacity:0}100%{transform:scale(1);opacity:1}}
 @keyframes bOut{to{opacity:0;transform:translateY(-10px) scale(.95)}}
-#title{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);padding:10px 22px 12px;text-align:center;min-width:min(92%,330px);z-index:4;animation:bIn .6s cubic-bezier(.2,1.6,.4,1) both}
+#title{position:fixed;left:18px;bottom:18px;padding:10px 22px 12px;text-align:center;width:min(92vw,330px);z-index:4;animation:bIn .6s cubic-bezier(.2,1.6,.4,1) both}
 #title .tt{font-family:var(--fontH);font-size:38px;color:#5a3418;line-height:1.1;text-shadow:0 2px 0 #fff8e6}
 #title .ts{font-size:15px;margin:2px 0 8px;color:var(--ink2)}
 #title .tk{font-size:12px;margin-top:8px;color:var(--ink2)}
 .btn.big{font-size:20px;padding:7px 22px;background:#ffd56a}
-body.titleMode #season,body.titleMode #score,body.titleMode #hand,body.titleMode #side,body.titleMode #tracks,body.titleMode #hint{opacity:0;pointer-events:none}
+body.titleMode #againBtn,body.titleMode #balBtn,body.titleMode #camBtns,body.titleMode #season,body.titleMode #score,body.titleMode #hand,body.titleMode #side,body.titleMode #tracks,body.titleMode #hint{opacity:0;pointer-events:none}
 body:not(.titleMode) #title{display:none}
 #camBtns{position:absolute;right:6px;bottom:6px;display:flex;gap:6px}
 #camBtns .btn{font-family:'DejaVu Sans',Arial,sans-serif;font-size:18px;padding:4px 10px}
 #hint{position:absolute;left:8px;bottom:8px;font-size:13px;color:#fff3d6;text-shadow:0 1px 2px #000;pointer-events:none;max-width:60%}
 #side{grid-area:side;padding:8px;display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0}
 #chainBadge{font-family:var(--fontH);display:inline-block;background:#ccc;color:#fff;border-radius:10px;padding:1px 9px;margin-left:6px;font-size:16px;vertical-align:middle}
-#chainBadge.d0{background:#a89a84}#chainBadge.d1{background:#d08a2a}#chainBadge.d2{background:#d9632a}#chainBadge.d3{background:#c23b5a;animation:wob 1s infinite}
+#chainBadge.d0{background:#a89a84}#chainBadge.d1{background:#d08a2a}#chainBadge.d2{background:#d9632a}#chainBadge.d3{background:#c23b5a;animation:wob .5s 2}
 @keyframes wob{50%{transform:scale(1.12) rotate(-3deg)}}
 #steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
 #steps li{background:#fff8e8;border:2px solid #e0cba3;border-radius:8px;padding:3px 6px;font-size:13px;line-height:1.3}
@@ -126,7 +126,7 @@ body:not(.titleMode) #title{display:none}
 @media (max-height:520px) and (min-aspect-ratio:1/1){
   #app{padding:4px;gap:4px;grid-template-columns:170px 1fr 190px}
   #top{padding:2px 6px;gap:5px} #top h1{font-size:16px} .pill,.btn{font-size:12px;padding:2px 6px}
-  .trk{padding:2px 5px} .trk .val{font-size:16px} .trk .nm{font-size:13px} .trk .bn{font-size:10px} .seg{height:6px}
+  .trk{padding:2px 5px} .trk .val{font-size:16px} .trk .nm{font-size:13px} .trk .bn,.trk .stars,#ring{display:none} .seg{height:6px} .bar{margin:2px 0 1px} #tracks{gap:3px;padding:5px}
   #tracks h2,#side h2{font-size:14px}
   .card canvas{width:84px;height:54px} .card .lb{font-size:11px} #rotBtn{width:42px;height:42px;font-size:20px;margin-bottom:6px}
   #steps li{font-size:11px;padding:1px 4px}
@@ -134,7 +134,10 @@ body:not(.titleMode) #title{display:none}
 }
 /* portrait: tracks above, hand below */
 @media (max-aspect-ratio:1/1){
-  #app{padding:5px;gap:5px;grid-template-columns:1fr;grid-template-rows:auto auto 1fr auto auto;
+  #title{left:0;right:0;margin:0 auto;bottom:30px}
+  body.titleMode #tracks,body.titleMode #side,body.titleMode #hand{display:none}
+  body.titleMode #app{grid-template-rows:auto minmax(0,1fr)}
+  #app{padding:5px;gap:5px;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;
     grid-template-areas:"top" "tracks" "stage" "side" "hand"}
   #top{padding:3px 6px;gap:4px} #top h1{font-size:16px;width:auto} .pill{font-size:12px;padding:1px 7px} .btn{font-size:12px;padding:2px 7px}
   #tracks{flex-direction:row;padding:5px;gap:4px;overflow:visible}
@@ -143,10 +146,11 @@ body:not(.titleMode) #title{display:none}
   .trk .row1{flex-wrap:wrap;gap:2px} .trk .nm{font-size:12px;gap:2px} .dot{width:9px;height:9px} .ic{width:16px;height:16px}
   .trk .val{font-size:17px;margin-left:0;width:100%} .trk .dl{font-size:12px;position:absolute;right:4px;top:18px}
   .trk .stars{display:none}
-  .trk .bn{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trk .bn .long{display:none}
+  .trk .bn{font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .trk .bn .long{display:none} .trk .bn .every{display:none} .trk .cross{top:-11px;right:2px;font-size:10px;padding:0 3px;border-width:1.5px}
   .bar{gap:2px} .seg{height:6px}
-  #side{max-height:96px;padding:4px 6px;gap:3px} #side h2{font-size:14px} #steps li{font-size:11px;padding:1px 4px} #sideFoot{display:none}
-  .card canvas{width:92px;height:60px} .card .lb{font-size:11px} #hand{gap:6px}
+  #seedLbl{display:none}
+  #side{max-height:118px;padding:4px 6px;gap:3px} #side h2{font-size:14px} #steps li{font-size:11px;padding:1px 4px} #sideFoot{display:none}
+  .card canvas{width:86px;height:56px} .card .lb{font-size:11px} #hand{gap:6px}
   #rotBtn{width:46px;height:46px;font-size:22px;margin-bottom:8px}
   #hint{display:none}
   .banner{font-size:15px !important}
@@ -286,7 +290,15 @@ const perf={samples:[]};
 let gameOverShown=false;
 
 // ================= RENDER CORE =================
-const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d',{alpha:false});let frozen=false,bgC=null;
+/** warm wooden table, baked once per resize (planks, grain, lamp light, vignette) */
+function buildBg(){bgC=document.createElement('canvas');bgC.width=cv.width;bgC.height=cv.height;const g=bgC.getContext('2d'),w=bgC.width,h=bgC.height,u=Math.max(1,DPR);
+  g.fillStyle='#7a4b2a';g.fillRect(0,0,w,h);const rnd=rng(7);const pw=150*u;
+  for(let x=0,i=0;x<w;x+=pw,i++){g.fillStyle=['#7d4d2b','#76472a','#81512e','#7a4a29'][i%4];g.fillRect(x,0,pw,h);
+    g.strokeStyle='rgba(50,25,10,.10)';g.lineWidth=1*u;for(let k=0;k<9;k++){const gx=x+rnd()*pw;g.beginPath();g.moveTo(gx,0);for(let y=0;y<=h;y+=40*u)g.lineTo(gx+Math.sin(y/(90*u)+k)*4*u,y);g.stroke();}
+    g.fillStyle='rgba(30,12,4,.45)';g.fillRect(x,0,2*u,h);g.fillStyle='rgba(255,220,170,.08)';g.fillRect(x+2*u,0,1*u,h);}
+  const lg=g.createRadialGradient(w*0.5,h*0.42,0,w*0.5,h*0.42,Math.max(w,h)*0.7);lg.addColorStop(0,'rgba(255,215,160,.20)');lg.addColorStop(0.55,'rgba(255,215,160,0)');lg.addColorStop(1,'rgba(25,10,2,.45)');g.fillStyle=lg;g.fillRect(0,0,w,h);}
+
 let CW=1,CH=1,DPR=1;
 const V={ctx,cs:1,sn:0,S:30,cx:0,cy:0,sh:2,corner:[]};
 let PX=0,PY=0;
@@ -377,7 +389,7 @@ function drawSheep(x,y,z0,face,graze,hop,w){
   for(const s of[-1,1])ell(x+fx*0.12*w+px*0.05*s*w,y+fy*0.12*w+py*0.05*s*w,hz+1.5,0.022*w,'#2e2522');
 }
 function drawVillager(x,y,z0,col,bob,w){
-  w=w||1;shadow(x,y,z0-1,0.045*w);ell(x,y,z0,0.035*w,'#3a2a20');ell(x,y,z0+1+bob,0.047*w,shades(col,1,0.8,0.8)[0]);ell(x,y,z0+2+bob,0.045*w,col);ell(x,y,z0+3+bob,0.042*w,'#f2c9a0');ell(x,y,z0+4+bob,0.034*w,'#5a3a22');
+  w=(w||1)*1.6;shadow(x,y,z0-1,0.045*w);ell(x,y,z0,0.035*w,'#3a2a20');ell(x,y,z0+1+bob,0.047*w,shades(col,1,0.8,0.8)[0]);ell(x,y,z0+2+bob,0.045*w,col);ell(x,y,z0+3+bob,0.042*w,'#f2c9a0');ell(x,y,z0+4+bob,0.034*w,'#5a3a22');
 }
 function drawRocks(x,y,z0,hs){
   shadow(x,y,z0,0.5);
@@ -398,7 +410,7 @@ function drawFish(x,y,z,ang){ell(x,y,z,0.05,'#f08a4b');ell(x-Math.cos(ang)*0.06,
 
 const MTN_SIDE=['#55524d','#615d57','#6d6962','#79746c','#857f76'];
 const TOPS={'-1':'#e8dbb0','-2':'#a39c90'};
-function topCol(tt){return tt>=0?T[tt].c:TOPS[tt];}
+function topCol(tt){return(tt>=0?(T[tt]&&T[tt].c):TOPS[tt])||TOPS['-1'];}
 function lighten(hex,f){return shades(hex,1,f,f)[0];}
 /** one tile: wooden slab (stacked slices) + bevelled type-coloured top + surface detail. Shared by board and hand cards. */
 function drawTile(x,y,lift,tt,q,r,t,glow){
@@ -505,16 +517,17 @@ let last=performance.now();
 function resize(){const r=cv.getBoundingClientRect();DPR=Math.min(2,window.devicePixelRatio||1);CW=Math.max(1,r.width);CH=Math.max(1,r.height);
   cv.width=Math.round(CW*DPR);cv.height=Math.round(CH*DPR);}
 new ResizeObserver(resize).observe(cv);
-const RB=9.2;const stageEl=document.getElementById('stage');let vig=null;
+const RB=9.2;const stageEl=document.getElementById('stage');
 function boardPath(z,k){const c=V.ctx;proj(0,0,z);const bx=PX,by=PY;c.beginPath();for(let i=0;i<6;i++){const a=i*Math.PI/3,wx=Math.cos(a)*k,wy=Math.sin(a)*k;const X=bx+(wx*V.cs-wy*V.sn)*V.S,Y=by+(wx*V.sn+wy*V.cs)*V.S*PITCH;i?c.lineTo(X,Y):c.moveTo(X,Y);}c.closePath();}
 function frame(now){
   const t0=performance.now();const dt=Math.min(0.05,(now-last)/1000);last=now;
   if(!rdrag&&!twoF){let d=cam.target-cam.yaw;cam.yaw+=d*Math.min(1,dt*7);}
   runAnims(now);updateAgents(dt,now);
-  const c=ctx;c.setTransform(DPR,0,0,DPR,0,0);c.clearRect(0,0,CW,CH);
+  if(frozen){requestAnimationFrame(frame);return;}
+  const c=ctx;c.setTransform(1,0,0,1,0,0);if(!bgC||bgC.width!==cv.width||bgC.height!==cv.height)buildBg();c.drawImage(bgC,0,0);c.setTransform(DPR,0,0,DPR,0,0);
   const sr=stageEl.getBoundingClientRect(),tr=document.getElementById('tracks').getBoundingClientRect(),sd=document.getElementById('side').getBoundingClientRect();
   const portrait=CW<CH;const extraW=portrait?0:0.55*(tr.width+sd.width);
-  V.ctx=ctx;V.S=Math.max(4,Math.min((sr.width+extraW)/(2*RB),(sr.height-24)/(2*RB*PITCH+0.5),portrait?CW/(2*RB*0.93):1e9));V.sh=Math.max(1,Math.min(2,V.S*0.042));V.cx=sr.left+sr.width/2;V.cy=sr.top+sr.height/2+4*V.sh;
+  V.ctx=ctx;V.S=Math.max(4,portrait?Math.min(CW/(2*8.1),(sr.height-16)/(2*RB*PITCH+0.3)):Math.min((sr.width+extraW)/(2*RB),(sr.height-24)/(2*RB*PITCH+0.5)));V.sh=Math.max(1,Math.min(2,V.S*0.042));V.cx=sr.left+sr.width/2;V.cy=sr.top+sr.height/2+4*V.sh;
   setupView(V,cam.yaw);
   const t=now/1000;
   // board base: wooden tray with sea top
@@ -571,7 +584,7 @@ function frame(now){
     const bx=Math.cos(ang)*rr,by=Math.sin(ang)*rr;pushItem(bx,by,()=>drawBoat(bx,by,0,ang+Math.PI/2,now));}
   ITEMS.sort((a,b)=>a.d-b.d);for(const it of ITEMS)it.f();
   // clouds + birds (above)
-  c.globalAlpha=0.72;for(const[x,y,s]of clouds){for(let b=0;b<5;b++){const bx=x+Math.cos(b*1.4)*0.5*s,by=y+Math.sin(b*1.4)*0.3*s;for(let i=0;i<4;i++)ell(bx,by,95+i*1.5,(0.5-b*0.05)*s*(1-i*0.15),['#dfe7ee','#eef3f7','#f8fafc','#ffffff'][i]);}}c.globalAlpha=1;
+  c.save();c.beginPath();c.rect(sr.left-40,sr.top,sr.width+80,sr.height);c.clip();c.globalAlpha=0.68;for(const[x,y,s]of clouds){for(let b=0;b<5;b++){const bx=x+Math.cos(b*1.4)*0.5*s,by=y+Math.sin(b*1.4)*0.3*s;for(let i=0;i<4;i++)ell(bx,by,95+i*1.5,(0.5-b*0.05)*s*(1-i*0.15),['#dfe7ee','#eef3f7','#f8fafc','#ffffff'][i]);}}c.globalAlpha=1;c.restore();
   if(!RM){const per=16,u=(t%per)/7;if(u<1){const a0=Math.floor(t/per)*1.7;const ox=Math.cos(a0),oy=Math.sin(a0);
     c.strokeStyle='#3a2e28';c.lineWidth=1.6;c.beginPath();
     for(let b=0;b<3;b++){const px=-ox*13+ox*26*u-oy*(b-1)*0.6-ox*Math.abs(b-1)*0.6,py=-oy*13+oy*26*u+ox*(b-1)*0.6-oy*Math.abs(b-1)*0.6;
@@ -587,8 +600,6 @@ function frame(now){
   const tint=['rgba(160,230,140,.06)','rgba(255,240,170,.05)','rgba(240,150,60,.09)','rgba(180,205,255,.13)'][season()];
   c.fillStyle=tint;c.fillRect(0,0,CW,CH);
   if(season()===3){c.fillStyle='rgba(255,255,255,.85)';const nf=RM?15:45;for(let i=0;i<nf;i++){const hx=hash(i,3,1),hy=hash(i,5,2);const x=(hx*CW+Math.sin(t*0.8+i)*12)%CW,y=(hy*CH+t*(14+hx*20)*AM)%CH;c.beginPath();c.arc(x,y,1.2+hy*1.4,0,TAU);c.fill();}}
-  if(!vig||vig.w!==CW||vig.h!==CH){const g=ctx.createRadialGradient(CW/2,CH/2,Math.min(CW,CH)*0.35,CW/2,CH/2,Math.max(CW,CH)*0.75);g.addColorStop(0,'rgba(40,20,5,0)');g.addColorStop(1,'rgba(40,20,5,.32)');vig={w:CW,h:CH,g};}
-  c.fillStyle=vig.g;c.fillRect(0,0,CW,CH);
   // confetti
   confetti=confetti.filter(p=>p.life>0);
   for(const p of confetti){p.vy+=400*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.rot+=p.vr*dt;p.life-=dt;c.save();c.translate(p.x,p.y);c.rotate(p.rot);c.fillStyle=p.col;c.fillRect(-4,-2.5,8,5);c.restore();}
@@ -646,7 +657,7 @@ function renderTracks(){
     const low=state.balanced&&v===lowest?' style="border-color:#c2412d"':'';
     return `<div class="trk" id="trk${i}"${low}>${cross}<div class="row1"><span class="nm"><canvas class="ic" data-t="${i}"></canvas>${T[i].res}</span>
       <span class="stars">★${Math.floor(v/5)}</span><span class="val">${v}</span>${dl}</div><div class="bar">${segs}</div>
-      <div class="bn">5마다 → <b>${T[bo.to].res}+${bo.amt}</b><span class="long"> · ${bo.name}</span></div></div>`;}).join('');
+      <div class="bn"><span class="every">5마다 </span>→ <b>${T[bo.to].res}+${bo.amt}</b><span class="long"> · ${bo.name}</span></div></div>`;}).join('');
   drawIcons();
 }
 function drawIcons(){document.querySelectorAll('canvas.ic').forEach(cv2=>{const d=2;if(cv2.width!==44){cv2.width=44;cv2.height=44;}const g=cv2.getContext('2d');g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,22,22);drawIcon(g,+cv2.dataset.t);});}
@@ -693,9 +704,9 @@ function renderAll(){renderTop();renderTracks();renderSide();}
 function schedule(at,fn){anims.push({at,fn});anims.sort((a,b)=>a.at-b.at);}
 function runAnims(now){while(anims.length&&anims[0].at<=now)anims.shift().fn(false);}
 function flushAnims(){while(anims.length)anims.shift().fn(true);$('banners').innerHTML='';$('feed').classList.remove('show');}
-function banner(text,depth,col){const b=document.createElement('div');b.className='banner';b.style.fontSize=(16+depth*4)+'px';b.style.borderColor=col||'';
+function banner(text,depth,col){const b=document.createElement('div');b.className='banner';b.style.fontSize=(15+Math.min(depth,5)*2.5)+'px';b.style.borderColor=col||'';
   b.innerHTML=(depth?`<span class="dp">연쇄 ${depth}</span>`:'')+text;$('banners').appendChild(b);setTimeout(()=>b.remove(),2700);
-  const bs=$('banners').children;while(bs.length>4)bs[0].remove();}
+  const bs=$('banners').children;while(bs.length>3)bs[0].remove();}
 function burst(n){const r=cv.getBoundingClientRect();for(let i=0;i<(RM?n/3:n);i++)confetti.push({x:CW/2+(Math.random()-0.5)*80,y:CH*0.3,vx:(Math.random()-0.5)*420,vy:-180-Math.random()*320,
   rot:Math.random()*6,vr:(Math.random()-0.5)*12,col:['#ffd56a','#e3b23c','#c8643f','#5fb0dc','#9fcb5e','#ffffff'][i%6],life:1.4+Math.random()*0.8});}
 function showFeed(f,flushed){disp=disp.slice();disp[0]=f.grainAfter;renderTracks();renderTop();if(flushed)return;
@@ -750,6 +761,7 @@ function startGame(seed){document.body.classList.remove('titleMode');flushAnims(
 
 // ---------- preview ----------
 function setPreview(q,r){
+  if(document.body.classList.contains('titleMode')){preview=null;return;}
   if(state.over||!state.hand[sel]){preview=null;renderTracks();renderSide();return;}
   const p=preview;if(p&&p.q===q&&p.r===r&&p.rot===rot&&p.h===sel&&p.placed===state.placed)return;
   const sim=simulate(state,sel,q,r,rot);preview={q,r,rot,h:sel,placed:state.placed,sim};window.__isle.lastPreview=sim;renderTracks();renderSide();}
@@ -810,7 +822,7 @@ window.__isle={
   simulateOn:(st,h,q,r,ro)=>simulate(st,h,q,r,ro),
   placeAt(h,q,r,ro){const s=simulate(state,h,q,r,ro);if(!s.valid)return s;return placeReal(s);},
   setHand(list){state.hand=list.map(p=>[p[0],p[1]]);sel=0;renderHand();renderAll();},
-  setBoard(list,tracks){for(const[q,r,ty]of list){const c=state.cells[key(q,r)];if(c&&c.t==='land')c.tile=ty;}
+  setBoard(list,tracks){for(const[q,r,ty]of list){const c=state.cells[key(q,r)];if(c&&c.t==='land'&&(ty===null||(Number.isInteger(ty)&&ty>=0&&ty<5)))c.tile=ty;}
     if(tracks){state.tracks=tracks.slice();disp=tracks.slice();}sizes=computeSizes(state);for(const k in state.cells)if(state.cells[k].tile!==null&&!vis[k])vis[k]={born:0,grownAt:0};
     rebuildAgents(performance.now());renderAll();},
   setTracks(t){state.tracks=t.slice();disp=t.slice();renderAll();},
@@ -823,6 +835,7 @@ window.__isle={
   get rot(){return rot;},get sel(){return sel;},get yaw(){return cam.yaw;},get preview(){return preview&&preview.sim;},
   perf(){const s=perf.samples.slice().sort((a,b)=>a-b);return{n:s.length,avg:s.reduce((a,b)=>a+b,0)/Math.max(1,s.length),p95:s[Math.floor(s.length*0.95)]||0,max:s[s.length-1]||0};},
   resetPerf(){perf.samples=[];},
+  freeze(f){frozen=!!f;},
   agents:()=>agents.length,
   lastPreview:null,
 };
