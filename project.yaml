@@ -37,7 +37,7 @@ engine:
   name: "Godot"
   version: "4.7"
   language: "GDScript"
-  # Compatibility: 2D mobile, broadest device support (TD-FEASIBILITY advice)
+  # Compatibility: 2D sprite-stacked diorama; runs on web (test builds), mobile and PC
   rendering: "Compatibility"
   physics: "Godot Physics 2D"
 
@@ -57,9 +57,9 @@ naming:
 
 platform:
   multiplayer: false
-  online: false              # MVP is local-only; IAP / odds page arrive in T2
-  targets: [Mobile]
-  primary_input: "Touch"
+  online: false              # MVP local-only; ads/IAP SDKs arrive in T2
+  targets: [PC, Mobile]
+  primary_input: "Mouse/Touch"
   gamepad_support: "None"
   touch_support: "Full"
   cert_tier: none
@@ -75,7 +75,7 @@ testing:
   framework: gdunit4
 
 commands:
-  # build: no export preset exists yet — set once export_presets.cfg is created (e.g. an Android preset)
+  build: "godot --headless --export-release 'Web' build/web/index.html"   # web test build; PC/Android presets later
   test: "godot --headless -s -d --remote-debug tcp://127.0.0.1:0 res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests --ignoreHeadlessMode"
-  run: "godot --path . --windowed --resolution 720x1280"
+  run: "godot --path . --windowed --resolution 1280x720"
   smoke: "godot --headless --quit-after 5"

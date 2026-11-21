@@ -12,7 +12,7 @@
 
 - **Engine**: Godot 4.7
 - **Language**: GDScript
-- **Rendering**: Compatibility (2D mobile)
+- **Rendering**: Compatibility (2D, sprite-stacked pseudo-3D diorama)
 - **Physics**: Godot Physics 2D
 
 ## Input & Platform
@@ -20,12 +20,12 @@
 <!-- Written by /setup-engine. Read by /ux-design, /ux-review, /test-setup, /team-ui, and /dev-story -->
 <!-- to scope interaction specs, test helpers, and implementation to the correct input methods. -->
 
-- **Target Platforms**: Mobile (Android first, iOS later)
-- **Input Methods**: Touch (mouse emulates touch in editor)
-- **Primary Input**: Touch (swipe to swap, tap crew icon to fire skill)
+- **Target Platforms**: PC (Steam) + Mobile (iOS/Android); web builds for testing
+- **Input Methods**: Mouse + Touch (both first-class)
+- **Primary Input**: Drag a tile from the hand onto the hex island; rotate with wheel/right-click (PC) or a rotate button/two-finger twist (touch)
 - **Gamepad Support**: None
 - **Touch Support**: Full
-- **Platform Notes**: Portrait 720x1280 base; touch targets >= ~64px at 1080p; safe-area/notch handling; pause the 60s timer when the app is backgrounded.
+- **Platform Notes**: Landscape 16:9, 1280x720 base (mobile landscape too); touch targets >= ~64px at 1080p; safe-area handling; camera yaw rotation of the sprite-stacked island.
 
 ## Naming Conventions
 
